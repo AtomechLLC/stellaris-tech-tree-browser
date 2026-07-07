@@ -29,7 +29,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Every tech's name and description in the snapshot matches the game's English localisation text
   4. Every tech's icon exists as a web-ready image file (converted from the game's `.dds` asset) referenced from the snapshot
   5. Re-running the pipeline against the same install reproduces an equivalent snapshot (idempotent), simulating what a future game-patch update would require
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 01-01-PLAN.md — Walking skeleton: scaffold + Clausewitz parser + scripted-var resolver + Zod schema contract + version detect + minimal end-to-end tech.json
+- [ ] 01-02-PLAN.md — Full tech extraction (all 33 files) + DLC classification + prerequisite DAG validation
+- [ ] 01-03-PLAN.md — Localisation resolution (names/descriptions across all english .yml files)
+- [ ] 01-04-PLAN.md — Icon pipeline (DDS→WebP conversion + resolution + placeholder fallback)
+- [ ] 01-05-PLAN.md — Full assembler + validation report + idempotency/corpus test + SCHEMA.md
 
 ### Phase 2: Tech Tree Visualization
 **Goal**: Players can open the app and see the complete, accurately-laid-out tech tree, with icons, and pan/zoom smoothly across the full graph
@@ -66,6 +72,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Pipeline | 0/TBD | Not started | - |
+| 1. Data Pipeline | 0/5 | Not started | - |
 | 2. Tech Tree Visualization | 0/TBD | Not started | - |
 | 3. Navigation & Discovery | 0/TBD | Not started | - |
