@@ -1,0 +1,22 @@
+{
+  "name": "stellaris-tech-pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Build-time data pipeline: parses the local Stellaris install into a versioned tech.json snapshot for the frontend.",
+  "scripts": {
+    "build:data": "tsx src/assemble.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "jomini": "0.10.0",
+    "sharp": "0.35.3",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10",
+    "tsx": "^4.19.0"
+  }
+}
