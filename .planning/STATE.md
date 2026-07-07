@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-07-07T23:44:43.741Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-07-07T23:58:30.703Z"
 last_activity: 2026-07-07
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 ## Current Position
 
 Phase: 1 (Data Pipeline) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-07-07
 
-Progress: [██░░░░░░░░] 20%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [██░░░░░░░░] 20%
 
 *Updated after each plan completion*
 | Phase 01-data-pipeline P01 | 55 | 3 tasks | 10 files |
+| Phase 01-data-pipeline P02 | 45min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,9 @@ Recent decisions affecting current work:
 - [Phase ?]: unlocks.grants/leadsTo are required non-optional arrays (no Zod default) so a fixture missing either sub-field fails schema validation, per D-05
 - [Phase 01]: Pinned TypeScript to 5.9.3 explicitly, resolving the 5.x/6.x drift RESEARCH.md flagged
 - [Phase 01]: cost/weight extraction defensively preserves block-form via costRaw/weightModifierRaw for the documented-but-unobserved Open Question 1 shape
+- [Phase 01]: DLC filename-to-display-name matching uses normalized-token subset containment, not a hand-typed table (D-08)
+- [Phase 01]: OR-block prerequisite alternatives are flattened into prerequisites as real graph edges rather than modeling AND/OR schema semantics
+- [Phase 01]: jomini's duplicate top-level scalar key artifact (e.g. repeated weight=) resolved via last-value-wins, matching Clausewitz override semantics
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-07T23:44:43.730Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-07-07T23:58:30.693Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
