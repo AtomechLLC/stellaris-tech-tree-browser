@@ -155,3 +155,7 @@ None - no external service configuration required. `npm install` inside `pipelin
 ---
 *Phase: 01-data-pipeline*
 *Completed: 2026-07-07*
+
+## Self-Check: PASSED
+
+All 10 created files verified present on disk. All 6 referenced commit hashes (2b417fa, 5c2ba0e, ed1ad9c, a246928, 0840563, 32d65ce) verified present in `git log --oneline --all`.

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 1 context gathered
-last_updated: "2026-07-07T23:32:44.240Z"
-last_activity: 2026-07-07 -- Phase 1 planning complete
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-07-07T23:44:43.741Z"
+last_activity: 2026-07-07
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 5
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Players can quickly find any technology and understand how to reach it — accurate 4.5.0 data, presented clearly, navigable without friction.
-**Current focus:** Phase 1 - Data Pipeline
+**Current focus:** Phase 1 — Data Pipeline
 
 ## Current Position
 
-Phase: 1 of 3 (Data Pipeline)
-Plan: Not yet planned
+Phase: 1 (Data Pipeline) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-07-07 -- Phase 1 planning complete
+Last activity: 2026-07-07
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 01-data-pipeline P01 | 55 | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,9 @@ Recent decisions affecting current work:
 - Roadmap: Parse from local 4.5.0 game files for accuracy and repeatable version updates
 - Roadmap: Static/client-side web app — no server needed
 - Roadmap: 3-phase coarse structure — Data Pipeline → Tech Tree Visualization → Navigation & Discovery, sequenced so data correctness and layout land before general UI work (per research)
+- [Phase ?]: unlocks.grants/leadsTo are required non-optional arrays (no Zod default) so a fixture missing either sub-field fails schema validation, per D-05
+- [Phase 01]: Pinned TypeScript to 5.9.3 explicitly, resolving the 5.x/6.x drift RESEARCH.md flagged
+- [Phase 01]: cost/weight extraction defensively preserves block-form via costRaw/weightModifierRaw for the documented-but-unobserved Open Question 1 shape
 
 ### Pending Todos
 
@@ -92,6 +96,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-07T22:45:06.136Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-data-pipeline/01-CONTEXT.md
+Last session: 2026-07-07T23:44:43.730Z
+Stopped at: Completed 01-01-PLAN.md
+Resume file: None

@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Walking skeleton: scaffold + Clausewitz parser + scripted-var resolver + Zod schema contract + version detect + minimal end-to-end tech.json
+- [x] 01-01-PLAN.md — Walking skeleton: scaffold + Clausewitz parser + scripted-var resolver + Zod schema contract + version detect + minimal end-to-end tech.json
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -90,6 +90,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Pipeline | 0/5 | Not started | - |
+| 1. Data Pipeline | 1/5 | In Progress|  |
 | 2. Tech Tree Visualization | 0/TBD | Not started | - |
 | 3. Navigation & Discovery | 0/TBD | Not started | - |
