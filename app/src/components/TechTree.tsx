@@ -19,7 +19,6 @@ import { CategoryNav } from "./CategoryNav";
 import { TechTooltip } from "./TechTooltip";
 import { AncestryPanel } from "./AncestryPanel";
 import { FindOverlay, type FindEntry } from "./FindOverlay";
-import { Legend } from "./Legend";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { ErrorOverlay } from "./ErrorOverlay";
 
@@ -565,8 +564,6 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
             ⟲
           </button>
         </div>
-
-        <Legend />
       </div>
 
       {selectedKey && selectedRect && (

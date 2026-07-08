@@ -6,7 +6,7 @@ import type { Tech } from "../../types/tech-snapshot";
  *   - swimlanes.ts  (lane ordering + geometry)
  *   - CategoryAxis  (lane labels)
  *   - TechCardOverlay (card `Category – Tier` line)
- *   - Legend        (category grouping)
+ *   - CategoryNav   (left-panel category grouping + filters)
  *
  * Order is authoritative: area order top→bottom is physics → society →
  * engineering (matches the game's own research-area order and the existing

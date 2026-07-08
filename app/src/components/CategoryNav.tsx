@@ -14,10 +14,23 @@ import {
  * that category. Area headers do the same at area granularity. "Show all"
  * resets. Counts show how many techs each category has.
  *
+ * The panel is a flex column: the category groups scroll, and a compact
+ * keyboard-shortcuts block is pinned at the bottom (quick 260708-4y2 — it
+ * replaces the removed bottom-left Legend overlay).
+ *
  * Pure presentational + memoized — all filter state lives in TechTree.
  */
 
 type Area = Tech["area"];
+
+/** Keyboard/mouse shortcuts shown in the pinned bottom block. */
+const SHORTCUTS: { key: string; action: string }[] = [
+  { key: "F", action: "Find" },
+  { key: "Esc", action: "Deselect / close" },
+  { key: "Click", action: "Select" },
+  { key: "Drag", action: "Pan" },
+  { key: "Wheel", action: "Zoom" },
+];
 
 const AREAS: { key: Area; label: string }[] = [
   { key: "physics", label: "Physics" },
@@ -57,6 +70,7 @@ export const CategoryNav = memo(function CategoryNav({
 
   return (
     <nav className="category-nav" aria-label="Filter by category">
+      <div className="category-nav__scroll">
       <button
         type="button"
         className="category-nav__all"
@@ -120,6 +134,19 @@ export const CategoryNav = memo(function CategoryNav({
           </div>
         );
       })}
+      </div>
+
+      <div className="category-nav__hotkeys" aria-label="Keyboard shortcuts">
+        <div className="category-nav__hotkeys-title">Shortcuts</div>
+        <ul className="category-nav__hotkeys-list">
+          {SHORTCUTS.map((s) => (
+            <li className="category-nav__hotkey" key={s.key}>
+              <kbd className="category-nav__key">{s.key}</kbd>
+              <span className="category-nav__hotkey-action">{s.action}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </nav>
   );
 });
