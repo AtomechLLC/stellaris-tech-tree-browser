@@ -1,39 +1,38 @@
-import { createNodeBorderProgram } from "@sigma/node-border";
 import { createNodeImageProgram } from "@sigma/node-image";
-import { createNodeCompoundProgram } from "sigma/rendering";
 
 /**
- * Compound icon + area-ring node program (D-09, RESEARCH Pattern 1).
+ * Compact SQUARE icon-tile node program — the zoomed-OUT LOD substrate
+ * (Task 2 of quick 260707-we6). The rich reference-style HTML cards
+ * (TechCardOverlay) take over when zoomed IN; this program is what the whole
+ * tree reads as when scanned from far out, so it is intentionally small,
+ * square, and framed in the tech's AREA color.
  *
- * Sigma v3 has no built-in "ring around an image" node type: `@sigma/node-image`
- * renders the tech's WebP icon but its `color` option is a fill/tint fallback
- * only (no stroke); `@sigma/node-border` renders a stroke/ring but no image.
- * The two are combined into one registered node type via sigma core's
- * `createNodeCompoundProgram`, which is the documented pattern from sigma's
- * own storybook example for exactly this combination.
+ * Why a single image program (not the old image+border compound):
+ * `@sigma/node-border` only draws a CIRCULAR stroke, which cannot frame a
+ * square tile — so the circular ring is dropped here. `@sigma/node-image`'s
+ * own `colorAttribute` background provides the area-colored frame instead:
+ * with `drawingMode: "background"` the node's `areaColor` fills the tile and
+ * the padded icon sits on top of it, reading as an icon on an area-colored
+ * square.
  *
- * Per-node attributes this compound program consumes (set by buildGraph.ts):
- * - `areaColor` — the 2-3px ring stroke color (bridged from --area-* tokens)
- * - `color`     — the image-background fallback (bridged from --color-bg)
+ * Per-node attributes consumed (set by buildGraph.ts):
+ * - `areaColor` — the square frame/background color (bridged from --area-*)
  * - `image`     — the tech's WebP icon URL
  * - `label`     — the localized tech name (plain text, D-05)
+ *
+ * NOTE: `objectFit` is NOT a valid option in @sigma/node-image@3.0.0 (only
+ * drawingMode/keepWithinCircle/padding/colorAttribute/imageAttribute exist) —
+ * do not re-add it. Square rendering hinges on `keepWithinCircle: false`.
  */
-const NodeBorderRingProgram = createNodeBorderProgram({
-  borders: [
-    // Ring: ~3px stroke in the tech's area color (UI-SPEC Node Visual Spec).
-    { size: { value: 3, mode: "pixels" }, color: { attribute: "areaColor" } },
-    // Fill the remainder with the node's fallback background color.
-    { size: { fill: true }, color: { attribute: "color" } },
-  ],
-});
 
-const NodeImageIconProgram = createNodeImageProgram({
-  padding: 0.05, // small inset so the ring stays visible around the icon
-  objectFit: "contain", // never crop the pictogram (UI-SPEC Node Visual Spec)
-  drawingMode: "background", // color is a fallback background, not a tint
-});
+/** Icon inset inside the tile — larger padding = thicker area-colored frame. */
+const TILE_PADDING = 0.12;
 
-export const NodeCompoundProgram = createNodeCompoundProgram([
-  NodeBorderRingProgram,
-  NodeImageIconProgram,
-]);
+export const NodeCompoundProgram = createNodeImageProgram({
+  // Square tile instead of the default circular clip — the headline of Task 2.
+  keepWithinCircle: false,
+  // `areaColor` fills the tile as a background; the icon is drawn padded on top.
+  drawingMode: "background",
+  colorAttribute: "areaColor",
+  padding: TILE_PADDING,
+});

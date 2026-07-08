@@ -56,7 +56,9 @@ export function buildGraph(snapshot: TechSnapshot, tokens?: ThemeTokens): Direct
       cost: tech.cost,
       weight: tech.weight,
       image: tech.icon ? `${iconBase}/${tech.icon}` : undefined,
-      size: 12,
+      // Compact square tile size for the zoomed-out overview (Task 2). Bumped
+      // slightly from the old 12 so the framed icon reads at overview zoom.
+      size: 14,
       // x/y are owned by layout.ts (ELK layout, Plan 02-02 Task 2) — left
       // unset here; Sigma is only handed final coordinates after layoutGraph.
       x: 0,
