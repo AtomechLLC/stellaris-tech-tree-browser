@@ -36,7 +36,14 @@ async function getParser(): Promise<Jomini> {
 export async function parseClausewitzFile(filePath: string): Promise<Record<string, unknown>> {
   const parser = await getParser();
   const buf = readFileSync(filePath);
-  const text = buf.toString("latin1");
+  let text = buf.toString("latin1");
+  // Strip a UTF-8 BOM: the bytes EF BB BF decode under latin1 to the three
+  // characters U+00EF U+00BB U+00BF ("ï»¿" as literal chars), which would otherwise fuse with
+  // the file's first root token and make the first tech key silently fail
+  // TECH_KEY_PATTERN (loc-scanner.ts strips its BOM; keep the parsers consistent).
+  if (text.startsWith("ï»¿")) text = text.slice(3);
+  // Defensive: a real U+FEFF in case the input was already unicode-decoded.
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
   const wrapped = `__root__ = {\n${text}\n}`;
   const result = parser.parseText(wrapped, { encoding: "windows1252" }) as Record<string, Record<string, unknown>>;
   return result.__root__ ?? {};
