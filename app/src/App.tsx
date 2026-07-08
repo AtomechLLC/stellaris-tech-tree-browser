@@ -1,17 +1,27 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { DirectedGraph } from "graphology";
 import { fetchSnapshot } from "./lib/data/fetchSnapshot";
 import { buildGraph } from "./lib/graph/buildGraph";
 import { layoutGraph } from "./lib/graph/layout";
 import { TechTreeCanvas } from "./components/TechTreeCanvas";
+import { Header } from "./components/Header";
+import { LoadingOverlay } from "./components/LoadingOverlay";
+import { ErrorOverlay } from "./components/ErrorOverlay";
+import { EmptyOverlay } from "./components/EmptyOverlay";
 
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; graph: DirectedGraph };
+  | { status: "ready"; graph: DirectedGraph; techCount: number };
 
 export function App() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [retryToken, setRetryToken] = useState(0);
+
+  const retry = useCallback(() => {
+    setState({ status: "loading" });
+    setRetryToken((t) => t + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -27,7 +37,11 @@ export function App() {
         // renders the existing error state, not a blank screen.
         await layoutGraph(graph);
         if (cancelled) return;
-        setState({ status: "ready", graph });
+        setState({
+          status: "ready",
+          graph,
+          techCount: Object.keys(snapshot.techs).length,
+        });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -38,36 +52,17 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  if (state.status === "loading") {
-    return (
-      <div style={centeredStyle}>
-        <p>Loading…</p>
-      </div>
-    );
-  }
-
-  if (state.status === "error") {
-    return (
-      <div style={centeredStyle}>
-        <p>Couldn&apos;t load the tech tree: {state.message}</p>
-      </div>
-    );
-  }
+  }, [retryToken]);
 
   return (
-    <div style={{ height: "100vh", width: "100vw" }}>
-      <TechTreeCanvas graph={state.graph} />
+    <div className="app-shell">
+      <Header />
+      {state.status === "loading" && <LoadingOverlay />}
+      {state.status === "error" && <ErrorOverlay onRetry={retry} />}
+      {state.status === "ready" && state.techCount === 0 && <EmptyOverlay />}
+      {state.status === "ready" && state.techCount > 0 && (
+        <TechTreeCanvas graph={state.graph} />
+      )}
     </div>
   );
 }
-
-const centeredStyle: CSSProperties = {
-  height: "100vh",
-  width: "100vw",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontFamily: "sans-serif",
-};

@@ -1,27 +1,45 @@
 import { useEffect } from "react";
 import type { DirectedGraph } from "graphology";
 import { SigmaContainer, useLoadGraph } from "@react-sigma/core";
-import { createNodeImageProgram } from "@sigma/node-image";
 import type { Settings } from "sigma/settings";
+import { NodeCompoundProgram } from "../lib/sigma/nodeProgram";
+import { readThemeTokens } from "../lib/sigma/theme";
+import { TierAxis } from "./TierAxis";
+import { Legend } from "./Legend";
 
-// Plain image node program for this slice (TREE-03 full-scale pan/zoom
-// benchmark). The compound border+image ring (area color, D-09) is Plan
-// 02-03's concern — a plain image node is correct here. `keepWithinCircle`
-// (true is the package default) keeps icon art from spilling past the
-// node's circular bounds without cropping the pictogram (contain semantics).
-const NodeImageProgram = createNodeImageProgram({
-  padding: 0.05,
-});
+const NODE_TYPE = "techNode";
 
-// No edgeProgramClasses override and no `hideEdgesOnMove`/suppressing
-// setting is configured below, so Sigma's default edge-line program renders
-// all 613 prerequisite edges added by buildGraph.ts as-is (Plan 02-02,
-// TREE-01). Edge color/opacity tokens (UI-SPEC Edge Visual Spec, D-12
-// theming bridge) are Plan 02-03's scope.
-const sigmaSettings: Partial<Settings> = {
-  defaultNodeType: "image",
-  nodeProgramClasses: { image: NodeImageProgram },
-};
+/**
+ * Bridges CSS tokens into Sigma settings once, at module load (D-12,
+ * RESEARCH Pattern 4) — edge/label colors and the compound node program are
+ * all sourced from tokens.css, never a hardcoded hex. Edge opacity (UI-SPEC
+ * Edge Visual Spec: --color-edge @ 0.5 opacity) is baked into an rgba()
+ * string derived from the bridged hex, since Sigma's edge-line program reads
+ * a single CSS-color-format `color` value per edge/setting — there is no
+ * separate opacity setting to combine with a hex color.
+ */
+function buildSigmaSettings(): Partial<Settings> {
+  const tokens = readThemeTokens();
+  const edgeColorWithOpacity = hexToRgba(tokens.edge, 0.5);
+
+  return {
+    defaultNodeType: NODE_TYPE,
+    nodeProgramClasses: { [NODE_TYPE]: NodeCompoundProgram },
+    defaultEdgeColor: edgeColorWithOpacity,
+    labelColor: { color: tokens.text },
+    labelFont: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+    // Sigma's default zoom-based label hiding is accepted as-is (D-10) — no
+    // renderLabels/labelRenderedSizeThreshold override needed.
+  };
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const clean = hex.replace("#", "");
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 function GraphLoader({ graph }: { graph: DirectedGraph }) {
   const loadGraph = useLoadGraph();
@@ -35,8 +53,15 @@ function GraphLoader({ graph }: { graph: DirectedGraph }) {
 
 export function TechTreeCanvas({ graph }: { graph: DirectedGraph }) {
   return (
-    <SigmaContainer settings={sigmaSettings} style={{ width: "100%", height: "100%" }}>
-      <GraphLoader graph={graph} />
-    </SigmaContainer>
+    <div className="canvas-region">
+      <SigmaContainer
+        settings={buildSigmaSettings()}
+        style={{ width: "100%", height: "100%" }}
+      >
+        <GraphLoader graph={graph} />
+        <TierAxis />
+      </SigmaContainer>
+      <Legend />
+    </div>
   );
 }
