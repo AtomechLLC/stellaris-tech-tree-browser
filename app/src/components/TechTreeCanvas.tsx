@@ -33,8 +33,20 @@ function buildSigmaSettings(): Partial<Settings> {
   };
 }
 
+/**
+ * Alpha-composites a hex token into an `rgba()` string. Robust to token drift
+ * (WR-01): expands 3-digit shorthand and, for any value that is NOT a plain
+ * 3-/6-digit hex (a named color, an already-rgb() token, a future dark-theme
+ * value), returns it verbatim rather than emitting `rgba(NaN, NaN, NaN, a)` —
+ * the edge then renders at full opacity in that color, a graceful degradation
+ * instead of a broken (black/blank) edge layer.
+ */
 function hexToRgba(hex: string, alpha: number): string {
-  const clean = hex.replace("#", "");
+  let clean = hex.replace("#", "").trim();
+  if (clean.length === 3) {
+    clean = clean.split("").map((c) => c + c).join("");
+  }
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return hex;
   const r = parseInt(clean.slice(0, 2), 16);
   const g = parseInt(clean.slice(2, 4), 16);
   const b = parseInt(clean.slice(4, 6), 16);
