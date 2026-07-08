@@ -55,7 +55,11 @@ const PLACEHOLDER_ICON_NAME = "placeholder-icon.webp";
  * snapshot.
  */
 export async function runAssemble(): Promise<string> {
-  const { gameRoot } = resolveConfig([]);
+  // D-15 precedence #1: let resolveConfig read the real CLI args
+  // (process.argv.slice(2) default) so `npm run build:data -- --game-root=<path>`
+  // actually takes effect. (Test files deliberately pass [] to avoid vitest
+  // argv interference; the entrypoint must NOT.)
+  const { gameRoot } = resolveConfig();
   const gameVersion = detectGameVersion(gameRoot);
   const varMap = await loadScriptedVariables(gameRoot);
   const dlcRegistry = await loadDlcRegistry(gameRoot);
