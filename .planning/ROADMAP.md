@@ -14,7 +14,7 @@ The journey runs from raw game files to a navigable tool: first, build a rock-so
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Data Pipeline** - Parse all Stellaris 4.5.0 tech data into an accurate, versioned, one-command-regenerable JSON snapshot (completed 2026-07-08)
-- [ ] **Phase 2: Tech Tree Visualization** - Render the full tech tree as a true DAG with icons, readable layout, and smooth pan/zoom
+- [x] **Phase 2: Tech Tree Visualization** - Render the full tech tree as a true DAG with icons, readable layout, and smooth pan/zoom (completed 2026-07-08)
 - [ ] **Phase 3: Navigation & Discovery** - Find any tech and understand how to reach it — search, filters, prerequisite chains, detail panel, working links
 
 ## Phase Details
@@ -78,7 +78,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 02-03-PLAN.md — Node icon+area-ring+label, camera-synced tier-axis, legend, tokens.css single source + getComputedStyle theme bridge, loading/error/empty states (TREE-04, UIFX-01)
+- [x] 02-03-PLAN.md — Node icon+area-ring+label, camera-synced tier-axis, legend, tokens.css single source + getComputedStyle theme bridge, loading/error/empty states (TREE-04, UIFX-01)
 
 ### Phase 3: Navigation & Discovery
 
@@ -105,7 +105,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 02-02-PLAN.md — Real DAG: all 613 prerequisite edges (multi-parent), elkjs tier-partitioned layout + area-band Y-remap (TREE-01, TREE-02)
+- [x] 02-02-PLAN.md — Real DAG: all 613 prerequisite edges (multi-parent), elkjs tier-partitioned layout + area-band Y-remap (TREE-01, TREE-02)
 
 **Wave 3** *(blocked on Wave 2)*
 
@@ -119,5 +119,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Pipeline | 5/5 | Complete    | 2026-07-08 |
-| 2. Tech Tree Visualization | 2/3 | In Progress|  |
+| 2. Tech Tree Visualization | 3/3 | Complete   | 2026-07-08 |
 | 3. Navigation & Discovery | 0/TBD | Not started | - |

@@ -20,7 +20,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **TREE-01**: User can view the full tech tree with prerequisite edges rendered as a true DAG (multi-prerequisite techs placed correctly, not tree-flattened)
 - [x] **TREE-02**: Tree layout is readable at full scale — organized by tier and research area
 - [x] **TREE-03**: User can pan and zoom smoothly at full-tree scale (hundreds of nodes) without lag
-- [ ] **TREE-04**: Tech nodes display icon, localized name, and tier at a glance
+- [x] **TREE-04**: Tech nodes display icon, localized name, and tier at a glance
 
 ### Navigation
 
@@ -37,7 +37,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### UI Foundation
 
-- [ ] **UIFX-01**: UI styling is built on theme tokens (CSS custom properties) from day one — light theme ships at launch, additional themes require no rework
+- [x] **UIFX-01**: UI styling is built on theme tokens (CSS custom properties) from day one — light theme ships at launch, additional themes require no rework
 
 ## v2 Requirements
 
@@ -81,8 +81,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | TREE-01 | Phase 2 | Complete |
 | TREE-02 | Phase 2 | Complete |
 | TREE-03 | Phase 2 | Complete |
-| TREE-04 | Phase 2 | Pending |
-| UIFX-01 | Phase 2 | Pending |
+| TREE-04 | Phase 2 | Complete |
+| UIFX-01 | Phase 2 | Complete |
 | NAV-01 | Phase 3 | Pending |
 | NAV-02 | Phase 3 | Pending |
 | NAV-03 | Phase 3 | Pending |
