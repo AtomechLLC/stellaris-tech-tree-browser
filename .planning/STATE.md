@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 Phase: 3
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-07-08 - Completed quick task 260707-we6: category swimlanes + reference-style zoom-LOD tech cards
+Last activity: 2026-07-08 - Completed quick task 260708-0mk: replaced Sigma with a reference-styled DOM tech tree (ELK + DOM cards + SVG connectors)
 
 Progress: [██████████] 100%
 
@@ -107,6 +107,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260707-we6 | Category swimlanes + reference-style zoom-LOD tech cards | 2026-07-08 | 17668cf..b58df93 | [260707-we6-...](./quick/260707-we6-category-swimlanes-and-square-tile-nodes/) |
+| 260708-0mk | Replace Sigma with a reference-styled DOM tech tree (ELK layout + DOM cards + SVG connectors) | 2026-07-08 | 73f2337..8c0059e | [260708-0mk-...](./quick/260708-0mk-replace-sigma-with-a-simple-dom-css-tech/) |
 
 ## Deferred Items
 
