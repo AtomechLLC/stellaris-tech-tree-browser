@@ -123,8 +123,15 @@ export async function runAssemble(): Promise<string> {
     let iconRef: string;
     if (iconSource.base) {
       const pngTempPath = join(iconsOutDir, `${key}.tmp.png`);
-      await convertDdsToWebp(iconSource.base, pngTempPath, webpOutPath);
-      iconRef = `${key}.webp`;
+      // D-13: a corrupt/unreadable DDS (or transient magick failure) degrades
+      // to the placeholder — it must never abort the whole build.
+      try {
+        await convertDdsToWebp(iconSource.base, pngTempPath, webpOutPath);
+        iconRef = `${key}.webp`;
+      } catch (err) {
+        console.warn(`[assemble] icon conversion failed for "${key}" (${err}) — using placeholder`);
+        iconRef = usePlaceholder();
+      }
     } else {
       iconRef = usePlaceholder();
       console.warn(`[assemble] no icon source resolved for "${key}" — using placeholder`);
@@ -133,7 +140,12 @@ export async function runAssemble(): Promise<string> {
     for (const swap of iconSource.swaps) {
       const swapWebpPath = join(iconsOutDir, `${swap.name}.webp`);
       const swapPngTempPath = join(iconsOutDir, `${swap.name}.tmp.png`);
-      await convertDdsToWebp(swap.path, swapPngTempPath, swapWebpPath);
+      try {
+        await convertDdsToWebp(swap.path, swapPngTempPath, swapWebpPath);
+      } catch (err) {
+        // D-13: swap icons are supplementary — warn and skip, never fail the build.
+        console.warn(`[assemble] swap icon conversion failed for "${swap.name}" (${err}) — skipping`);
+      }
     }
 
     techs[key] = {
