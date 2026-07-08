@@ -20,6 +20,7 @@
  * (tech_titans -> Apocalypse, tech_juggernaut -> Federations).
  */
 import type { TechSnapshot } from "./schema/tech-snapshot.js";
+import { PLACEHOLDER_ICON_NAME } from "./icons/convert.js";
 
 const KNOWN_CROSS_DLC_CASES: Array<{ techKey: string; expectedDlc: string }> = [
   { techKey: "tech_titans", expectedDlc: "Apocalypse" },
@@ -52,7 +53,13 @@ export interface Report {
   danglingPrerequisiteCount: number;
   missingNameCount: number;
   missingDescriptionCount: number;
-  missingIconCount: number;
+  /**
+   * Count of techs shipping the placeholder icon (i.e. no real icon source
+   * resolved/converted). After the D-13 fallback every tech's `icon` is a
+   * truthy string, so measuring `icon === PLACEHOLDER_ICON_NAME` is the real
+   * missing-icon signal — a `!icon` check would be permanently 0.
+   */
+  placeholderIconCount: number;
   areaCounts: Record<string, number>;
   tierCounts: Record<string, number>;
   dlcBreakdown: Record<string, number>;
@@ -74,7 +81,7 @@ export function buildReport(snapshot: TechSnapshot, warnings: ReportWarnings): R
   const dlcBreakdown: Record<string, number> = {};
   let missingNameCount = 0;
   let missingDescriptionCount = 0;
-  let missingIconCount = 0;
+  let placeholderIconCount = 0;
   let techsWithGrants = 0;
   let techsWithLeadsTo = 0;
 
@@ -84,7 +91,7 @@ export function buildReport(snapshot: TechSnapshot, warnings: ReportWarnings): R
 
     if (!tech.name) missingNameCount++;
     if (!tech.description) missingDescriptionCount++;
-    if (!tech.icon) missingIconCount++;
+    if (tech.icon === PLACEHOLDER_ICON_NAME) placeholderIconCount++;
 
     if (tech.unlocks.grants.length > 0) techsWithGrants++;
     if (tech.unlocks.leadsTo.length > 0) techsWithLeadsTo++;
@@ -103,7 +110,7 @@ export function buildReport(snapshot: TechSnapshot, warnings: ReportWarnings): R
     danglingPrerequisiteCount: warnings.danglingPrerequisiteCount,
     missingNameCount,
     missingDescriptionCount,
-    missingIconCount,
+    placeholderIconCount,
     areaCounts: snapshot.meta.areaCounts,
     tierCounts: snapshot.meta.tierCounts,
     dlcBreakdown,
@@ -126,7 +133,7 @@ export function printReport(report: Report): void {
   console.log(`Unresolved @scripted_variable references: ${report.unresolvedVariableCount}`);
   console.log(`Dangling prerequisite references: ${report.danglingPrerequisiteCount}`);
   console.log(
-    `Missing name: ${report.missingNameCount}  Missing description: ${report.missingDescriptionCount}  Missing icon: ${report.missingIconCount}`,
+    `Missing name: ${report.missingNameCount}  Missing description: ${report.missingDescriptionCount}  Placeholder icon: ${report.placeholderIconCount}`,
   );
 
   console.log("Area counts:");

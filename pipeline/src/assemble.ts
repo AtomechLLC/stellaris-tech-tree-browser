@@ -35,20 +35,19 @@ import { pathToFileURL } from "node:url";
 import { resolveConfig } from "./config.js";
 import { detectGameVersion } from "./version/detect.js";
 import { loadScriptedVariables } from "./parser/scripted-variables.js";
-import { extractAllTechs, listTechFiles, type ExtractedTech } from "./parser/tech-extractor.js";
+import { extractAllTechsWithStats, listTechFiles } from "./parser/tech-extractor.js";
 import { loadDlcRegistry } from "./dlc/dlc-registry.js";
 import { classifyDlc } from "./dlc/dlc-classifier.js";
 import { buildAndValidateGraph } from "./graph/build-dag.js";
 import { scanAllLocalisation, resolveTechText } from "./localisation/loc-scanner.js";
 import { resolveIconSource, type TechSwap } from "./icons/resolve.js";
-import { convertDdsToWebp } from "./icons/convert.js";
+import { convertDdsToWebp, PLACEHOLDER_ICON_NAME } from "./icons/convert.js";
 import { buildUnlocks } from "./unlocks.js";
 import { buildReport, printReport, type ReportWarnings } from "./report.js";
 import { TechSnapshotSchema, type Tech, type TechSnapshot } from "./schema/tech-snapshot.js";
 
 const LOCALISATION_SUBDIR = join("localisation", "english");
-const PLACEHOLDER_ICON_PATH = join(process.cwd(), "assets", "placeholder-icon.webp");
-const PLACEHOLDER_ICON_NAME = "placeholder-icon.webp";
+const PLACEHOLDER_ICON_PATH = join(process.cwd(), "assets", PLACEHOLDER_ICON_NAME);
 
 /**
  * Runs the full pipeline and returns the path to the written tech.json
@@ -66,8 +65,10 @@ export async function runAssemble(): Promise<string> {
   const locMap = scanAllLocalisation(join(gameRoot, LOCALISATION_SUBDIR));
 
   const sourceFiles = listTechFiles(gameRoot);
-  const extractedTechs: ExtractedTech[] = await extractAllTechs(gameRoot, varMap);
-  const totalTechKeysFound = extractedTechs.length;
+  // D-17: totalTechKeysFound is measured BEFORE the extraction filter (inside
+  // extractAllTechsWithStats), not derived from the filtered output — the
+  // report's parsed-vs-found count match must be able to detect drift.
+  const { techs: extractedTechs, totalTechKeysFound } = await extractAllTechsWithStats(gameRoot, varMap);
 
   // D-16: buildAndValidateGraph throws on any dangling prerequisite or cycle.
   const graph = buildAndValidateGraph(extractedTechs);
@@ -97,6 +98,7 @@ export async function runAssemble(): Promise<string> {
 
   const missingNames: string[] = [];
   let unresolvedGrantLocKeysTotal = 0;
+  let unresolvedVariableRefsTotal = 0;
 
   const techs: Record<string, Tech> = {};
 
@@ -114,6 +116,7 @@ export async function runAssemble(): Promise<string> {
     const leadsToForTech = graph.get(key)?.leadsTo ?? [];
     const unlocksResult = buildUnlocks(unlockContentRaw, locMap, leadsToForTech, fileVars);
     unresolvedGrantLocKeysTotal += unlocksResult.unresolvedGrantLocKeys;
+    unresolvedVariableRefsTotal += unlocksResult.unresolvedVariableRefs;
 
     const iconSource = resolveIconSource(
       { key, icon: iconOverrideRaw, technology_swap: technologySwapRaw as TechSwap | TechSwap[] | undefined },
@@ -201,11 +204,22 @@ export async function runAssemble(): Promise<string> {
   console.log(`[assemble] wrote ${outPath}`);
   console.log(`[assemble] techCount=${validated.meta.techCount}`);
 
-  // D-17: validation report.
+  // D-17: validation report — every metric below is MEASURED from the actual
+  // artifact/accumulators, never asserted as a constant.
+  // buildAndValidateGraph already throws on dangling refs, so this measured
+  // count is 0 on every successful run — by measurement, not by assumption.
+  const techKeySet = new Set(Object.keys(validated.techs));
+  let danglingPrerequisiteCount = 0;
+  for (const tech of Object.values(validated.techs)) {
+    for (const prereq of tech.prerequisites) {
+      if (!techKeySet.has(prereq)) danglingPrerequisiteCount++;
+    }
+  }
+
   const warnings: ReportWarnings = {
     totalTechKeysFound,
-    unresolvedVariableCount: 0,
-    danglingPrerequisiteCount: 0,
+    unresolvedVariableCount: unresolvedVariableRefsTotal,
+    danglingPrerequisiteCount,
     unresolvedGrantLocKeys: unresolvedGrantLocKeysTotal,
   };
   const report = buildReport(validated, warnings);

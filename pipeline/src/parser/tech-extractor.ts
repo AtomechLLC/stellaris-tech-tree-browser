@@ -277,18 +277,31 @@ export function extractTech(
   };
 }
 
+/** Result of `extractAllTechsWithStats`: extracted records plus pre-filter counters for the D-17 report. */
+export interface ExtractAllTechsResult {
+  techs: ExtractedTech[];
+  /**
+   * Total top-level `tech_*` keys seen across all source files BEFORE the
+   * isPlainObject extraction filter — the D-17 count-match input. Measured
+   * here (not derived from the filtered output) so the report's
+   * parsed-vs-found comparison can actually detect extraction drift.
+   */
+  totalTechKeysFound: number;
+}
+
 /**
  * Parses all 33 tech files under `common/technology/` and returns the full
  * set of extracted `tech_*` records (678+ expected per RESEARCH.md's direct
  * corpus count; `000_documentation.txt` and any non-tech top-level key are
- * filtered out).
+ * filtered out) plus the pre-filter `tech_*` key count for the D-17 report.
  */
-export async function extractAllTechs(
+export async function extractAllTechsWithStats(
   gameRoot: string,
   varMap: Map<string, number | string>,
-): Promise<ExtractedTech[]> {
+): Promise<ExtractAllTechsResult> {
   const files = listTechFiles(gameRoot);
   const techs: ExtractedTech[] = [];
+  let totalTechKeysFound = 0;
 
   for (const file of files) {
     const filePath = join(gameRoot, TECHNOLOGY_SUBDIR, file);
@@ -306,10 +319,23 @@ export async function extractAllTechs(
     }
 
     for (const [key, value] of Object.entries(rawFile)) {
-      if (!TECH_KEY_PATTERN.test(key) || !isPlainObject(value)) continue;
+      if (!TECH_KEY_PATTERN.test(key)) continue;
+      totalTechKeysFound++;
+      if (!isPlainObject(value)) continue;
       techs.push(extractTech(key, value, fileVars, file));
     }
   }
 
-  return techs;
+  return { techs, totalTechKeysFound };
+}
+
+/**
+ * Convenience wrapper returning only the extracted records — kept for callers
+ * (and tests) that do not need the D-17 counters.
+ */
+export async function extractAllTechs(
+  gameRoot: string,
+  varMap: Map<string, number | string>,
+): Promise<ExtractedTech[]> {
+  return (await extractAllTechsWithStats(gameRoot, varMap)).techs;
 }

@@ -31,6 +31,14 @@ import { unlinkSync, copyFileSync } from "node:fs";
 import sharp from "sharp";
 
 /**
+ * Filename of the shipped placeholder icon as emitted under
+ * `data/v{version}/icons/` (D-13). Shared by assemble.ts (which emits it and
+ * sets it as the fallback `icon` ref) and report.ts (which counts techs
+ * shipping it).
+ */
+export const PLACEHOLDER_ICON_NAME = "placeholder-icon.webp";
+
+/**
  * Converts a single DDS icon to a lossless WebP via ImageMagick (DDS -> PNG)
  * then sharp (PNG -> WebP). The intermediate PNG temp file is removed after
  * conversion regardless of outcome.

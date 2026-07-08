@@ -25,6 +25,8 @@ export interface BuildUnlocksResult {
   leadsTo: string[];
   /** Count of grant-content loc-keys that had no localisation entry and were shipped verbatim (cosmetic, D-16 warn-not-fail). */
   unresolvedGrantLocKeys: number;
+  /** Count of `@scripted_variable` modifier values that could not be resolved and shipped verbatim (should be 0; feeds the D-17 unresolved-variable metric). */
+  unresolvedVariableRefs: number;
 }
 
 /**
@@ -90,8 +92,8 @@ function grantsFromModifier(
   modifier: GrantsModifier,
   locMap: Map<string, string>,
   varMap: Map<string, number | string>,
-): Array<{ text: string; resolved: boolean }> {
-  const out: Array<{ text: string; resolved: boolean }> = [];
+): Array<{ text: string; resolved: boolean; unresolvedVariable: boolean }> {
+  const out: Array<{ text: string; resolved: boolean; unresolvedVariable: boolean }> = [];
   for (const [statKey, statValue] of Object.entries(modifier)) {
     if (MODIFIER_META_KEYS.has(statKey)) continue;
     if (typeof statValue !== "string" && typeof statValue !== "number" && typeof statValue !== "boolean") continue;
@@ -109,7 +111,11 @@ function grantsFromModifier(
       }
     }
 
-    out.push({ text: `${label}: ${valueText}`, resolved: labelResolved && valueResolved });
+    out.push({
+      text: `${label}: ${valueText}`,
+      resolved: labelResolved && valueResolved,
+      unresolvedVariable: !valueResolved,
+    });
   }
   return out;
 }
@@ -128,6 +134,7 @@ export function buildUnlocks(
 ): BuildUnlocksResult {
   const grants: string[] = [];
   let unresolvedGrantLocKeys = 0;
+  let unresolvedVariableRefs = 0;
 
   for (const flag of unlockContentRaw.featureFlags) {
     const { text, resolved } = grantFromFeatureFlag(flag, locMap);
@@ -143,9 +150,10 @@ export function buildUnlocks(
   }
 
   for (const modifier of unlockContentRaw.grantsModifiers) {
-    for (const { text, resolved } of grantsFromModifier(modifier, locMap, varMap)) {
+    for (const { text, resolved, unresolvedVariable } of grantsFromModifier(modifier, locMap, varMap)) {
       grants.push(text);
       if (!resolved) unresolvedGrantLocKeys++;
+      if (unresolvedVariable) unresolvedVariableRefs++;
     }
   }
 
@@ -157,5 +165,6 @@ export function buildUnlocks(
     grants: [...grants].sort(),
     leadsTo: [...leadsTo].sort(),
     unresolvedGrantLocKeys,
+    unresolvedVariableRefs,
   };
 }
