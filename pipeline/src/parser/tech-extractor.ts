@@ -204,11 +204,32 @@ export function extractTech(
   varMap: Map<string, number | string>,
   sourceFile: string,
 ): ExtractedTech {
-  const area = typeof raw.area === "string" && VALID_AREAS.has(raw.area) ? (raw.area as Tech["area"]) : "physics";
+  // D-16 fail-loud: silently defaulting a missing/invalid area to "physics"
+  // or tier to 0 is silent data corruption (misclassified techs with no
+  // signal). Throw instead — the same policy as unparseable files, unresolved
+  // variables, and missing names.
+  if (typeof raw.area !== "string" || !VALID_AREAS.has(raw.area)) {
+    throw new Error(`extractTech: tech "${key}" has missing/invalid area ${JSON.stringify(raw.area)}`);
+  }
+  const area = raw.area as Tech["area"];
   const category = normalizeToArray(raw.category as string | string[] | undefined).flatMap((c) =>
     typeof c === "string" ? [c] : [],
   );
-  const tier = typeof raw.tier === "number" ? raw.tier : 0;
+  // Tier may legitimately be an @scripted_variable reference (real corpus
+  // case: tech_weaver_bio_healing_6 has `tier = @fallentechtier`, which the
+  // old default-to-0 path silently corrupted). resolveValue returns numbers
+  // as-is, resolves @refs, and throws on anything else — wrap to name the tech.
+  const rawTier = lastScalarIfDuplicated(raw.tier);
+  let tier: number;
+  try {
+    tier = resolveValue(rawTier, varMap);
+  } catch (err) {
+    throw new Error(
+      `extractTech: tech "${key}" has missing/invalid tier ${JSON.stringify(rawTier)} (${
+        err instanceof Error ? err.message : String(err)
+      })`,
+    );
+  }
 
   const rawCost = lastScalarIfDuplicated(raw.cost);
   let cost = 0;
