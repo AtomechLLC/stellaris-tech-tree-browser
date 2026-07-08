@@ -116,6 +116,131 @@
   color: var(--color-text);
 }
 
+/* ── Zoom-LOD tech-card overlay (quick 260707-we6 Task 3) ──────────────────
+   A full-viewport HTML layer that appears only when zoomed in; each card is
+   absolutely positioned at its node's projected screen coordinate and scaled
+   with the camera. The LAYER is pointer-events:none so pan/zoom/click pass
+   through to the Sigma canvas underneath. */
+.tech-card-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 6; /* above canvas, below tier-axis(5)? tier-axis is a top strip */
+}
+
+/* Reference-style horizontal card: icon square on the left, colored header +
+   meta/stats on the right, area-colored border. The card is centered on its
+   node via translate(-50%, -50%) in the inline transform. */
+.tech-card {
+  position: absolute;
+  display: flex;
+  width: 220px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  transform-origin: center center;
+  font-family: var(--font-sans);
+}
+
+/* Icon panel (left) — square, with a small tier roman-numeral badge overlaid. */
+.tech-card__icon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-border);
+}
+
+.tech-card__icon img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.tech-card__tier {
+  position: absolute;
+  left: 2px;
+  bottom: 2px;
+  min-width: 16px;
+  padding: 0 3px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: var(--font-weight-heading);
+  line-height: 1.4;
+  color: var(--color-surface);
+  background: rgba(17, 24, 39, 0.72);
+  border-radius: 3px;
+}
+
+.tech-card__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Area-colored header bar carrying the tech name (plain text). */
+.tech-card__title {
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: var(--font-weight-heading);
+  line-height: 1.25;
+  color: var(--color-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--color-border); /* overridden per-area below */
+}
+
+.tech-card__meta {
+  padding: 3px 8px 0;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--color-text);
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tech-card__stats {
+  padding: 1px 8px 5px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Area colors drive both the border and the header bar — sourced from the
+   same --area-* tokens as the Sigma tiles (never hardcoded hex). */
+.tech-card[data-area="physics"] {
+  border-color: var(--area-physics);
+}
+.tech-card[data-area="physics"] .tech-card__title {
+  background: var(--area-physics);
+}
+.tech-card[data-area="society"] {
+  border-color: var(--area-society);
+}
+.tech-card[data-area="society"] .tech-card__title {
+  background: var(--area-society);
+}
+.tech-card[data-area="engineering"] {
+  border-color: var(--area-engineering);
+}
+.tech-card[data-area="engineering"] .tech-card__title {
+  background: var(--area-engineering);
+}
+
 /* Loading / Error / Empty overlays — UI-SPEC Loading State / Empty-Error States */
 .overlay {
   position: absolute;

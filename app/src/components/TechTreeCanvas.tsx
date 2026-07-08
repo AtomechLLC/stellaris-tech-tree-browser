@@ -5,6 +5,7 @@ import type { Settings } from "sigma/settings";
 import { NodeCompoundProgram } from "../lib/sigma/nodeProgram";
 import { readThemeTokens } from "../lib/sigma/theme";
 import { TierAxis } from "./TierAxis";
+import { TechCardOverlay } from "./TechCardOverlay";
 import { Legend } from "./Legend";
 
 const NODE_TYPE = "techNode";
@@ -94,6 +95,7 @@ export function TechTreeCanvas({ graph }: { graph: DirectedGraph }) {
       >
         <GraphLoader graph={graph} />
         <TierAxis />
+        <TechCardOverlay graph={graph} />
       </SigmaContainer>
       <Legend />
     </div>
