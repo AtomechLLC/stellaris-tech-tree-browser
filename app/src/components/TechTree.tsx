@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -16,6 +17,7 @@ import { EdgeLayer } from "./EdgeLayer";
 import { BandLayer } from "./BandLayer";
 import { CategoryNav } from "./CategoryNav";
 import { TechTooltip } from "./TechTooltip";
+import { AncestryPanel } from "./AncestryPanel";
 import { Legend } from "./Legend";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { ErrorOverlay } from "./ErrorOverlay";
@@ -78,6 +80,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // card, thickens its prereq/child edges, and (when it has filter-hidden
   // ancestors) opens the ancestry drill-down panel.
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  // The selected card's on-screen rect — the ancestry panel anchors to its
+  // left, like the tooltip anchors to a hovered card. Captured after render.
+  const [selectedRect, setSelectedRect] = useState<DOMRect | null>(null);
   // Re-pack busy state (button label + guard). Bumped each time a re-pack
   // starts; the resolving handler ignores its result if this changed meanwhile
   // (stale-result guard) so a rapid re-toggle+re-pack can't swap in old layout.
@@ -270,6 +275,22 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     if ((e.target as HTMLElement).closest(".tech-card")) return;
     setSelectedKey(null);
   }, []);
+
+  // Capture the selected card's on-screen rect so the ancestry panel can anchor
+  // to its left. Runs after the DOM commit (post-render), reading the actual
+  // `.tech-card[data-key]` box. Cleared when nothing is selected. (Pan/zoom are
+  // imperative and don't re-run this, so the panel anchors at selection time —
+  // acceptable, mirroring the hover tooltip's fixed anchor.)
+  useLayoutEffect(() => {
+    if (!selectedKey) {
+      setSelectedRect(null);
+      return;
+    }
+    const el = viewportRef.current?.querySelector<HTMLElement>(
+      `.tech-card[data-key="${CSS.escape(selectedKey)}"]`,
+    );
+    setSelectedRect(el ? el.getBoundingClientRect() : null);
+  }, [selectedKey]);
 
   // ── Pan (imperative — no re-render) ───────────────────────────────────────
   const onPointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
@@ -478,6 +499,19 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
 
         <Legend />
       </div>
+
+      {selectedKey && selectedRect && (
+        <AncestryPanel
+          selectedKey={selectedKey}
+          active={active}
+          techByKey={techByKey}
+          iconBase={iconBase}
+          anchor={selectedRect}
+          onEnter={onCardEnter}
+          onLeave={onCardLeave}
+          onSelect={onSelect}
+        />
+      )}
 
       {hover && (
         <TechTooltip

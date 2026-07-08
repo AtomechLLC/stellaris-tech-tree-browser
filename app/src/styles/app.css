@@ -699,6 +699,146 @@
   opacity: 0.85;
 }
 
+/* ── Hidden-ancestry drill-down panel (quick 260708-4io) ──────────────────
+   Fixed overlay to the LEFT of a selected card when it has filter-hidden
+   recursive prerequisites. Depth-columns: deepest prereqs on the left, the
+   selected tech on the far right. Mini-cards are hoverable (→ tooltip) and
+   clickable (re-root). Hidden ancestors are marked (dashed border + dot). */
+.ancestry-panel {
+  position: fixed;
+  z-index: 28; /* below the hover tooltip (30) so a hover popover reads on top */
+  max-height: 520px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px;
+  background: var(--tree-panel);
+  border: 1px solid var(--tree-border);
+  border-top: 3px solid var(--color-select); /* gold accent = selection origin */
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  font-family: var(--font-sans);
+  color: var(--tree-text);
+}
+
+.ancestry-panel__header {
+  flex: 0 0 auto;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-select);
+}
+
+/* Depth-columns, deepest → selected, scrollable if the tree is wide/tall. */
+.ancestry-panel__cols {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  overflow: auto;
+}
+
+.ancestry-panel__col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* A faint connector rail between columns hints at the right-neighbour feed. */
+  border-right: 1px dashed var(--tree-border);
+  padding-right: 10px;
+}
+.ancestry-panel__col:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+/* Mini-card: icon + plain-text name, area-colored left border. A button so it's
+   keyboard-focusable and semantically clickable (re-roots the drill-down). */
+.ancestry-mini {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 150px;
+  padding: 4px 6px;
+  text-align: left;
+  background: var(--tree-card-bg);
+  border: 1px solid var(--tree-border);
+  border-left: 3px solid var(--tree-border); /* area-colored below */
+  border-radius: 4px;
+  color: var(--tree-text);
+  cursor: pointer;
+  position: relative;
+}
+.ancestry-mini:hover {
+  border-color: var(--color-select);
+}
+.ancestry-mini[data-area="physics"] { border-left-color: var(--area-physics); }
+.ancestry-mini[data-area="society"] { border-left-color: var(--area-society); }
+.ancestry-mini[data-area="engineering"] { border-left-color: var(--area-engineering); }
+
+/* The drill-down root (selected tech) — gold outline to match its card. */
+.ancestry-mini[data-root] {
+  outline: 2px solid var(--color-select);
+  outline-offset: 1px;
+}
+
+/* Hidden-by-filter ancestor: dashed border + a small marker dot so you can tell
+   which techs the active category filter removed from the main view. */
+.ancestry-mini[data-hidden] {
+  border-style: dashed;
+  opacity: 0.85;
+}
+.ancestry-mini__hidden-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-select);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+.ancestry-mini__icon {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tree-icon-bg);
+  border: 1px solid var(--tree-border);
+  border-radius: 3px;
+}
+.ancestry-mini__icon img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.ancestry-mini__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ancestry-mini__name {
+  font-size: 12px;
+  font-weight: var(--font-weight-heading);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ancestry-mini__meta {
+  font-size: 10px;
+  line-height: 1.2;
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Loading / Error / Empty overlays — UI-SPEC Loading State / Empty-Error States */
 .overlay {
   position: absolute;
