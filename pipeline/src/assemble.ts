@@ -108,6 +108,13 @@ export async function runAssemble(): Promise<string> {
   let unresolvedGrantLocKeysTotal = 0;
   let unresolvedVariableRefsTotal = 0;
 
+  // Swap icons share the per-tech output namespace ({name}.webp) and many
+  // swap names ARE real tech keys — those techs' own conversion passes
+  // produce their files. Converting such swaps again would be redundant and,
+  // if the colliding tech uses an `icon =` override, a silent iteration-order
+  // last-writer-wins content conflict. Used to skip those below.
+  const extractedKeySet = new Set(extractedTechs.map((t) => t.key));
+
   const techs: Record<string, Tech> = {};
 
   for (const extracted of extractedTechs) {
@@ -152,6 +159,9 @@ export async function runAssemble(): Promise<string> {
     }
 
     for (const swap of iconSource.swaps) {
+      // Skip swaps whose name is a real extracted tech key — that tech's own
+      // pass produces {name}.webp (see extractedKeySet note above).
+      if (extractedKeySet.has(swap.name)) continue;
       if (!SAFE_NAME.test(swap.name)) {
         throw new Error(`runAssemble: unsafe technology_swap name for output path: "${swap.name}"`);
       }

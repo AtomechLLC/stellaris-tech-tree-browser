@@ -58,6 +58,18 @@ deterministic, diff-stable output across runs (D-03/DATA-05).
 | `description` | `string \| null` | yes | Resolved localised description. **Warn-not-fail** (D-16): `null` is an expected, cosmetic gap for some techs, not a build failure. |
 | `icon` | `string \| null` | yes | Web-ready icon reference (the emitted `.webp` filename under `data/v{version}/icons/`), either the tech's real converted icon or the shipped placeholder filename (D-13) if no source `.dds` could be resolved. |
 
+### Swap-variant icons (D-10)
+
+In addition to each tech's own `icon` file, `technology_swap` variants that
+ship their own `.dds` source (`inherit_icon = no`) are converted and emitted
+alongside as `data/v{version}/icons/{swap_name}.webp`. These files are **not**
+referenced by any `icon` field in `tech.json` (v1 has no swap-level schema
+field); they are emitted so a future consumer can resolve swap-variant art
+without a pipeline re-run. When a swap's `name` is itself a real tech key in
+the snapshot, the pipeline does **not** convert the swap separately — that
+tech's own conversion pass produces the file (avoiding duplicate writes and
+last-writer-wins content conflicts).
+
 ### Plain-text string contract (Security Domain)
 
 `name`, `description`, and every string in `unlocks.grants` are shipped as
