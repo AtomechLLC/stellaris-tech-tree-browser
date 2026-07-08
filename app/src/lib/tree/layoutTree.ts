@@ -35,6 +35,18 @@ export interface LayoutNode {
   w: number;
   h: number;
   tech: Tech;
+  /**
+   * Explore-mode only: this node has ≥1 shown-eligible child, so a chevron
+   * toggle is rendered on its card. Unused by the banded map layout (which
+   * leaves it undefined) — the map card renders no chevron.
+   */
+  expandable?: boolean;
+  /**
+   * Explore-mode only: this node is currently expanded (in `expandedKeys`), so
+   * its chevron reads "open" and its children are visible below-right. Unused
+   * by the map layout.
+   */
+  expanded?: boolean;
 }
 
 /**
