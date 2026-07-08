@@ -307,6 +307,11 @@
   position: absolute;
   display: flex;
   box-sizing: border-box;
+  /* Perf: skip rendering cards that are off-screen (678 of them). The browser
+     reserves their box via contain-intrinsic-size and only paints the ones in
+     view, keeping pan/zoom cheap. */
+  content-visibility: auto;
+  contain-intrinsic-size: 230px 92px;
   background: var(--tree-card-bg);
   /* Subtle hex-mesh texture: a low-opacity inline SVG data-URI (no external
      request, CSP-safe). Layered UNDER the flat card background above. */
@@ -416,6 +421,76 @@
 }
 .tech-card[data-area="engineering"] .tech-card__title {
   background: var(--area-engineering);
+}
+
+/* ── Hover tooltip (reference-style detail popover) ──────────────────────── */
+.tech-tooltip {
+  position: fixed;
+  z-index: 30;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  background: var(--tree-panel);
+  border: 1px solid var(--tree-border);
+  border-left: 3px solid var(--tree-border); /* area-colored below */
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  font-family: var(--font-sans);
+  color: var(--tree-text);
+  pointer-events: none; /* never steal the hover from the card */
+}
+.tech-tooltip[data-area="physics"] { border-left-color: var(--area-physics); }
+.tech-tooltip[data-area="society"] { border-left-color: var(--area-society); }
+.tech-tooltip[data-area="engineering"] { border-left-color: var(--area-engineering); }
+
+.tech-tooltip__title {
+  font-size: 14px;
+  font-weight: var(--font-weight-heading);
+  color: #fff;
+  margin-bottom: 2px;
+}
+.tech-tooltip__meta {
+  font-size: 11px;
+  opacity: 0.75;
+  margin-bottom: 6px;
+}
+.tech-tooltip__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.tech-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--tree-border);
+  color: var(--tree-text);
+}
+.tech-badge--rare { background: #1f6feb; color: #fff; }
+.tech-badge--danger { background: #b3261e; color: #fff; }
+.tech-badge--dlc { background: transparent; border: 1px solid var(--tree-border); }
+
+.tech-tooltip__desc {
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0 0 6px;
+  opacity: 0.9;
+}
+.tech-tooltip__section {
+  font-size: 11px;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+.tech-tooltip__label {
+  display: inline-block;
+  min-width: 60px;
+  margin-right: 4px;
+  font-size: 10px;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  opacity: 0.6;
 }
 
 /* Loading / Error / Empty overlays — UI-SPEC Loading State / Empty-Error States */

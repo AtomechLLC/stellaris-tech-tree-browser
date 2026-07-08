@@ -33,12 +33,23 @@ interface TechCardProps {
   /** Absolute position in the shared canvas coordinate space. */
   x: number;
   y: number;
+  /** Hover in → show tooltip (rect = the card's on-screen box). Stable refs. */
+  onEnter?: (tech: Tech, rect: DOMRect) => void;
+  onLeave?: () => void;
 }
 
 // Memoized: pan/zoom re-renders the parent every tick, but a card's props
-// (tech, image, x, y) are stable across transform changes, so memo lets all 678
-// cards bail out of re-rendering — only the single canvas CSS transform updates.
-export const TechCard = memo(function TechCard({ tech, image, x, y }: TechCardProps) {
+// (tech, image, x, y, onEnter, onLeave — all stable) don't change, so memo lets
+// all 678 cards bail out of re-rendering — only the single canvas transform
+// updates (which we now apply imperatively, so cards don't re-render at all).
+export const TechCard = memo(function TechCard({
+  tech,
+  image,
+  x,
+  y,
+  onEnter,
+  onLeave,
+}: TechCardProps) {
   const category = tech.category[0] ?? "";
   return (
     <div
@@ -51,6 +62,8 @@ export const TechCard = memo(function TechCard({ tech, image, x, y }: TechCardPr
         width: `${CARD_W}px`,
         height: `${CARD_H}px`,
       }}
+      onMouseEnter={(e) => onEnter?.(tech, e.currentTarget.getBoundingClientRect())}
+      onMouseLeave={onLeave}
     >
       <div className="tech-card__icon">
         {image ? <img src={image} alt="" loading="lazy" /> : null}

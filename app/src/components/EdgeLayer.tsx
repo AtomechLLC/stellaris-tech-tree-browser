@@ -47,7 +47,10 @@ function fallbackPath(from: LayoutNode, to: LayoutNode): string {
 // Memoized: props (edges/nodes/width/height) are stable across pan/zoom, so the
 // 613-path SVG bails out of re-rendering on every transform tick.
 export const EdgeLayer = memo(function EdgeLayer({ edges, nodes, width, height }: EdgeLayerProps) {
-  const paths = useMemo(() => {
+  // Perf: concatenate every edge into ONE path `d` string → a single <path> DOM
+  // node instead of 613. The browser paints/composites one element far more
+  // cheaply, which keeps pan/zoom smooth. All edges share one stroke style.
+  const d = useMemo(() => {
     const nodeByKey = new Map(nodes.map((n) => [n.key, n]));
     const out: string[] = [];
 
@@ -68,7 +71,7 @@ export const EdgeLayer = memo(function EdgeLayer({ edges, nodes, width, height }
         if (from && to) out.push(fallbackPath(from, to));
       }
     }
-    return out;
+    return out.join(" ");
   }, [edges, nodes]);
 
   return (
@@ -79,9 +82,7 @@ export const EdgeLayer = memo(function EdgeLayer({ edges, nodes, width, height }
       viewBox={`0 0 ${width} ${height}`}
       role="presentation"
     >
-      {paths.map((d, i) => (
-        <path key={i} className="edge-layer__path" d={d} />
-      ))}
+      <path className="edge-layer__path" d={d} />
     </svg>
   );
 });

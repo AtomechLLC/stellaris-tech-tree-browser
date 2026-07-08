@@ -13,21 +13,23 @@ import { CATEGORY_ORDER, CATEGORY_AREA } from "../lib/graph/categories";
 import { TechCard, CARD_W, CARD_H } from "./TechCard";
 import { EdgeLayer } from "./EdgeLayer";
 import { CategoryNav } from "./CategoryNav";
+import { TechTooltip } from "./TechTooltip";
 import { Legend } from "./Legend";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { ErrorOverlay } from "./ErrorOverlay";
 
 /**
- * Interactive DOM tech tree. Runs `layoutTree` once (async ELK, in an effect),
- * then renders DOM cards + an SVG edge layer inside ONE CSS-transformed
- * `.tree-canvas`. Pan = drag on the viewport (translate state); zoom = wheel
- * toward the cursor + buttons (scale, clamped). Because cards and edges share
- * the canvas coordinate space, pan/zoom is a single CSS transform.
+ * Interactive DOM tech tree. Runs `layoutTree` once (async ELK), then renders
+ * DOM cards + a single-path SVG edge layer inside ONE `.tree-canvas`.
  *
- * The left CategoryNav (quick 260708-2v7) filters which categories render:
- * checkboxes toggle categories on/off (multi-select), clicking a name isolates
- * to just that category (and fits the view to it). Area is conveyed by card
- * color; the layout itself is area-agnostic (ELK optimizes crossings).
+ * PERF: the pan/zoom transform is applied IMPERATIVELY (a ref + direct DOM style
+ * write), so dragging never triggers a React re-render — the browser just
+ * translates the already-composited layer. Combined with memoized cards/edges,
+ * a single edge <path>, and content-visibility on cards, pan/zoom stays smooth
+ * at 678 nodes.
+ *
+ * The left CategoryNav filters which categories render; hovering a card shows a
+ * TechTooltip with its detail (like the reference tool).
  */
 
 const ZOOM_MIN = 0.15;
@@ -48,6 +50,8 @@ interface Transform {
 }
 
 const DEFAULT_TRANSFORM: Transform = { x: 40, y: 40, scale: 0.4 };
+const cssTransform = (t: Transform) =>
+  `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
 
 function clampZoom(z: number): number {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
@@ -60,17 +64,41 @@ const catsInArea = (area: Area): string[] =>
 export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const [state, setState] = useState<LayoutState>({ status: "loading" });
   const [active, setActive] = useState<Set<string>>(() => new Set<string>(CATEGORY_ORDER));
-  const [transform, setTransform] = useState<Transform>(DEFAULT_TRANSFORM);
+  const [hover, setHover] = useState<{ tech: Tech; rect: DOMRect } | null>(null);
 
   const viewportRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const transformRef = useRef<Transform>(DEFAULT_TRANSFORM);
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(
     null,
   );
 
   const iconBase = `/data/${snapshot.meta.gameVersion}/icons`;
 
-  // One-shot ELK layout inside the loading state (D-08) — never re-run on
-  // pan/zoom/filter. A throw here surfaces the error state, not a blank screen.
+  // key → display name, for resolving prerequisite/leadsTo lists in the tooltip.
+  const nameByKey = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const t of Object.values(snapshot.techs)) m.set(t.key, t.name);
+    return m;
+  }, [snapshot]);
+
+  // ── Imperative transform (no React re-render on pan/zoom) ──────────────────
+  const applyTransform = useCallback((t: Transform) => {
+    transformRef.current = t;
+    if (canvasRef.current) canvasRef.current.style.transform = cssTransform(t);
+  }, []);
+
+  // Stable ref callback: bind the canvas node and apply the current transform on
+  // (re)attach. Stable identity so React only calls it on real mount/unmount.
+  const setCanvas = useCallback(
+    (el: HTMLDivElement | null) => {
+      canvasRef.current = el;
+      if (el) el.style.transform = cssTransform(transformRef.current);
+    },
+    [],
+  );
+
+  // One-shot ELK layout inside the loading state (never re-run on pan/zoom/filter).
   useEffect(() => {
     let cancelled = false;
     setState({ status: "loading" });
@@ -88,7 +116,6 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     };
   }, [snapshot]);
 
-  // Total tech count per category (stable — from the FULL layout, not filtered).
   const counts = useMemo(() => {
     if (state.status !== "ready") return {};
     const m: Record<string, number> = {};
@@ -96,7 +123,6 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     return m;
   }, [state]);
 
-  // Filter nodes/edges to the active category set (hide, not re-layout — instant).
   const filtered = useMemo(() => {
     if (state.status !== "ready") return null;
     const { layout } = state;
@@ -108,31 +134,32 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   }, [state, active]);
 
   // Frame a set of nodes to fill the viewport (used when isolating a category).
-  const fitToNodes = useCallback((nodes: LayoutNode[]) => {
-    const rect = viewportRef.current?.getBoundingClientRect();
-    if (!rect || nodes.length === 0) return;
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    for (const n of nodes) {
-      minX = Math.min(minX, n.x);
-      minY = Math.min(minY, n.y);
-      maxX = Math.max(maxX, n.x + n.w);
-      maxY = Math.max(maxY, n.y + n.h);
-    }
-    const pad = 60;
-    const bw = Math.max(1, maxX - minX);
-    const bh = Math.max(1, maxY - minY);
-    const scale = clampZoom(
-      Math.min((rect.width - pad * 2) / bw, (rect.height - pad * 2) / bh),
-    );
-    setTransform({
-      scale,
-      x: (rect.width - bw * scale) / 2 - minX * scale,
-      y: (rect.height - bh * scale) / 2 - minY * scale,
-    });
-  }, []);
+  const fitToNodes = useCallback(
+    (nodes: LayoutNode[]) => {
+      const rect = viewportRef.current?.getBoundingClientRect();
+      if (!rect || nodes.length === 0) return;
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      for (const n of nodes) {
+        minX = Math.min(minX, n.x);
+        minY = Math.min(minY, n.y);
+        maxX = Math.max(maxX, n.x + n.w);
+        maxY = Math.max(maxY, n.y + n.h);
+      }
+      const pad = 60;
+      const bw = Math.max(1, maxX - minX);
+      const bh = Math.max(1, maxY - minY);
+      const scale = clampZoom(Math.min((rect.width - pad * 2) / bw, (rect.height - pad * 2) / bh));
+      applyTransform({
+        scale,
+        x: (rect.width - bw * scale) / 2 - minX * scale,
+        y: (rect.height - bh * scale) / 2 - minY * scale,
+      });
+    },
+    [applyTransform],
+  );
 
   // ── Filter actions (from CategoryNav) ─────────────────────────────────────
   const onToggleCategory = useCallback((cat: string) => {
@@ -179,32 +206,40 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
 
   const onShowAll = useCallback(() => {
     setActive(new Set(CATEGORY_ORDER));
-    setTransform(DEFAULT_TRANSFORM);
+    applyTransform(DEFAULT_TRANSFORM);
+  }, [applyTransform]);
+
+  // ── Hover (tooltip) — stable callbacks so cards stay memoized ──────────────
+  const onCardEnter = useCallback((tech: Tech, rect: DOMRect) => {
+    setHover({ tech, rect });
+  }, []);
+  const onCardLeave = useCallback(() => setHover(null), []);
+
+  // ── Pan (imperative — no re-render) ───────────────────────────────────────
+  const onPointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    setHover(null); // hide tooltip while dragging
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: transformRef.current.x,
+      originY: transformRef.current.y,
+    };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }, []);
 
-  // ── Pan (pointer drag on the viewport) ────────────────────────────────────
-  const onPointerDown = useCallback(
+  const onPointerMove = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
-      dragRef.current = {
-        startX: e.clientX,
-        startY: e.clientY,
-        originX: transform.x,
-        originY: transform.y,
-      };
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      const drag = dragRef.current;
+      if (!drag) return;
+      const t = transformRef.current;
+      applyTransform({
+        scale: t.scale,
+        x: drag.originX + (e.clientX - drag.startX),
+        y: drag.originY + (e.clientY - drag.startY),
+      });
     },
-    [transform.x, transform.y],
+    [applyTransform],
   );
-
-  const onPointerMove = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    setTransform((t) => ({
-      ...t,
-      x: drag.originX + (e.clientX - drag.startX),
-      y: drag.originY + (e.clientY - drag.startY),
-    }));
-  }, []);
 
   const endDrag = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
     dragRef.current = null;
@@ -212,45 +247,48 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
   }, []);
 
-  // ── Zoom toward the cursor (wheel) ────────────────────────────────────────
-  const onWheel = useCallback((e: ReactWheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const rect = viewportRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const cursorX = e.clientX - rect.left;
-    const cursorY = e.clientY - rect.top;
-    setTransform((t) => {
+  // ── Zoom toward the cursor (wheel — imperative) ───────────────────────────
+  const onWheel = useCallback(
+    (e: ReactWheelEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const rect = viewportRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const cursorX = e.clientX - rect.left;
+      const cursorY = e.clientY - rect.top;
+      const t = transformRef.current;
       const factor = e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
       const nextScale = clampZoom(t.scale * factor);
       const ratio = nextScale / t.scale;
-      return {
+      applyTransform({
         scale: nextScale,
         x: cursorX - (cursorX - t.x) * ratio,
         y: cursorY - (cursorY - t.y) * ratio,
-      };
-    });
-  }, []);
+      });
+    },
+    [applyTransform],
+  );
 
-  const zoomBy = useCallback((factor: number) => {
-    const rect = viewportRef.current?.getBoundingClientRect();
-    const cx = rect ? rect.width / 2 : 0;
-    const cy = rect ? rect.height / 2 : 0;
-    setTransform((t) => {
+  const zoomBy = useCallback(
+    (factor: number) => {
+      const rect = viewportRef.current?.getBoundingClientRect();
+      const cx = rect ? rect.width / 2 : 0;
+      const cy = rect ? rect.height / 2 : 0;
+      const t = transformRef.current;
       const nextScale = clampZoom(t.scale * factor);
       const ratio = nextScale / t.scale;
-      return {
+      applyTransform({
         scale: nextScale,
         x: cx - (cx - t.x) * ratio,
         y: cy - (cy - t.y) * ratio,
-      };
-    });
-  }, []);
+      });
+    },
+    [applyTransform],
+  );
 
-  const resetView = useCallback(() => setTransform(DEFAULT_TRANSFORM), []);
+  const resetView = useCallback(() => applyTransform(DEFAULT_TRANSFORM), [applyTransform]);
 
   // Memoize the card + edge elements against the (stable) filtered layout — NOT
-  // the transform. A pan/zoom tick then only updates the one canvas transform
-  // instead of reconciling hundreds of cards + SVG paths.
+  // the transform (which is imperative now). Filter/hover re-renders reuse these.
   const layoutReady = state.status === "ready" ? filtered ?? state.layout : null;
   const content = useMemo(() => {
     if (!layoutReady) return null;
@@ -270,10 +308,12 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           image={node.tech.icon ? `${iconBase}/${node.tech.icon}` : undefined}
           x={node.x}
           y={node.y}
+          onEnter={onCardEnter}
+          onLeave={onCardLeave}
         />
       )),
     };
-  }, [layoutReady, iconBase]);
+  }, [layoutReady, iconBase, onCardEnter, onCardLeave]);
 
   if (state.status === "loading") return <LoadingOverlay />;
   if (state.status === "error") {
@@ -305,11 +345,12 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       >
         <div
           className="tree-canvas"
+          ref={setCanvas}
           style={{
             width: `${layout.width}px`,
             height: `${layout.height}px`,
-            transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
             transformOrigin: "0 0",
+            willChange: "transform",
           }}
         >
           {content?.edge}
@@ -330,6 +371,8 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
 
         <Legend />
       </div>
+
+      {hover && <TechTooltip tech={hover.tech} nameByKey={nameByKey} anchor={hover.rect} />}
     </div>
   );
 }
