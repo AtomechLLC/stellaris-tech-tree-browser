@@ -366,14 +366,17 @@
   flex-direction: column;
 }
 
-/* Area-colored header bar carrying the tech name (plain text). */
+/* Area-colored header bar carrying the tech name (plain text). The fill is a
+   DEEPENED blend of the area color (not the raw, vivid token) so the off-white
+   text reads comfortably instead of clashing; the bright area color still shows
+   on the card border for identity. */
 .tech-card__title {
   padding: 4px 8px;
   font-size: 13px;
   font-weight: var(--font-weight-heading);
   line-height: 1.25;
-  color: #fff;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+  color: #eef2f7;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -408,19 +411,20 @@
   border-color: var(--area-physics);
 }
 .tech-card[data-area="physics"] .tech-card__title {
-  background: var(--area-physics);
+  background: color-mix(in srgb, var(--area-physics) 60%, #0c111a);
 }
 .tech-card[data-area="society"] {
   border-color: var(--area-society);
 }
 .tech-card[data-area="society"] .tech-card__title {
-  background: var(--area-society);
+  /* orange is light — mix a touch more dark in so off-white text stays legible. */
+  background: color-mix(in srgb, var(--area-society) 55%, #0c111a);
 }
 .tech-card[data-area="engineering"] {
   border-color: var(--area-engineering);
 }
 .tech-card[data-area="engineering"] .tech-card__title {
-  background: var(--area-engineering);
+  background: color-mix(in srgb, var(--area-engineering) 60%, #0c111a);
 }
 
 /* ── Hover tooltip (reference-style detail popover) ──────────────────────── */
