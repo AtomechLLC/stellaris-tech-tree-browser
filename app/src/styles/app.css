@@ -40,23 +40,29 @@
   position: relative;
   flex: 1 1 auto;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   min-height: 0;
 }
 
-/* Area filter tabs (All / Physics / Society / Engineering) across the top. */
-.area-tabs {
+/* ── Left category navigation (quick 260708-2v7) ──────────────────────────
+   The 13 categories grouped under their 3 areas. A checkbox toggles each
+   category's visibility (multi-select); clicking the name isolates the tree
+   to just that category (area header does the same at area level). */
+.category-nav {
   flex: 0 0 auto;
-  display: flex;
-  gap: var(--space-xs);
-  padding: var(--space-sm) var(--space-md);
+  width: 220px;
+  overflow-y: auto;
+  padding: var(--space-sm) var(--space-sm) var(--space-md);
   background: var(--tree-panel);
-  border-bottom: 1px solid var(--tree-border);
+  border-right: 1px solid var(--tree-border);
+  font-family: var(--font-sans);
+  color: var(--tree-text);
 }
 
-.area-tab {
-  padding: 4px 14px;
-  font-family: var(--font-sans);
+.category-nav__all {
+  width: 100%;
+  margin-bottom: var(--space-sm);
+  padding: 5px 10px;
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-heading);
   color: var(--tree-text);
@@ -65,25 +71,85 @@
   border-radius: 4px;
   cursor: pointer;
 }
-
-.area-tab[data-active] {
+.category-nav__all[data-active] {
   background: var(--color-accent);
   border-color: var(--color-accent);
   color: #fff;
 }
+.category-nav__all:not([data-active]):hover {
+  border-color: var(--color-accent);
+}
 
-/* Each area tab tints toward its own area color when active. */
-.area-tab[data-area="physics"][data-active] {
-  background: var(--area-physics);
-  border-color: var(--area-physics);
+.category-nav__group {
+  margin-bottom: var(--space-sm);
 }
-.area-tab[data-area="society"][data-active] {
-  background: var(--area-society);
-  border-color: var(--area-society);
+
+/* Area header: checkbox (toggle all its categories) + clickable area name. */
+.category-nav__area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--tree-border);
 }
-.area-tab[data-area="engineering"][data-active] {
-  background: var(--area-engineering);
-  border-color: var(--area-engineering);
+.category-nav__area-name {
+  flex: 1 1 auto;
+  text-align: left;
+  padding: 0;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-heading);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.category-nav__group[data-area="physics"] .category-nav__area-name { color: var(--area-physics); }
+.category-nav__group[data-area="society"] .category-nav__area-name { color: var(--area-society); }
+.category-nav__group[data-area="engineering"] .category-nav__area-name { color: var(--area-engineering); }
+
+.category-nav__cats {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+}
+.category-nav__cat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 4px 1px 8px;
+}
+.category-nav__cat-name {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px;
+  font-size: 12px;
+  color: var(--tree-text);
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: left;
+}
+.category-nav__cat-name:hover {
+  background: var(--tree-border);
+}
+.category-nav__cat-name[data-dim] {
+  opacity: 0.4; /* category currently toggled off */
+}
+.category-nav__count {
+  flex: 0 0 auto;
+  font-size: 11px;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+.category-nav__check {
+  flex: 0 0 auto;
+  cursor: pointer;
+  accent-color: var(--color-accent);
 }
 
 /* Viewport clips the canvas; drag pans, wheel zooms. Dark background. */

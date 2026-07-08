@@ -8,9 +8,11 @@ import {
   type WheelEvent as ReactWheelEvent,
 } from "react";
 import type { TechSnapshot, Tech } from "../types/tech-snapshot";
-import { layoutTree, type TreeLayout } from "../lib/tree/layoutTree";
+import { layoutTree, type TreeLayout, type LayoutNode } from "../lib/tree/layoutTree";
+import { CATEGORY_ORDER, CATEGORY_AREA } from "../lib/graph/categories";
 import { TechCard, CARD_W, CARD_H } from "./TechCard";
 import { EdgeLayer } from "./EdgeLayer";
+import { CategoryNav } from "./CategoryNav";
 import { Legend } from "./Legend";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { ErrorOverlay } from "./ErrorOverlay";
@@ -20,12 +22,12 @@ import { ErrorOverlay } from "./ErrorOverlay";
  * then renders DOM cards + an SVG edge layer inside ONE CSS-transformed
  * `.tree-canvas`. Pan = drag on the viewport (translate state); zoom = wheel
  * toward the cursor + buttons (scale, clamped). Because cards and edges share
- * the canvas coordinate space, pan/zoom is a single CSS transform — no
- * per-frame position sync, no projection, no culling, no camera.
+ * the canvas coordinate space, pan/zoom is a single CSS transform.
  *
- * Area filter tabs (All / Physics / Society / Engineering) filter which
- * nodes+edges render; area is otherwise conveyed by card COLOR (ELK optimizes
- * crossings freely — no forced area bands, matching the reference).
+ * The left CategoryNav (quick 260708-2v7) filters which categories render:
+ * checkboxes toggle categories on/off (multi-select), clicking a name isolates
+ * to just that category (and fits the view to it). Area is conveyed by card
+ * color; the layout itself is area-agnostic (ELK optimizes crossings).
  */
 
 const ZOOM_MIN = 0.15;
@@ -33,13 +35,6 @@ const ZOOM_MAX = 1.5;
 const ZOOM_STEP = 1.15;
 
 type Area = Tech["area"];
-
-const AREA_TABS: { key: "all" | Area; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "physics", label: "Physics" },
-  { key: "society", label: "Society" },
-  { key: "engineering", label: "Engineering" },
-];
 
 type LayoutState =
   | { status: "loading" }
@@ -52,26 +47,30 @@ interface Transform {
   scale: number;
 }
 
+const DEFAULT_TRANSFORM: Transform = { x: 40, y: 40, scale: 0.4 };
+
 function clampZoom(z: number): number {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
 }
 
+const categoryOf = (n: LayoutNode): string => n.tech.category[0] ?? "";
+const catsInArea = (area: Area): string[] =>
+  CATEGORY_ORDER.filter((c) => CATEGORY_AREA[c] === area);
+
 export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const [state, setState] = useState<LayoutState>({ status: "loading" });
-  const [areaFilter, setAreaFilter] = useState<"all" | Area>("all");
-  const [transform, setTransform] = useState<Transform>({ x: 40, y: 40, scale: 0.4 });
+  const [active, setActive] = useState<Set<string>>(() => new Set<string>(CATEGORY_ORDER));
+  const [transform, setTransform] = useState<Transform>(DEFAULT_TRANSFORM);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(
     null,
   );
 
-  // Icon base path derived from the snapshot's OWN version (WR-02) — a future
-  // game-patch snapshot needs no edit here.
   const iconBase = `/data/${snapshot.meta.gameVersion}/icons`;
 
   // One-shot ELK layout inside the loading state (D-08) — never re-run on
-  // pan/zoom. A throw here surfaces the error state, not a blank screen.
+  // pan/zoom/filter. A throw here surfaces the error state, not a blank screen.
   useEffect(() => {
     let cancelled = false;
     setState({ status: "loading" });
@@ -89,17 +88,99 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     };
   }, [snapshot]);
 
-  // Filter nodes/edges by the active area tab (area shown by card color; the
-  // layout itself is area-agnostic — ELK optimizes crossings, no forced bands).
+  // Total tech count per category (stable — from the FULL layout, not filtered).
+  const counts = useMemo(() => {
+    if (state.status !== "ready") return {};
+    const m: Record<string, number> = {};
+    for (const n of state.layout.nodes) m[categoryOf(n)] = (m[categoryOf(n)] ?? 0) + 1;
+    return m;
+  }, [state]);
+
+  // Filter nodes/edges to the active category set (hide, not re-layout — instant).
   const filtered = useMemo(() => {
     if (state.status !== "ready") return null;
     const { layout } = state;
-    if (areaFilter === "all") return layout;
-    const nodes = layout.nodes.filter((n) => n.tech.area === areaFilter);
+    if (active.size === CATEGORY_ORDER.length) return layout;
+    const nodes = layout.nodes.filter((n) => active.has(categoryOf(n)));
     const visible = new Set(nodes.map((n) => n.key));
     const edges = layout.edges.filter((e) => visible.has(e.from) && visible.has(e.to));
     return { ...layout, nodes, edges };
-  }, [state, areaFilter]);
+  }, [state, active]);
+
+  // Frame a set of nodes to fill the viewport (used when isolating a category).
+  const fitToNodes = useCallback((nodes: LayoutNode[]) => {
+    const rect = viewportRef.current?.getBoundingClientRect();
+    if (!rect || nodes.length === 0) return;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const n of nodes) {
+      minX = Math.min(minX, n.x);
+      minY = Math.min(minY, n.y);
+      maxX = Math.max(maxX, n.x + n.w);
+      maxY = Math.max(maxY, n.y + n.h);
+    }
+    const pad = 60;
+    const bw = Math.max(1, maxX - minX);
+    const bh = Math.max(1, maxY - minY);
+    const scale = clampZoom(
+      Math.min((rect.width - pad * 2) / bw, (rect.height - pad * 2) / bh),
+    );
+    setTransform({
+      scale,
+      x: (rect.width - bw * scale) / 2 - minX * scale,
+      y: (rect.height - bh * scale) / 2 - minY * scale,
+    });
+  }, []);
+
+  // ── Filter actions (from CategoryNav) ─────────────────────────────────────
+  const onToggleCategory = useCallback((cat: string) => {
+    setActive((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  }, []);
+
+  const onIsolateCategory = useCallback(
+    (cat: string) => {
+      setActive(new Set([cat]));
+      if (state.status === "ready") {
+        fitToNodes(state.layout.nodes.filter((n) => categoryOf(n) === cat));
+      }
+    },
+    [state, fitToNodes],
+  );
+
+  const onToggleArea = useCallback((area: Area) => {
+    const cats = catsInArea(area);
+    setActive((prev) => {
+      const next = new Set(prev);
+      const allOn = cats.every((c) => next.has(c));
+      for (const c of cats) {
+        if (allOn) next.delete(c);
+        else next.add(c);
+      }
+      return next;
+    });
+  }, []);
+
+  const onIsolateArea = useCallback(
+    (area: Area) => {
+      setActive(new Set(catsInArea(area)));
+      if (state.status === "ready") {
+        fitToNodes(state.layout.nodes.filter((n) => n.tech.area === area));
+      }
+    },
+    [state, fitToNodes],
+  );
+
+  const onShowAll = useCallback(() => {
+    setActive(new Set(CATEGORY_ORDER));
+    setTransform(DEFAULT_TRANSFORM);
+  }, []);
 
   // ── Pan (pointer drag on the viewport) ────────────────────────────────────
   const onPointerDown = useCallback(
@@ -142,7 +223,6 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       const factor = e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
       const nextScale = clampZoom(t.scale * factor);
       const ratio = nextScale / t.scale;
-      // Keep the graph point under the cursor fixed while scaling.
       return {
         scale: nextScale,
         x: cursorX - (cursorX - t.x) * ratio,
@@ -151,7 +231,6 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     });
   }, []);
 
-  // ── Button zoom (centered on the viewport) ────────────────────────────────
   const zoomBy = useCallback((factor: number) => {
     const rect = viewportRef.current?.getBoundingClientRect();
     const cx = rect ? rect.width / 2 : 0;
@@ -167,14 +246,11 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     });
   }, []);
 
-  const resetView = useCallback(() => {
-    setTransform({ x: 40, y: 40, scale: 0.4 });
-  }, []);
+  const resetView = useCallback(() => setTransform(DEFAULT_TRANSFORM), []);
 
-  // Memoize the card + edge elements against the (stable) layout — NOT the
-  // transform. Pan/zoom re-renders this component every tick, but with this
-  // memo (plus React.memo on TechCard/EdgeLayer) that tick only updates the one
-  // canvas CSS transform instead of reconciling 678 cards + 613 SVG paths.
+  // Memoize the card + edge elements against the (stable) filtered layout — NOT
+  // the transform. A pan/zoom tick then only updates the one canvas transform
+  // instead of reconciling hundreds of cards + SVG paths.
   const layoutReady = state.status === "ready" ? filtered ?? state.layout : null;
   const content = useMemo(() => {
     if (!layoutReady) return null;
@@ -208,22 +284,15 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
 
   return (
     <div className="tech-tree">
-      <div className="area-tabs" role="tablist" aria-label="Filter by research area">
-        {AREA_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            role="tab"
-            aria-selected={areaFilter === tab.key}
-            className="area-tab"
-            data-area={tab.key === "all" ? undefined : tab.key}
-            data-active={areaFilter === tab.key || undefined}
-            onClick={() => setAreaFilter(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <CategoryNav
+        active={active}
+        counts={counts}
+        onToggleCategory={onToggleCategory}
+        onIsolateCategory={onIsolateCategory}
+        onToggleArea={onToggleArea}
+        onIsolateArea={onIsolateArea}
+        onShowAll={onShowAll}
+      />
 
       <div
         className="tree-viewport"
