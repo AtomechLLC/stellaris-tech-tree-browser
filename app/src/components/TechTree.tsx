@@ -390,7 +390,11 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       originX: transformRef.current.x,
       originY: transformRef.current.y,
     };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    // NOTE: do NOT setPointerCapture here. Capturing on pointerdown makes the
+    // browser synthesize the trailing `click` on the capture target (the
+    // viewport) instead of the card under the cursor, so card clicks never
+    // fire (cards become unselectable). Capture is deferred to onPointerMove,
+    // the moment the gesture is confirmed a real drag past the threshold.
   }, []);
 
   const onPointerMove = useCallback(
@@ -404,6 +408,11 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > DRAG_THRESHOLD
       ) {
         movedRef.current = true;
+        // Now that it's a confirmed drag, capture the pointer so panning keeps
+        // tracking even if the cursor leaves the viewport. Deferring capture to
+        // here (not pointerdown) is what keeps a pure click landing on the card
+        // — see the note in onPointerDown.
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       }
       const t = transformRef.current;
       applyTransform({
