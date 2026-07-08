@@ -113,6 +113,7 @@ None yet.
 | 260708-3zu | Category swimlane bands (tinted + rotated name watermark) + Re-pack button + dark header | 2026-07-08 | 55c044e..fef3d26 | [260708-3zu-...](./quick/260708-3zu-category-swimlane-bands-with-tints-redo-/) |
 | 260708-4io | Selectable cards + gold prereq/child edge highlight + hidden-ancestry drill-down panel | 2026-07-08 | 955c850..35ba563 | [260708-4io-...](./quick/260708-4io-selectable-cards-highlighted-edges-hidde/) |
 | 260708-4y2 | F-Find (search→jump) + hotkey list replaces legend + weight-modifier "Research Weight" detail | 2026-07-08 | 8ed2748..4b71cd0 | [260708-4y2-...](./quick/260708-4y2-find-hotkey-hotkey-list-replaces-legend-/) |
+| 260708-5di | Explore mode — Map/Explore toggle + collapsible forward tech tree from roots (expand to see unlocks) | 2026-07-08 | 61425c7..31a0ee2 | [260708-5di-...](./quick/260708-5di-explore-mode-collapsible-forward-tech-tr/) |
 
 ## Deferred Items
 
