@@ -1,5 +1,5 @@
 /**
- * DOM chrome layout rules (header, tier-axis, legend, overlays). All colors,
+ * DOM chrome layout rules (header, tech tree, legend, overlays). All colors,
  * spacing, and typography reference tokens.css custom properties — no
  * hardcoded hex/px literals for themeable values (D-11, UIFX-01).
  */
@@ -32,42 +32,126 @@
   color: var(--color-text);
 }
 
-/* Tier-axis header strip — UI-SPEC App Shell Layout.
-   Rendered as a child of react-sigma's `.react-sigma` root (which is
-   position:relative), so it is absolutely positioned as a strip pinned to
-   the top of the canvas viewport. `pointer-events: none` keeps it from
-   blocking Sigma's native pan/zoom/click handling underneath. */
-.tier-axis {
+/* ── DOM tech tree (quick 260708-0mk): one CSS-transformed canvas holding
+   absolutely-positioned DOM cards + an SVG edge layer. Pan/zoom is a single
+   transform on `.tree-canvas` — no per-frame sync, no projection, no camera.
+   Dark viewport so the area-colored cards pop (reference look). */
+.tech-tree {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Area filter tabs (All / Physics / Society / Engineering) across the top. */
+.area-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--tree-panel);
+  border-bottom: 1px solid var(--tree-border);
+}
+
+.area-tab {
+  padding: 4px 14px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-heading);
+  color: var(--tree-text);
+  background: transparent;
+  border: 1px solid var(--tree-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.area-tab[data-active] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+/* Each area tab tints toward its own area color when active. */
+.area-tab[data-area="physics"][data-active] {
+  background: var(--area-physics);
+  border-color: var(--area-physics);
+}
+.area-tab[data-area="society"][data-active] {
+  background: var(--area-society);
+  border-color: var(--area-society);
+}
+.area-tab[data-area="engineering"][data-active] {
+  background: var(--area-engineering);
+  border-color: var(--area-engineering);
+}
+
+/* Viewport clips the canvas; drag pans, wheel zooms. Dark background. */
+.tree-viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--tree-bg);
+  cursor: grab;
+  touch-action: none;
+}
+
+.tree-viewport:active {
+  cursor: grabbing;
+}
+
+/* The single transformed coordinate space shared by cards + edges. */
+.tree-canvas {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  height: 32px;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 5;
+  will-change: transform;
 }
 
-.tier-axis__label {
+/* SVG connector layer — below the cards, non-interactive. */
+.edge-layer {
   position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  white-space: nowrap;
-  font-family: var(--font-sans);
-  font-size: var(--font-size-label);
-  font-weight: var(--font-weight-label);
-  line-height: var(--line-height-label);
-  color: var(--color-text);
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: visible;
 }
 
-/* Canvas region */
-.canvas-region {
-  position: relative;
-  flex: 1 1 auto;
-  background: var(--color-bg);
-  min-height: 0;
+.edge-layer__path {
+  fill: none;
+  stroke: var(--color-edge);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  opacity: 0.55;
+}
+
+/* Zoom +/- / reset control — bottom-right of the viewport. */
+.zoom-controls {
+  position: absolute;
+  right: var(--space-md);
+  bottom: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 12;
+}
+
+.zoom-controls button {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--tree-text);
+  background: var(--tree-panel);
+  border: 1px solid var(--tree-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.zoom-controls button:hover {
+  background: var(--tree-border);
 }
 
 /* Legend — bottom-left overlay, UI-SPEC App Shell Layout */
@@ -147,138 +231,60 @@
   color: var(--color-text);
 }
 
-/* ── Category swimlane axis: backgrounds + left labels (quick 260707-we6
-   Task 4). Both are camera-synced re-projections (CategoryAxis) — the bands
-   span the full canvas width behind the nodes; the labels are pinned to the
-   left edge at each lane's vertical center. Both are pointer-events:none. */
-.category-bands {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 1; /* behind nodes/edges chrome — subtle background only */
-}
-
-.category-band {
-  position: absolute;
-  left: 0;
-  right: 0;
-  /* Faint area tint; alternating lanes get a touch more contrast so adjacent
-     lanes within one area are still distinguishable. */
-  opacity: 0.05;
-}
-
-.category-band--striped {
-  opacity: 0.1;
-}
-
-.category-band[data-area="physics"] {
-  background: var(--area-physics);
-}
-.category-band[data-area="society"] {
-  background: var(--area-society);
-}
-.category-band[data-area="engineering"] {
-  background: var(--area-engineering);
-}
-
-.category-axis {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 0; /* labels overflow to the right of the left edge */
-  pointer-events: none;
-  z-index: 7; /* above bands + cards' layer so lane names stay readable */
-}
-
-.category-axis__label {
-  position: absolute;
-  left: var(--space-sm);
-  transform: translateY(-50%);
-  white-space: nowrap;
-  padding: 1px 6px;
-  border-radius: 3px;
-  background: var(--color-surface);
-  border-left: 3px solid var(--color-border);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-label);
-  font-weight: var(--font-weight-heading);
-  line-height: var(--line-height-label);
-  color: var(--color-text);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
-}
-
-.category-axis__label[data-area="physics"] {
-  border-left-color: var(--area-physics);
-}
-.category-axis__label[data-area="society"] {
-  border-left-color: var(--area-society);
-}
-.category-axis__label[data-area="engineering"] {
-  border-left-color: var(--area-engineering);
-}
-
-/* ── Zoom-LOD tech-card overlay (quick 260707-we6 Task 3) ──────────────────
-   A full-viewport HTML layer that appears only when zoomed in; each card is
-   absolutely positioned at its node's projected screen coordinate and scaled
-   with the camera. The LAYER is pointer-events:none so pan/zoom/click pass
-   through to the Sigma canvas underneath. */
-.tech-card-layer {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 6; /* above canvas, below tier-axis(5)? tier-axis is a top strip */
-}
-
-/* Reference-style horizontal card: icon square on the left, colored header +
-   meta/stats on the right, area-colored border. The card is centered on its
-   node via translate(-50%, -50%) in the inline transform. */
+/* ── Reference-style tech card (quick 260708-0mk): icon square on the left
+   with a tier badge, area-colored header carrying the name, then meta/stats.
+   Fixed size (230x92 — the size handed to ELK so positions line up),
+   absolutely positioned at its ELK (x, y) inside `.tree-canvas`, so it pans/
+   zooms with the shared transform. Area color drives the border + header;
+   a faint hex-mesh texture (inline SVG data-URI, CSP-safe) tints the body. */
 .tech-card {
   position: absolute;
   display: flex;
-  width: 220px;
-  background: var(--color-surface);
+  box-sizing: border-box;
+  background: var(--tree-card-bg);
+  /* Subtle hex-mesh texture: a low-opacity inline SVG data-URI (no external
+     request, CSP-safe). Layered UNDER the flat card background above. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='24' viewBox='0 0 28 24'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-opacity='0.04' stroke-width='1' d='M14 0l7 4v8l-7 4-7-4V4z'/%3E%3C/svg%3E");
   border: 2px solid var(--color-border);
   border-radius: 6px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   overflow: hidden;
-  transform-origin: center center;
+  z-index: 2; /* above the edge layer */
   font-family: var(--font-sans);
 }
 
-/* Icon panel (left) — square, with a small tier roman-numeral badge overlaid. */
+/* Icon panel (left) — fills the card height, with a tier roman-numeral badge
+   overlaid at the bottom-left. */
 .tech-card__icon {
   position: relative;
   flex: 0 0 auto;
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  align-self: stretch;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-bg);
-  border-right: 1px solid var(--color-border);
+  background: var(--tree-icon-bg);
+  border-right: 1px solid var(--tree-border);
 }
 
 .tech-card__icon img {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
 }
 
 .tech-card__tier {
   position: absolute;
-  left: 2px;
-  bottom: 2px;
+  left: 3px;
+  bottom: 3px;
   min-width: 16px;
   padding: 0 3px;
   text-align: center;
   font-size: 11px;
   font-weight: var(--font-weight-heading);
   line-height: 1.4;
-  color: var(--color-surface);
-  background: rgba(17, 24, 39, 0.72);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
   border-radius: 3px;
 }
 
@@ -295,29 +301,31 @@
   font-size: 13px;
   font-weight: var(--font-weight-heading);
   line-height: 1.25;
-  color: var(--color-surface);
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  background: var(--color-border); /* overridden per-area below */
+  background: var(--tree-border); /* overridden per-area below */
 }
 
 .tech-card__meta {
-  padding: 3px 8px 0;
+  padding: 4px 8px 0;
   font-size: 11px;
   line-height: 1.3;
-  color: var(--color-text);
-  opacity: 0.7;
+  color: var(--tree-text);
+  opacity: 0.75;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .tech-card__stats {
-  padding: 1px 8px 5px;
+  padding: 2px 8px 6px;
   font-size: 11px;
   line-height: 1.3;
-  color: var(--color-text);
+  color: var(--tree-text);
+  opacity: 0.9;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

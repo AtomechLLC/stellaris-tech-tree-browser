@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import type { DirectedGraph } from "graphology";
+import type { TechSnapshot } from "./types/tech-snapshot";
 import { fetchSnapshot } from "./lib/data/fetchSnapshot";
-import { buildGraph } from "./lib/graph/buildGraph";
-import { layoutGraph } from "./lib/graph/layout";
-import { TechTreeCanvas } from "./components/TechTreeCanvas";
+import { TechTree } from "./components/TechTree";
 import { Header } from "./components/Header";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { ErrorOverlay } from "./components/ErrorOverlay";
@@ -13,7 +11,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; graph: DirectedGraph; techCount: number };
+  | { status: "ready"; snapshot: TechSnapshot; techCount: number };
 
 export function App() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -28,19 +26,15 @@ export function App() {
     let cancelled = false;
 
     fetchSnapshot()
-      .then(async (snapshot) => {
+      .then((snapshot) => {
         if (cancelled) return;
-        const graph = buildGraph(snapshot);
-        // D-08: layout is computed once here, inside the loading state,
-        // before the graph is ever handed to Sigma — this is the one-shot
-        // elkjs computation (tier partition + area-band Y-remap); pan/zoom
-        // never re-invokes it. A throw here falls into the catch below and
-        // renders the existing error state, not a blank screen.
-        await layoutGraph(graph);
-        if (cancelled) return;
+        // The one-shot ELK layout now runs inside <TechTree> (in its own
+        // loading state) — App only fetches + shape-validates the snapshot and
+        // hands it down. A fetch/parse throw falls into the catch below and
+        // renders the error state, not a blank screen.
         setState({
           status: "ready",
-          graph,
+          snapshot,
           techCount: Object.keys(snapshot.techs).length,
         });
       })
@@ -72,7 +66,7 @@ export function App() {
             />
           )}
         >
-          <TechTreeCanvas graph={state.graph} />
+          <TechTree snapshot={state.snapshot} />
         </ErrorBoundary>
       )}
     </div>

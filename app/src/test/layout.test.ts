@@ -3,11 +3,13 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { TechSnapshot } from "../types/tech-snapshot";
-import { buildGraph } from "../lib/graph/buildGraph";
-import { layoutGraph } from "../lib/graph/layout";
-import { CATEGORY_AREA, CATEGORY_ORDER, type CategoryKey } from "../lib/graph/categories";
+import { layoutTree } from "../lib/tree/layoutTree";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Card size handed to ELK — must match the rendered `.tech-card`.
+const CARD_W = 230;
+const CARD_H = 92;
 
 function loadRealSnapshot(): TechSnapshot {
   // Reads the real, full-scale copied snapshot from disk (D-08: benchmark
@@ -18,162 +20,83 @@ function loadRealSnapshot(): TechSnapshot {
   return JSON.parse(raw) as TechSnapshot;
 }
 
-describe("buildGraph: prerequisite edges (TREE-01 true DAG)", () => {
-  it("adds all 613 prerequisite edges across the full 678-tech corpus", () => {
-    const snapshot = loadRealSnapshot();
-    const graph = buildGraph(snapshot);
-
-    expect(graph.order).toBe(678);
-    expect(graph.size).toBe(613);
-  });
-
-  it("connects a known multi-parent tech to ALL of its parents (not tree-flattened)", () => {
-    const snapshot = loadRealSnapshot();
-    const graph = buildGraph(snapshot);
-
-    // tech_growth_chamber_1 has 5 prerequisites in the real v4.5.0 corpus —
-    // the max fan-in multi-parent tech (verified against pipeline/data).
-    const key = "tech_growth_chamber_1";
-    const tech = snapshot.techs[key];
-    expect(tech).toBeDefined();
-    expect(tech.prerequisites.length).toBeGreaterThan(1);
-
-    expect(graph.inDegree(key)).toBe(tech.prerequisites.length);
-    for (const prereqKey of tech.prerequisites) {
-      expect(graph.hasEdge(prereqKey, key)).toBe(true);
-    }
-  });
-});
-
-describe("layoutGraph: ELK tier-partition + category-swimlane Y-remap (TREE-02)", () => {
+describe("layoutTree: ELK tier-partitioned LR layout + orthogonal edge routing", () => {
   // ELK's layered layout at the real 678-node/613-edge scale takes several
-  // seconds on the main thread (D-08 one-shot cost, benchmarked and recorded
-  // in the plan SUMMARY) — well above vitest's default 5s test timeout, so
-  // each layoutGraph-exercising test here is given explicit headroom.
-  const LAYOUT_TEST_TIMEOUT = 20_000;
+  // seconds on the main thread (D-08 one-shot cost) — well above vitest's
+  // default 5s timeout, so each layoutTree-exercising test gets headroom.
+  const LAYOUT_TEST_TIMEOUT = 30_000;
 
-  it("places tier-0 nodes strictly left of tier-5 nodes (monotonic tier->x)", async () => {
+  it("positions every tech (node count == tech count)", async () => {
     const snapshot = loadRealSnapshot();
-    const graph = buildGraph(snapshot);
+    const techCount = Object.keys(snapshot.techs).length;
 
-    await layoutGraph(graph);
+    const layout = await layoutTree(snapshot, CARD_W, CARD_H);
 
-    const tier0Key = Object.values(snapshot.techs).find((t) => t.tier === 0)?.key;
-    const tier5Key = Object.values(snapshot.techs).find((t) => t.tier === 5)?.key;
-    expect(tier0Key).toBeDefined();
-    expect(tier5Key).toBeDefined();
-
-    const tier0X = graph.getNodeAttribute(tier0Key!, "x") as number;
-    const tier5X = graph.getNodeAttribute(tier5Key!, "x") as number;
-    expect(tier0X).toBeLessThan(tier5X);
-
-    // Full monotonicity: every node's x must be non-decreasing as tier
-    // increases — compare min-x-per-tier across all six tiers.
-    const minXByTier = new Map<number, number>();
-    graph.forEachNode((_key, attrs) => {
-      const tier = attrs.tier as number;
-      const x = attrs.x as number;
-      const current = minXByTier.get(tier);
-      if (current === undefined || x < current) minXByTier.set(tier, x);
-    });
-    const maxXByTier = new Map<number, number>();
-    graph.forEachNode((_key, attrs) => {
-      const tier = attrs.tier as number;
-      const x = attrs.x as number;
-      const current = maxXByTier.get(tier);
-      if (current === undefined || x > current) maxXByTier.set(tier, x);
-    });
-    for (let tier = 0; tier < 5; tier++) {
-      expect(maxXByTier.get(tier)!).toBeLessThanOrEqual(minXByTier.get(tier + 1)!);
+    expect(layout.nodes.length).toBe(techCount);
+    // Every node carries a real tech + card size and a finite position.
+    for (const node of layout.nodes) {
+      expect(node.tech).toBeDefined();
+      expect(node.tech.key).toBe(node.key);
+      expect(node.w).toBe(CARD_W);
+      expect(node.h).toBe(CARD_H);
+      expect(Number.isFinite(node.x)).toBe(true);
+      expect(Number.isFinite(node.y)).toBe(true);
     }
+    expect(layout.width).toBeGreaterThan(0);
+    expect(layout.height).toBeGreaterThan(0);
   }, LAYOUT_TEST_TIMEOUT);
 
-  it("preserves area order (all physics.y < all society.y < all engineering.y)", async () => {
+  it("orders x by tier (tier 0 leftmost, monotonic tier->x)", async () => {
     const snapshot = loadRealSnapshot();
-    const graph = buildGraph(snapshot);
 
-    await layoutGraph(graph);
+    const layout = await layoutTree(snapshot, CARD_W, CARD_H);
 
-    const yRangeByArea = new Map<string, { min: number; max: number }>();
-    graph.forEachNode((_key, attrs) => {
-      const area = attrs.area as string;
-      const y = attrs.y as number;
-      const range = yRangeByArea.get(area);
-      if (!range) {
-        yRangeByArea.set(area, { min: y, max: y });
-      } else {
-        range.min = Math.min(range.min, y);
-        range.max = Math.max(range.max, y);
-      }
-    });
-
-    expect(yRangeByArea.size).toBe(3);
-
-    // Area order is authoritative: physics on top, then society, then
-    // engineering — every node in an earlier area sits strictly above every
-    // node in a later area.
-    const order = ["physics", "society", "engineering"] as const;
-    for (let i = 0; i < order.length - 1; i++) {
-      const current = yRangeByArea.get(order[i])!;
-      const next = yRangeByArea.get(order[i + 1])!;
-      expect(current.max).toBeLessThanOrEqual(next.min);
-    }
-  }, LAYOUT_TEST_TIMEOUT);
-
-  it("groups every node into its 13-category swimlane, lanes non-overlapping in y", async () => {
-    const snapshot = loadRealSnapshot();
-    const graph = buildGraph(snapshot);
-
-    const geometry = await layoutGraph(graph);
-
-    // Lane geometry covers all 13 categories in CATEGORY_ORDER.
-    expect(geometry.map((g) => g.category)).toEqual([...CATEGORY_ORDER]);
-
-    // Lanes are non-overlapping and monotonically stacked downward.
-    for (let i = 0; i < geometry.length - 1; i++) {
-      const current = geometry[i];
-      const next = geometry[i + 1];
-      expect(current.top + current.height).toBeLessThanOrEqual(next.top);
-    }
-
-    // Every node's y lands within its own category lane's [top, top+height].
-    const laneByCategory = new Map(geometry.map((g) => [g.category, g]));
-    graph.forEachNode((_key, attrs) => {
-      const category = attrs.category as CategoryKey;
-      const y = attrs.y as number;
-      const lane = laneByCategory.get(category);
-      expect(lane).toBeDefined();
-      expect(y).toBeGreaterThanOrEqual(lane!.top);
-      expect(y).toBeLessThanOrEqual(lane!.top + lane!.height);
-    });
-
-    // Each lane's parent area matches CATEGORY_AREA (nesting is correct).
-    for (const lane of geometry) {
-      expect(lane.area).toBe(CATEGORY_AREA[lane.category]);
-    }
-  }, LAYOUT_TEST_TIMEOUT);
-
-  it("keeps x equal to ELK's tier-partitioned x (swimlane touches only y)", async () => {
-    const snapshot = loadRealSnapshot();
-    const graph = buildGraph(snapshot);
-
-    await layoutGraph(graph);
-
-    // Monotonic tier→x still holds after the y-only swimlane remap.
+    const tierOf = new Map(layout.nodes.map((n) => [n.key, n.tech.tier]));
+    // Compare min/max x per tier: every tier's rightmost card sits left of
+    // (or level with) the next tier's leftmost card — global tier columns.
     const minXByTier = new Map<number, number>();
     const maxXByTier = new Map<number, number>();
-    graph.forEachNode((_key, attrs) => {
-      const tier = attrs.tier as number;
-      const x = attrs.x as number;
+    for (const node of layout.nodes) {
+      const tier = tierOf.get(node.key)!;
       const curMin = minXByTier.get(tier);
-      if (curMin === undefined || x < curMin) minXByTier.set(tier, x);
+      if (curMin === undefined || node.x < curMin) minXByTier.set(tier, node.x);
       const curMax = maxXByTier.get(tier);
-      if (curMax === undefined || x > curMax) maxXByTier.set(tier, x);
-    });
+      if (curMax === undefined || node.x > curMax) maxXByTier.set(tier, node.x);
+    }
     for (let tier = 0; tier < 5; tier++) {
       if (minXByTier.has(tier + 1)) {
         expect(maxXByTier.get(tier)!).toBeLessThanOrEqual(minXByTier.get(tier + 1)!);
       }
     }
+  }, LAYOUT_TEST_TIMEOUT);
+
+  it("routes edges only between existing techs (no dangling references)", async () => {
+    const snapshot = loadRealSnapshot();
+
+    const layout = await layoutTree(snapshot, CARD_W, CARD_H);
+
+    // 613 prerequisite edges across the full corpus (all endpoints exist).
+    expect(layout.edges.length).toBe(613);
+    const keys = new Set(layout.nodes.map((n) => n.key));
+    for (const edge of layout.edges) {
+      expect(keys.has(edge.from)).toBe(true);
+      expect(keys.has(edge.to)).toBe(true);
+    }
+  }, LAYOUT_TEST_TIMEOUT);
+
+  it("returns orthogonal edge routing (bend points) for connectors", async () => {
+    const snapshot = loadRealSnapshot();
+
+    const layout = await layoutTree(snapshot, CARD_W, CARD_H);
+
+    // At least some edges must carry ELK routing sections with start/end
+    // points — the SVG layer draws elbow connectors from these.
+    const withSections = layout.edges.filter((e) => e.sections.length > 0);
+    expect(withSections.length).toBeGreaterThan(0);
+    const section = withSections[0].sections[0];
+    expect(Number.isFinite(section.startPoint.x)).toBe(true);
+    expect(Number.isFinite(section.startPoint.y)).toBe(true);
+    expect(Number.isFinite(section.endPoint.x)).toBe(true);
+    expect(Number.isFinite(section.endPoint.y)).toBe(true);
   }, LAYOUT_TEST_TIMEOUT);
 });

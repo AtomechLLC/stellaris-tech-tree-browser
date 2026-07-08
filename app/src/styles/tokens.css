@@ -26,6 +26,17 @@
   --area-society: #e69f00;
   --area-engineering: #d55e00;
 
+  /* Dark-theme tree tokens (quick 260708-0mk): the tech-tree viewport is dark
+     so the area-colored cards pop (reference look), while the app-shell chrome
+     (header) stays on the light surface tokens above. Kept as their own token
+     group so a future full dark-theme swap can reuse or override them. */
+  --tree-bg: #10141c;
+  --tree-panel: #1a2130;
+  --tree-card-bg: #232c3d;
+  --tree-icon-bg: #161c28;
+  --tree-border: #38445c;
+  --tree-text: #dbe2ee;
+
   /* Spacing — 8-point scale (UI-SPEC Spacing Scale) */
   --space-xs: 4px;
   --space-sm: 8px;
