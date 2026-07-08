@@ -12,14 +12,15 @@
   overflow: hidden;
 }
 
-/* Header bar — UI-SPEC App Shell Layout */
+/* Header bar — UI-SPEC App Shell Layout. Dark (quick 260708-3zu) to match
+   the dark tree viewport — tree tokens only, no hardcoded hex. */
 .app-header {
   flex: 0 0 auto;
   height: 48px;
   display: flex;
   align-items: center;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--tree-panel);
+  border-bottom: 1px solid var(--tree-border);
   padding: 0 var(--space-md);
 }
 
@@ -29,7 +30,7 @@
   font-size: var(--font-size-heading);
   font-weight: var(--font-weight-heading);
   line-height: var(--line-height-heading);
-  color: var(--color-text);
+  color: var(--tree-text);
 }
 
 /* ── DOM tech tree (quick 260708-0mk): one CSS-transformed canvas holding
