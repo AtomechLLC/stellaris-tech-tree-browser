@@ -29,11 +29,26 @@ interface BandLayerProps {
  */
 function watermarkBg(label: string): string {
   const text = label.toUpperCase();
+  const F = 72; // font size (large, per request)
+  const L = 10; // letter spacing
+  const charW = F * 0.66; // generous bold-uppercase advance estimate
+  const textW = text.length * charW + Math.max(0, text.length - 1) * L;
+  const rad = Math.PI / 6; // 30°
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  // Size the tile to the ROTATED text's bounding box (+margin) so the whole word
+  // always fits — no clipping — and the tile tiles cleanly.
+  const margin = F * 0.9;
+  const w = Math.ceil(textW * cos + F * sin + margin * 2);
+  const h = Math.ceil(textW * sin + F * cos + margin * 2);
+  const cx = w / 2;
+  const cy = h / 2;
   const svg =
-    `<svg xmlns='http://www.w3.org/2000/svg' width='460' height='150'>` +
-    `<text x='6' y='120' transform='rotate(-30 6 120)' ` +
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>` +
+    `<text x='${cx}' y='${cy}' text-anchor='middle' dominant-baseline='central' ` +
+    `transform='rotate(-30 ${cx} ${cy})' ` +
     `font-family='-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif' ` +
-    `font-size='40' font-weight='700' letter-spacing='6' ` +
+    `font-size='${F}' font-weight='700' letter-spacing='${L}' ` +
     `fill='rgba(255,255,255,0.25)'>${text}</text></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
