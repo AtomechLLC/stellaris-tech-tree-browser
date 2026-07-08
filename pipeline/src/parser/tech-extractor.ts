@@ -55,6 +55,10 @@ export interface ExtractedTech extends Tech {
   sourceFile: string;
   /** Raw `potential` trigger block, preserved verbatim so the DLC classifier can scan for host_has_dlc (D-08). */
   potentialRaw: unknown;
+  /** Raw `icon = "<name>"` override field, if present, so Plan 05's icon resolver can honor it (D-10). */
+  iconOverrideRaw: string | null;
+  /** Raw `technology_swap` block(s), preserved verbatim so Plan 05's icon resolver can resolve swap-variant icons (D-10). */
+  technologySwapRaw: unknown;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -249,6 +253,8 @@ export function extractTech(
     unlockContentRaw,
     sourceFile,
     potentialRaw: raw.potential,
+    iconOverrideRaw: typeof raw.icon === "string" ? raw.icon : null,
+    technologySwapRaw: raw.technology_swap,
   };
 }
 
