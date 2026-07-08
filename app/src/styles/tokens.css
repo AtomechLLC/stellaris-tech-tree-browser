@@ -26,6 +26,12 @@
   --area-society: #e69f00;
   --area-engineering: #d55e00;
 
+  /* Selection highlight (quick 260708-4io): the gold "targeted" color for a
+     click-selected card's outline/glow and its highlighted prereq/child edges.
+     A single token so the card outline, edge stroke, and ancestry-panel
+     accents all stay in sync — never a bare hex in a component (D-11). */
+  --color-select: #ffd23f;
+
   /* Dark-theme tree tokens (quick 260708-0mk): the tech-tree viewport is dark
      so the area-colored cards pop (reference look), while the app-shell chrome
      (header) stays on the light surface tokens above. Kept as their own token

@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
 } from "react";
@@ -40,6 +41,9 @@ const ZOOM_STEP = 1.15;
 // far out anyway). Toggled as a class on the canvas so panning while zoomed out
 // isn't repainting 678 shadowed/textured/texted cards every frame.
 const LOD_THRESHOLD = 0.55;
+// Pointer travel (px, from the pointerdown origin) beyond which a gesture is a
+// drag, not a click — so a pan that ends on a card doesn't select it.
+const DRAG_THRESHOLD = 4;
 
 type Area = Tech["area"];
 
@@ -70,6 +74,10 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const [state, setState] = useState<LayoutState>({ status: "loading" });
   const [active, setActive] = useState<Set<string>>(() => new Set<string>(CATEGORY_ORDER));
   const [hover, setHover] = useState<{ tech: Tech; rect: DOMRect } | null>(null);
+  // Click-selected ("targeted") tech key, or null. Selection highlights the
+  // card, thickens its prereq/child edges, and (when it has filter-hidden
+  // ancestors) opens the ancestry drill-down panel.
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   // Re-pack busy state (button label + guard). Bumped each time a re-pack
   // starts; the resolving handler ignores its result if this changed meanwhile
   // (stale-result guard) so a rapid re-toggle+re-pack can't swap in old layout.
@@ -82,6 +90,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(
     null,
   );
+  // True once a pointer drag has moved past the click threshold — read by the
+  // card's onSelect so a pan that ends over a card doesn't count as a click.
+  const movedRef = useRef(false);
 
   const iconBase = `/data/${snapshot.meta.gameVersion}/icons`;
 
@@ -235,9 +246,35 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   }, []);
   const onCardLeave = useCallback(() => setHover(null), []);
 
+  // ── Selection ─────────────────────────────────────────────────────────────
+  // Click toggles selection; a drag that ends on a card is suppressed via the
+  // movedRef guard. Stable ref so the memoized cards don't re-render on hover/pan.
+  const onSelect = useCallback((key: string) => {
+    if (movedRef.current) return; // this "click" was actually a drag — ignore
+    setSelectedKey((k) => (k === key ? null : key));
+  }, []);
+
+  // Escape clears the selection (window listener, mounted once).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedKey(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  // Clicking empty viewport background (not a card) clears the selection. A
+  // real drag is also suppressed here via movedRef so panning doesn't deselect.
+  const onViewportClick = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
+    if (movedRef.current) return;
+    if ((e.target as HTMLElement).closest(".tech-card")) return;
+    setSelectedKey(null);
+  }, []);
+
   // ── Pan (imperative — no re-render) ───────────────────────────────────────
   const onPointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
     setHover(null); // hide tooltip while dragging
+    movedRef.current = false; // reset drag/click discrimination for this gesture
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -251,6 +288,14 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     (e: ReactPointerEvent<HTMLDivElement>) => {
       const drag = dragRef.current;
       if (!drag) return;
+      // Once moved past the threshold, mark this gesture a drag so the trailing
+      // click on a card is ignored by onSelect.
+      if (
+        !movedRef.current &&
+        Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > DRAG_THRESHOLD
+      ) {
+        movedRef.current = true;
+      }
       const t = transformRef.current;
       applyTransform({
         scale: t.scale,
@@ -343,6 +388,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           nodes={layoutReady.nodes}
           width={layoutReady.width}
           height={layoutReady.height}
+          selectedKey={selectedKey}
         />
       ),
       cards: layoutReady.nodes.map((node) => (
@@ -354,10 +400,15 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           y={node.y}
           onEnter={onCardEnter}
           onLeave={onCardLeave}
+          selected={node.key === selectedKey}
+          onSelect={onSelect}
         />
       )),
     };
-  }, [layoutReady, iconBase, onCardEnter, onCardLeave]);
+    // `selectedKey` in deps means only the 2 changed cards re-render on a
+    // selection change (React.memo bails the rest); hover/pan never touch
+    // selectedKey so they still reuse this memo cheaply.
+  }, [layoutReady, iconBase, onCardEnter, onCardLeave, selectedKey, onSelect]);
 
   if (state.status === "loading") return <LoadingOverlay />;
   if (state.status === "error") {
@@ -386,6 +437,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onWheel={onWheel}
+        onClick={onViewportClick}
       >
         <div
           className="tree-canvas"

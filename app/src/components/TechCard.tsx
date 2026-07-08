@@ -36,6 +36,11 @@ interface TechCardProps {
   /** Hover in → show tooltip (rect = the card's on-screen box). Stable refs. */
   onEnter?: (tech: Tech, rect: DOMRect) => void;
   onLeave?: () => void;
+  /** Whether this card is the currently selected ("targeted") node. */
+  selected?: boolean;
+  /** Click → select this card (toggle in the parent). Stable ref; the parent
+   *  suppresses the call if the click was actually a drag (drag-safe). */
+  onSelect?: (key: string) => void;
 }
 
 // Memoized: pan/zoom re-renders the parent every tick, but a card's props
@@ -49,12 +54,16 @@ export const TechCard = memo(function TechCard({
   y,
   onEnter,
   onLeave,
+  selected,
+  onSelect,
 }: TechCardProps) {
   const category = tech.category[0] ?? "";
   return (
     <div
       className="tech-card"
       data-area={tech.area}
+      data-key={tech.key}
+      data-selected={selected ? "" : undefined}
       style={{
         position: "absolute",
         left: `${x}px`,
@@ -64,6 +73,7 @@ export const TechCard = memo(function TechCard({
       }}
       onMouseEnter={(e) => onEnter?.(tech, e.currentTarget.getBoundingClientRect())}
       onMouseLeave={onLeave}
+      onClick={() => onSelect?.(tech.key)}
     >
       <div className="tech-card__icon">
         {image ? <img src={image} alt="" loading="lazy" /> : null}

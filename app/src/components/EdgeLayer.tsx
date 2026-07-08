@@ -17,6 +17,8 @@ interface EdgeLayerProps {
   nodes: LayoutNode[];
   width: number;
   height: number;
+  /** Currently selected tech key — its incident edges are drawn highlighted. */
+  selectedKey?: string | null;
 }
 
 /** Builds an SVG path `d` string from a list of points as straight segments. */
@@ -44,35 +46,66 @@ function fallbackPath(from: LayoutNode, to: LayoutNode): string {
   ]);
 }
 
+/**
+ * Builds the combined SVG `d` for a set of edges, reusing ELK routing when
+ * present and falling back to a straight elbow otherwise. Shared by the dim
+ * base path (all edges) and the highlight path (the selected node's edges) so
+ * both use identical geometry.
+ */
+function buildPath(
+  edges: LayoutEdge[],
+  nodeByKey: Map<string, LayoutNode>,
+): string {
+  const out: string[] = [];
+  for (const edge of edges) {
+    if (edge.sections.length > 0) {
+      for (const section of edge.sections) {
+        const points = [
+          section.startPoint,
+          ...(section.bendPoints ?? []),
+          section.endPoint,
+        ];
+        out.push(pointsToPath(points));
+      }
+    } else {
+      // No ELK routing — fall back to a straight elbow between the cards.
+      const from = nodeByKey.get(edge.from);
+      const to = nodeByKey.get(edge.to);
+      if (from && to) out.push(fallbackPath(from, to));
+    }
+  }
+  return out.join(" ");
+}
+
 // Memoized: props (edges/nodes/width/height) are stable across pan/zoom, so the
 // 613-path SVG bails out of re-rendering on every transform tick.
-export const EdgeLayer = memo(function EdgeLayer({ edges, nodes, width, height }: EdgeLayerProps) {
+export const EdgeLayer = memo(function EdgeLayer({
+  edges,
+  nodes,
+  width,
+  height,
+  selectedKey,
+}: EdgeLayerProps) {
+  const nodeByKey = useMemo(() => new Map(nodes.map((n) => [n.key, n])), [nodes]);
+
   // Perf: concatenate every edge into ONE path `d` string → a single <path> DOM
   // node instead of 613. The browser paints/composites one element far more
   // cheaply, which keeps pan/zoom smooth. All edges share one stroke style.
-  const d = useMemo(() => {
-    const nodeByKey = new Map(nodes.map((n) => [n.key, n]));
-    const out: string[] = [];
+  // Memoized on [edges, nodes] only, so a selection change never rebuilds it.
+  const d = useMemo(() => buildPath(edges, nodeByKey), [edges, nodeByKey]);
 
-    for (const edge of edges) {
-      if (edge.sections.length > 0) {
-        for (const section of edge.sections) {
-          const points = [
-            section.startPoint,
-            ...(section.bendPoints ?? []),
-            section.endPoint,
-          ];
-          out.push(pointsToPath(points));
-        }
-      } else {
-        // No ELK routing — fall back to a straight elbow between the cards.
-        const from = nodeByKey.get(edge.from);
-        const to = nodeByKey.get(edge.to);
-        if (from && to) out.push(fallbackPath(from, to));
-      }
-    }
-    return out.join(" ");
-  }, [edges, nodes]);
+  // Highlight path: only the selected tech's incident edges (its prerequisites,
+  // where `to === selectedKey`, AND its children/leadsTo, where `from ===
+  // selectedKey`). Drawn on top of the base path as a solid thick gold line.
+  // Rebuilt only when the selection (or layout) changes — pan/zoom don't.
+  const highlightD = useMemo(() => {
+    if (!selectedKey) return "";
+    const incident = edges.filter(
+      (e) => e.from === selectedKey || e.to === selectedKey,
+    );
+    if (incident.length === 0) return "";
+    return buildPath(incident, nodeByKey);
+  }, [edges, nodeByKey, selectedKey]);
 
   return (
     <svg
@@ -83,6 +116,7 @@ export const EdgeLayer = memo(function EdgeLayer({ edges, nodes, width, height }
       role="presentation"
     >
       <path className="edge-layer__path" d={d} />
+      {highlightD && <path className="edge-layer__path--highlight" d={highlightD} />}
     </svg>
   );
 });
