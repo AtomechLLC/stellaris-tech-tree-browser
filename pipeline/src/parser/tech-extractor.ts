@@ -151,10 +151,17 @@ function extractUnlockContentRaw(raw: Record<string, unknown>): UnlockContentRaw
     typeof f === "string" ? [f] : [],
   );
 
-  const prereqforDescBlock = raw.prereqfor_desc;
+  // Pitfall 5 arity: a tech may declare `prereqfor_desc` more than once
+  // (verified real corpus case: tech_gene_expressions has two blocks) — jomini
+  // auto-arrays the duplicate key, so normalize to an array of blocks first
+  // rather than guarding on a single plain object (which silently dropped ALL
+  // prereqfor_desc content for such techs).
   const prereqforDesc: PrereqforDescEntry[] = [];
-  if (isPlainObject(prereqforDescBlock)) {
-    for (const kindValue of Object.values(prereqforDescBlock)) {
+  for (const block of normalizeToArray(
+    raw.prereqfor_desc as Record<string, unknown> | Record<string, unknown>[] | undefined,
+  )) {
+    if (!isPlainObject(block)) continue;
+    for (const kindValue of Object.values(block)) {
       const entries = normalizeToArray(kindValue as Record<string, unknown> | Record<string, unknown>[] | undefined);
       for (const entry of entries) {
         if (!isPlainObject(entry)) continue;
