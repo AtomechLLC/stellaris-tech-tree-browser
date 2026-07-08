@@ -12,7 +12,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **DATA-01**: Pipeline parses all technology definitions from the local Stellaris 4.5.0 install (all 33 tech files, including DLC files) into a versioned JSON snapshot
 - [x] **DATA-02**: Parsed tech records include tier, area, category, cost, base weight, prerequisites, unlocks, DLC gating, and flags (rare/dangerous/repeatable/starting), with `@scripted_variables` resolved to concrete values
 - [x] **DATA-03**: Tech names and descriptions are resolved from the game's English localisation files
-- [ ] **DATA-04**: Tech icons are extracted from game `.dds` assets and converted to web formats
+- [x] **DATA-04**: Tech icons are extracted from game `.dds` assets and converted to web formats
 - [x] **DATA-05**: Pipeline regenerates the full data snapshot with a single command, so future game-version updates are cheap
 
 ### Tree Visualization
@@ -76,7 +76,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Complete |
 | DATA-03 | Phase 1 | Complete |
-| DATA-04 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Complete |
 | DATA-05 | Phase 1 | Complete |
 | TREE-01 | Phase 2 | Pending |
 | TREE-02 | Phase 2 | Pending |
