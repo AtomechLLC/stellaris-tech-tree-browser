@@ -22,6 +22,31 @@ import {
 const elk = new ELK();
 
 /**
+ * The synthetic Explore-mode root buckets. EVERY no-prerequisite tech is grouped
+ * under one of these so the initial Explore column is just the bucket cards.
+ * Priority (first match wins) is defined in exploreLayout: starting → repeatable
+ * → dangerous → insight → archaeology → event.
+ */
+export type BucketId =
+  | "starting"
+  | "insight"
+  | "dangerous"
+  | "repeatable"
+  | "archaeology"
+  | "event";
+
+/** Display payload carried by a synthetic bucket root node. */
+export interface BucketNodeMeta {
+  id: BucketId;
+  /** Bracketed display label, e.g. "Insight" → rendered as "[Insight]". */
+  label: string;
+  /** One-line descriptor of what the bucket groups. */
+  descriptor: string;
+  /** How many shown-eligible roots this bucket currently groups. */
+  count: number;
+}
+
+/**
  * A single positioned tech node in the computed layout. `(x, y)` is the
  * top-left corner in the shared canvas coordinate space (the same space the
  * `.tree-canvas` CSS transform operates in), so a `.tech-card` can be
@@ -34,7 +59,19 @@ export interface LayoutNode {
   y: number;
   w: number;
   h: number;
-  tech: Tech;
+  /**
+   * The tech this node renders. Present for every real tech node. Absent ONLY
+   * for the synthetic Explore-mode "bucket" root cards (which carry `bucket`
+   * instead) — those group the special non-starting roots so the initial
+   * Explore column stays short. The map layout always sets this.
+   */
+  tech?: Tech;
+  /**
+   * Explore-mode only: set on the synthetic bucket root cards ([Insight],
+   * [Dangerous], [Repeatable], [Archaeology], [Event]). Mutually exclusive with
+   * `tech`. Expanding a bucket reveals its grouped roots one column to the right.
+   */
+  bucket?: BucketNodeMeta;
   /**
    * Explore-mode only: this node has ≥1 shown-eligible child, so a chevron
    * toggle is rendered on its card. Unused by the banded map layout (which

@@ -33,6 +33,9 @@ const FlagsSchema = z.object({
   isDangerous: z.boolean(),
   isRepeatable: z.boolean(),
   isStarting: z.boolean(),
+  /** Pre-FTL "insight" tech (First Contact / observation research); groups the
+   *  [Insight] explore bucket. Source: `is_insight = yes` in the game files. */
+  isInsight: z.boolean(),
 });
 
 export const TechSchema = z.object({

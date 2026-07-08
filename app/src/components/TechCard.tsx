@@ -41,6 +41,9 @@ interface TechCardProps {
   /** Click → select this card (toggle in the parent). Stable ref; the parent
    *  suppresses the call if the click was actually a drag (drag-safe). */
   onSelect?: (key: string) => void;
+  /** Double-click → "activate": jump to the Explore focus view for this tech
+   *  (from the map) or re-focus (within Explore). Stable ref; drag-safe. */
+  onActivate?: (key: string) => void;
   /**
    * Explore-mode only: when set, this tech has ≥1 revealable child, so a chevron
    * toggle is rendered on the card's right edge. Map mode passes nothing → no
@@ -66,6 +69,7 @@ export const TechCard = memo(function TechCard({
   onLeave,
   selected,
   onSelect,
+  onActivate,
   expandable,
   expanded,
   onToggleExpand,
@@ -87,6 +91,7 @@ export const TechCard = memo(function TechCard({
       onMouseEnter={(e) => onEnter?.(tech, e.currentTarget.getBoundingClientRect())}
       onMouseLeave={onLeave}
       onClick={() => onSelect?.(tech.key)}
+      onDoubleClick={() => onActivate?.(tech.key)}
     >
       <div className="tech-card__icon">
         {image ? <img src={image} alt="" loading="lazy" /> : null}

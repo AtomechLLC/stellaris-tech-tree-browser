@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -11,14 +10,14 @@ import {
 } from "react";
 import type { TechSnapshot, Tech } from "../types/tech-snapshot";
 import { layoutTree, type TreeLayout, type LayoutNode } from "../lib/tree/layoutTree";
-import { layoutExplore } from "../lib/tree/exploreLayout";
+import { layoutExplore, layoutFocus } from "../lib/tree/exploreLayout";
 import { CATEGORY_ORDER, CATEGORY_AREA } from "../lib/graph/categories";
 import { TechCard, CARD_W, CARD_H } from "./TechCard";
+import { BucketCard } from "./BucketCard";
 import { EdgeLayer } from "./EdgeLayer";
 import { BandLayer } from "./BandLayer";
 import { CategoryNav } from "./CategoryNav";
 import { TechTooltip } from "./TechTooltip";
-import { AncestryPanel } from "./AncestryPanel";
 import { FindOverlay, type FindEntry } from "./FindOverlay";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { ErrorOverlay } from "./ErrorOverlay";
@@ -73,7 +72,9 @@ function clampZoom(z: number): number {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
 }
 
-const categoryOf = (n: LayoutNode): string => n.tech.category[0] ?? "";
+// Synthetic bucket nodes carry no `tech`; they only exist in Explore mode and
+// never reach the map-only callers of this helper, so "" is a safe fallback.
+const categoryOf = (n: LayoutNode): string => n.tech?.category[0] ?? "";
 const catsInArea = (area: Area): string[] =>
   CATEGORY_ORDER.filter((c) => CATEGORY_AREA[c] === area);
 
@@ -85,9 +86,6 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // card, thickens its prereq/child edges, and (when it has filter-hidden
   // ancestors) opens the ancestry drill-down panel.
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  // The selected card's on-screen rect — the ancestry panel anchors to its
-  // left, like the tooltip anchors to a hovered card. Captured after render.
-  const [selectedRect, setSelectedRect] = useState<DOMRect | null>(null);
   // Re-pack busy state (button label + guard). Bumped each time a re-pack
   // starts; the resolving handler ignores its result if this changed meanwhile
   // (stale-result guard) so a rapid re-toggle+re-pack can't swap in old layout.
@@ -207,6 +205,18 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     [snapshot, expandedKeys, active],
   );
 
+  // Explore FOCUS view (quick 260708-7fx): when a real tech is selected in
+  // Explore, the canvas switches from the browse spanning tree to the focus
+  // tech's full dependency neighborhood — its ENTIRE recursive prerequisite tree
+  // fanned out to the left, and the techs that DIRECTLY depend on it to the
+  // right, all as real cards with connecting edges. `null` when browsing (no
+  // selection) or when the selection isn't a real tech (e.g. a bucket card).
+  const exploreFocus = useMemo<TreeLayout | null>(() => {
+    if (viewMode !== "explore" || !selectedKey) return null;
+    if (!snapshot.techs[selectedKey]) return null; // bucket keys etc.
+    return layoutFocus(snapshot, selectedKey, CARD_W, CARD_H);
+  }, [viewMode, selectedKey, snapshot]);
+
   // Frame a set of nodes to fill the viewport (used when isolating a category).
   const fitToNodes = useCallback(
     (nodes: LayoutNode[]) => {
@@ -234,6 +244,15 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     },
     [applyTransform],
   );
+
+  // Entering / changing the Explore focus view auto-frames its neighborhood so
+  // the focus tech + its prereqs + dependents all fit ("zoom in on this"). Runs
+  // after the focus layout commits; a rAF lets the DOM cards mount first.
+  useEffect(() => {
+    if (!exploreFocus || exploreFocus.nodes.length === 0) return;
+    const id = requestAnimationFrame(() => fitToNodes(exploreFocus.nodes));
+    return () => cancelAnimationFrame(id);
+  }, [exploreFocus, fitToNodes]);
 
   // ── Filter actions (from CategoryNav) ─────────────────────────────────────
   const onToggleCategory = useCallback((cat: string) => {
@@ -272,7 +291,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     (area: Area) => {
       setActive(new Set(catsInArea(area)));
       if (state.status === "ready") {
-        fitToNodes(state.layout.nodes.filter((n) => n.tech.area === area));
+        fitToNodes(state.layout.nodes.filter((n) => n.tech?.area === area));
       }
     },
     [state, fitToNodes],
@@ -296,25 +315,22 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // ── Selection ─────────────────────────────────────────────────────────────
   // Click toggles selection; a drag that ends on a card is suppressed via the
   // movedRef guard. Stable ref so the memoized cards don't re-render on hover/pan.
-  const onSelect = useCallback(
-    (key: string) => {
-      if (movedRef.current) return; // this "click" was actually a drag — ignore
-      setSelectedKey((k) => (k === key ? null : key));
-      // In Explore mode, selecting a card also reveals the techs that depend on
-      // it — its children appear in the next column to the right, with edges
-      // drawn by the explore layout (and highlighted gold since it's selected).
-      // Expand-only (never collapse on select); the chevron still toggles.
-      if (viewMode === "explore") {
-        setExpandedKeys((prev) => {
-          if (prev.has(key)) return prev;
-          const next = new Set(prev);
-          next.add(key);
-          return next;
-        });
-      }
-    },
-    [viewMode],
-  );
+  // In Explore this drives the FOCUS view: selecting a real tech swaps the canvas
+  // to that tech's dependency neighborhood (prereqs left, dependents right);
+  // clicking it again (or Escape / empty space) clears back to the browse tree.
+  const onSelect = useCallback((key: string) => {
+    if (movedRef.current) return; // this "click" was actually a drag — ignore
+    setSelectedKey((k) => (k === key ? null : key));
+  }, []);
+
+  // Double-click "activate": jump to the Explore focus view for this tech. From
+  // the map this switches into Explore (with the tech focused); within Explore
+  // it just re-focuses. The focus layout + auto-fit run off `selectedKey`.
+  const onActivate = useCallback((key: string) => {
+    if (movedRef.current) return;
+    setViewMode("explore");
+    setSelectedKey(key);
+  }, []);
 
   // Escape clears the selection (window listener, mounted once).
   useEffect(() => {
@@ -356,48 +372,49 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     (key: string) => {
       const tech = techByKey.get(key);
       if (tech) {
-        const cat = tech.category[0] ?? "";
-        // Un-hide the tech's category if it's currently filtered out.
+        // Reveal the tech AND its recursive prerequisites: collect every
+        // category on the picked tech's upstream prereq chain and un-hide them
+        // all, so a filter-hidden tech shows up together with the path to it.
+        const cats = new Set<string>();
+        const seen = new Set<string>();
+        const stack = [key];
+        while (stack.length > 0) {
+          const k = stack.pop()!;
+          if (seen.has(k)) continue;
+          seen.add(k);
+          const t = techByKey.get(k);
+          if (!t) continue;
+          const c = t.category[0] ?? "";
+          if (c) cats.add(c);
+          for (const p of t.prerequisites) stack.push(p);
+        }
         setActive((prev) => {
-          if (!cat || prev.has(cat)) return prev;
+          let changed = false;
           const next = new Set(prev);
-          next.add(cat);
-          return next;
+          for (const c of cats) if (!next.has(c)) (next.add(c), (changed = true));
+          return changed ? next : prev;
         });
       }
       setSelectedKey(key);
-      if (state.status === "ready") {
+      // In Explore, selecting the tech opens its focus view (full prereq tree +
+      // dependents) and the focus auto-fit effect frames it — nothing more to do
+      // here. In Map, frame the picked node directly from the banded layout.
+      if (viewMode !== "explore" && state.status === "ready") {
         const node = state.layout.nodes.find((n) => n.key === key);
         if (node) fitToNodes([node]);
       }
       setFindOpen(false);
     },
-    [techByKey, state, fitToNodes],
+    [techByKey, state, fitToNodes, viewMode],
   );
 
   // Clicking empty viewport background (not a card) clears the selection. A
   // real drag is also suppressed here via movedRef so panning doesn't deselect.
   const onViewportClick = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
     if (movedRef.current) return;
-    if ((e.target as HTMLElement).closest(".tech-card")) return;
+    if ((e.target as HTMLElement).closest(".tech-card, .bucket-card")) return;
     setSelectedKey(null);
   }, []);
-
-  // Capture the selected card's on-screen rect so the ancestry panel can anchor
-  // to its left. Runs after the DOM commit (post-render), reading the actual
-  // `.tech-card[data-key]` box. Cleared when nothing is selected. (Pan/zoom are
-  // imperative and don't re-run this, so the panel anchors at selection time —
-  // acceptable, mirroring the hover tooltip's fixed anchor.)
-  useLayoutEffect(() => {
-    if (!selectedKey) {
-      setSelectedRect(null);
-      return;
-    }
-    const el = viewportRef.current?.querySelector<HTMLElement>(
-      `.tech-card[data-key="${CSS.escape(selectedKey)}"]`,
-    );
-    setSelectedRect(el ? el.getBoundingClientRect() : null);
-  }, [selectedKey]);
 
   // ── Pan (imperative — no re-render) ───────────────────────────────────────
   const onPointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
@@ -531,6 +548,16 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     [childrenByKey],
   );
 
+  // A bucket card's WHOLE box is the toggle, so a pan that ends over one would
+  // otherwise fire a click — guard on movedRef exactly like the card onSelect.
+  const onBucketToggle = useCallback(
+    (key: string) => {
+      if (movedRef.current) return;
+      onToggleExpand(key);
+    },
+    [onToggleExpand],
+  );
+
   // Switch views. Entering Explore fits/resets to the collapsed root column;
   // returning to Map restores its default frame. (Selection/filter persist.)
   const onSelectView = useCallback(
@@ -582,9 +609,12 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     state.status !== "ready"
       ? null
       : viewMode === "explore"
-        ? exploreLayout
+        ? exploreFocus ?? exploreLayout
         : filtered ?? state.layout;
   const explore = viewMode === "explore";
+  // In Explore, a focused tech shows its dependency neighborhood (focus view);
+  // otherwise the browse spanning tree. `focused` gates chevrons/expansion off.
+  const focused = explore && exploreFocus !== null;
   const content = useMemo(() => {
     if (!layoutReady) return null;
     return {
@@ -601,24 +631,43 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           selectedKey={selectedKey}
         />
       ),
-      cards: layoutReady.nodes.map((node) => (
-        <TechCard
-          key={node.key}
-          tech={node.tech}
-          image={node.tech.icon ? `${iconBase}/${node.tech.icon}` : undefined}
-          x={node.x}
-          y={node.y}
-          onEnter={onCardEnter}
-          onLeave={onCardLeave}
-          selected={node.key === selectedKey}
-          onSelect={onSelect}
-          // Explore-mode-only expand affordance. Map mode passes nothing →
-          // node.expandable is undefined → the chevron never renders.
-          expandable={explore ? node.expandable : undefined}
-          expanded={explore ? node.expanded : undefined}
-          onToggleExpand={explore ? onToggleExpand : undefined}
-        />
-      )),
+      cards: layoutReady.nodes.map((node) =>
+        // Synthetic Explore bucket root → a BucketCard (no tech/tooltip/select;
+        // click just toggles its expansion). Real tech → the normal TechCard.
+        node.bucket ? (
+          <BucketCard
+            key={node.key}
+            nodeKey={node.key}
+            bucketId={node.bucket.id}
+            label={node.bucket.label}
+            descriptor={node.bucket.descriptor}
+            count={node.bucket.count}
+            x={node.x}
+            y={node.y}
+            expandable={!!node.expandable}
+            expanded={!!node.expanded}
+            onToggle={onBucketToggle}
+          />
+        ) : (
+          <TechCard
+            key={node.key}
+            tech={node.tech!}
+            image={node.tech!.icon ? `${iconBase}/${node.tech!.icon}` : undefined}
+            x={node.x}
+            y={node.y}
+            onEnter={onCardEnter}
+            onLeave={onCardLeave}
+            selected={node.key === selectedKey}
+            onSelect={onSelect}
+            onActivate={onActivate}
+            // Chevron/expansion belong to the Explore BROWSE tree only. The focus
+            // view is a static neighborhood (no chevrons); the map has none either.
+            expandable={explore && !focused ? node.expandable : undefined}
+            expanded={explore && !focused ? node.expanded : undefined}
+            onToggleExpand={explore && !focused ? onToggleExpand : undefined}
+          />
+        ),
+      ),
     };
     // `selectedKey` in deps means only the 2 changed cards re-render on a
     // selection change (React.memo bails the rest); hover/pan never touch
@@ -626,12 +675,15 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   }, [
     layoutReady,
     explore,
+    focused,
     iconBase,
     onCardEnter,
     onCardLeave,
     selectedKey,
     onSelect,
+    onActivate,
     onToggleExpand,
+    onBucketToggle,
   ]);
 
   if (state.status === "loading") return <LoadingOverlay />;
@@ -639,7 +691,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     return <ErrorOverlay onRetry={() => setState({ status: "loading" })} />;
   }
 
-  const layout = explore ? exploreLayout : filtered ?? state.layout;
+  const layout = explore ? exploreFocus ?? exploreLayout : filtered ?? state.layout;
 
   return (
     <div className="tech-tree">
@@ -726,22 +778,6 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           </button>
         </div>
       </div>
-
-      {/* Ancestry drill-down is MAP-ONLY: it reveals filter-hidden PREREQUISITE
-          chains, which is a swimlane-map concern. Explore is a forward tree, so
-          the panel is suppressed there (selection/highlight still work). */}
-      {!explore && selectedKey && selectedRect && (
-        <AncestryPanel
-          selectedKey={selectedKey}
-          active={active}
-          techByKey={techByKey}
-          iconBase={iconBase}
-          anchor={selectedRect}
-          onEnter={onCardEnter}
-          onLeave={onCardLeave}
-          onSelect={onSelect}
-        />
-      )}
 
       {hover && (
         <TechTooltip

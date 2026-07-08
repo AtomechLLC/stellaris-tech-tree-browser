@@ -569,6 +569,106 @@
   border-color: color-mix(in srgb, var(--color-select) 60%, var(--tree-border));
 }
 
+/* ── Explore-mode synthetic bucket root cards (quick 260708-6bk) ─────────────
+   The five grouping roots ([Insight], [Dangerous], [Repeatable], [Archaeology],
+   [Event]) that collapse the ~150 non-starting no-prereq techs. Deliberately
+   UNLIKE a tech card: no icon, a DASHED border (reads as "a group, not a tech")
+   with a solid colored left spine per bucket. Token-driven accents (no bare hex,
+   D-11): each reuses an existing palette token so they stay colorblind-safe. */
+.bucket-card {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  content-visibility: auto;
+  contain-intrinsic-size: 230px 92px;
+  background: var(--tree-panel);
+  border: 2px dashed var(--tree-border);
+  border-left: 5px solid var(--tree-border);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  padding: 8px 12px;
+  cursor: pointer;
+  z-index: 2; /* above the edge layer, same as tech cards */
+  font-family: var(--font-sans);
+  color: var(--tree-text);
+  overflow: hidden;
+}
+.bucket-card:hover {
+  border-top-color: color-mix(in srgb, var(--color-select) 50%, var(--tree-border));
+  border-right-color: color-mix(in srgb, var(--color-select) 50%, var(--tree-border));
+  border-bottom-color: color-mix(in srgb, var(--color-select) 50%, var(--tree-border));
+}
+.bucket-card:focus-visible {
+  outline: 2px solid var(--color-select);
+  outline-offset: 1px;
+}
+.bucket-card[data-expanded] {
+  border-style: solid;
+}
+
+.bucket-card__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.bucket-card__title {
+  font-size: 15px;
+  font-weight: var(--font-weight-heading);
+  line-height: 1.2;
+  color: #eef2f7;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bucket-card__meta {
+  font-size: 12px;
+  line-height: 1.2;
+  color: color-mix(in srgb, var(--tree-text) 72%, transparent);
+}
+.bucket-card__count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-select);
+}
+.bucket-card__chevron {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--tree-text);
+}
+.bucket-card[data-expanded] .bucket-card__chevron {
+  color: var(--color-select);
+}
+
+/* Per-bucket left-spine accent — each reuses an existing colorblind-safe token
+   (Okabe-Ito area palette + danger + the gold selection token). */
+.bucket-card[data-bucket="starting"] {
+  border-left-color: var(--color-accent);
+}
+.bucket-card[data-bucket="insight"] {
+  border-left-color: var(--area-physics);
+}
+.bucket-card[data-bucket="dangerous"] {
+  border-left-color: var(--color-danger);
+}
+.bucket-card[data-bucket="repeatable"] {
+  border-left-color: var(--area-society);
+}
+.bucket-card[data-bucket="archaeology"] {
+  border-left-color: var(--area-engineering);
+}
+.bucket-card[data-bucket="event"] {
+  border-left-color: var(--color-select);
+}
+
 /* Area colors drive both the border and the header bar — sourced from the
    same --area-* tokens as the Sigma tiles (never hardcoded hex). */
 .tech-card[data-area="physics"] {

@@ -22,7 +22,7 @@ function tech(key: string, name: string): Tech {
     prerequisites: [],
     unlocks: { grants: [], leadsTo: [] },
     dlc: null,
-    flags: { isRare: false, isDangerous: false, isRepeatable: false, isStarting: false },
+    flags: { isRare: false, isDangerous: false, isRepeatable: false, isStarting: false, isInsight: false },
     name,
     description: null,
     icon: null,
@@ -107,6 +107,61 @@ describe("describeWeightModifiers", () => {
     const raw = { modifier: { factor: "@federation_perk_factor", has_federation: true } };
     const lines = describeWeightModifiers(raw, mapOf());
     expect(lines).toEqual(["×@federation_perk_factor if with federation"]);
+  });
+
+  it("humanizes game-entity conditions instead of dumping raw id tokens", () => {
+    // The real Genetic Healthcare modifiers (was showing raw tr_/r_/flag tokens).
+    const raw = {
+      factor: 2,
+      modifier: [
+        { factor: 1.25, has_tradition: "tr_harmony_adopt" },
+        { factor: 2, has_relic: "r_pox_sample" },
+        { factor: 2, has_country_flag: "payback_researching_gene_clinics" },
+      ],
+    };
+    const lines = describeWeightModifiers(raw, mapOf());
+    expect(lines).toEqual([
+      "Base ×2",
+      "×1.25 if Harmony tradition (adopted)",
+      "×2 if Pox Sample relic",
+      "×2 if Payback Researching Gene Clinics flag",
+    ]);
+  });
+
+  it("resolves ethics, ascension perks, origins, civics and traits to readable names", () => {
+    expect(
+      describeWeightModifiers(
+        { modifier: { factor: 2, has_ethic: "ethic_fanatic_militarist" } },
+        mapOf(),
+      ),
+    ).toEqual(["×2 if Fanatic Militarist ethic"]);
+    expect(
+      describeWeightModifiers(
+        { modifier: { factor: 2, has_ascension_perk: "ap_mastery_of_nature" } },
+        mapOf(),
+      ),
+    ).toEqual(["×2 if Mastery of Nature ascension perk"]);
+    expect(
+      describeWeightModifiers(
+        { modifier: { factor: 2, has_origin: "origin_necrophage" } },
+        mapOf(),
+      ),
+    ).toEqual(["×2 if Necrophage origin"]);
+    expect(
+      describeWeightModifiers(
+        { modifier: { factor: 2, has_trait: "trait_aquatic" } },
+        mapOf(),
+      ),
+    ).toEqual(["×2 if Aquatic trait"]);
+  });
+
+  it("marks a completed (finish) tradition distinctly from an adopted one", () => {
+    expect(
+      describeWeightModifiers(
+        { modifier: { factor: 2, has_tradition: "tr_expansion_finish" } },
+        mapOf(),
+      ),
+    ).toEqual(["×2 if Expansion tradition (completed)"]);
   });
 
   it("skips deep logic blocks (OR/NOR/NOT) without throwing", () => {

@@ -1,6 +1,11 @@
 import type { TechSnapshot, Tech } from "../../types/tech-snapshot";
 import { CATEGORY_INDEX } from "../graph/categories";
-import type { TreeLayout, LayoutNode, LayoutEdge } from "./layoutTree";
+import type {
+  TreeLayout,
+  LayoutNode,
+  LayoutEdge,
+  BucketId,
+} from "./layoutTree";
 
 /**
  * Explore-mode layout (UC2): a collapsible FORWARD tech tree.
@@ -8,8 +13,16 @@ import type { TreeLayout, LayoutNode, LayoutEdge } from "./layoutTree";
  * Unlike `layoutTree` (the banded swimlane map, which runs ELK asynchronously),
  * this is a PURE, SYNCHRONOUS layout with NO ELK — cheap enough to recompute on
  * every expand/collapse via `useMemo`. It opens collapsed at the entry-point
- * techs (roots = techs with no prerequisites) and reveals what each one unlocks
- * as you expand it.
+ * roots and reveals what each one unlocks as you expand it.
+ *
+ * ROOT MODEL (quick 260708-6bk): the raw no-prerequisite set is ~178 techs —
+ * far too long to open on. Only the ~28 genuine *starting* techs (isStarting)
+ * are realistic empire-start entry points, so those stay real roots. Every
+ * OTHER no-prerequisite tech is grouped under one of five synthetic "bucket"
+ * root cards — [Insight] (pre-FTL), [Dangerous], [Repeatable], [Archaeology],
+ * [Event] — so the initial column is 28 + 5 = 33 rows. Expanding a bucket
+ * reveals its grouped roots one column to the right (later reveal), each of
+ * which then expands normally into its own unlocks.
  *
  * The tech graph is a DAG (a tech can have multiple prerequisites), but Explore
  * renders it as a spanning TREE: a global `visited` set dedups, so each tech
@@ -23,11 +36,78 @@ import type { TreeLayout, LayoutNode, LayoutEdge } from "./layoutTree";
  * show a chevron toggle.
  */
 
+/** Stable key prefix for the synthetic bucket root nodes (never a real tech). */
+export const BUCKET_KEY_PREFIX = "bucket:";
+export const bucketKey = (id: BucketId): string => `${BUCKET_KEY_PREFIX}${id}`;
+
+interface BucketDef {
+  id: BucketId;
+  label: string;
+  descriptor: string;
+  /** Predicate matched against a root (no-prerequisite) tech. */
+  match: (tech: Tech) => boolean;
+}
+
+/**
+ * The six explore buckets, in DISPLAY order (Empire Starting Techs, Repeatable,
+ * Dangerous, Insight, Archaeology, Event). ASSIGNMENT is by first-match in the
+ * order listed here, so a tech matching several (e.g. a starting tech that's
+ * also rare) lands in the first — [Empire Starting Techs] wins for any start
+ * tech, then the more specific signals, and [Event] stays the catch-all.
+ * Verified against v4.5.0: the 178 no-prerequisite roots partition cleanly into
+ * Starting 28 / Repeatable 3 / Dangerous 23 / Insight 13 / Archaeology 11 /
+ * Event 100.
+ */
+export const EXPLORE_BUCKETS: BucketDef[] = [
+  {
+    id: "starting",
+    label: "Empire Starting Techs",
+    descriptor: "Techs your empire begins with",
+    match: (t) => t.flags.isStarting,
+  },
+  {
+    id: "repeatable",
+    label: "Repeatable",
+    descriptor: "Repeatable techs",
+    match: (t) => t.flags.isRepeatable,
+  },
+  {
+    id: "dangerous",
+    label: "Dangerous",
+    descriptor: "Dangerous techs",
+    match: (t) => t.flags.isDangerous,
+  },
+  {
+    id: "insight",
+    label: "Insight",
+    descriptor: "Pre-FTL insight techs",
+    match: (t) => t.flags.isInsight,
+  },
+  {
+    id: "archaeology",
+    label: "Archaeology",
+    descriptor: "Archaeostudies techs",
+    match: (t) => (t.category[0] ?? "") === "archaeostudies",
+  },
+  {
+    id: "event",
+    label: "Event",
+    descriptor: "Event & special techs",
+    match: () => true, // catch-all — must be last
+  },
+];
+
+/** First-match bucket id for a root (no-prerequisite) tech (never null). */
+function bucketOf(tech: Tech): BucketId {
+  for (const def of EXPLORE_BUCKETS) if (def.match(tech)) return def.id;
+  return "event"; // unreachable — the last def matches everything
+}
+
 // Geometry: one column per depth, one row per visited node. Derived from the
 // card size so columns/rows always clear the real DOM cards (mirrors the map's
 // COL_EXTRA/ROW_EXTRA intent, tuned tighter for a single-tree reading flow).
-const COL_EXTRA = 90; // horizontal gutter between depth columns
-const ROW_EXTRA = 16; // vertical gutter between stacked rows
+export const COL_EXTRA = 90; // horizontal gutter between depth columns
+export const ROW_EXTRA = 16; // vertical gutter between stacked rows
 
 /** The category key a tech belongs to (its first category, or ""). */
 function categoryOf(tech: Tech): string {
@@ -53,8 +133,8 @@ function isShown(tech: Tech, active: Set<string> | undefined): boolean {
 interface ExploreGraph {
   /** tech key → the techs whose `prerequisites` include it (its unlocks). */
   childrenByKey: Map<string, Tech[]>;
-  /** entry-point techs (no prerequisites), sorted (tier, categoryIndex, name). */
-  roots: Tech[];
+  /** Every root (no-prereq) tech grouped by bucket id, sorted (tier, cat, name). */
+  bucketRoots: Map<BucketId, Tech[]>;
 }
 
 const graphCache = new WeakMap<TechSnapshot, ExploreGraph>();
@@ -74,11 +154,15 @@ function buildExploreGraph(snapshot: TechSnapshot): ExploreGraph {
 
   const techs = Object.values(snapshot.techs);
   const childrenByKey = new Map<string, Tech[]>();
-  const roots: Tech[] = [];
+  const bucketRoots = new Map<BucketId, Tech[]>();
+  for (const def of EXPLORE_BUCKETS) bucketRoots.set(def.id, []);
 
   for (const tech of techs) {
     if (tech.prerequisites.length === 0) {
-      roots.push(tech);
+      // Every root is bucketed (incl. starting techs → [Empire Starting Techs])
+      // so the initial Explore column is just the handful of bucket cards, not
+      // ~178 rows of individual roots.
+      bucketRoots.get(bucketOf(tech))!.push(tech);
       continue;
     }
     for (const prereqKey of tech.prerequisites) {
@@ -92,12 +176,12 @@ function buildExploreGraph(snapshot: TechSnapshot): ExploreGraph {
     }
   }
 
-  roots.sort(compareTechs);
+  for (const arr of bucketRoots.values()) arr.sort(compareTechs);
   // Sort each child bucket too so a node's revealed unlocks appear in the same
   // stable (tier, category, name) order every time.
   for (const bucket of childrenByKey.values()) bucket.sort(compareTechs);
 
-  const graph: ExploreGraph = { childrenByKey, roots };
+  const graph: ExploreGraph = { childrenByKey, bucketRoots };
   graphCache.set(snapshot, graph);
   return graph;
 }
@@ -121,7 +205,7 @@ export function layoutExplore(
   const COL_W = cardW + COL_EXTRA;
   const ROW_H = cardH + ROW_EXTRA;
 
-  const { childrenByKey, roots } = buildExploreGraph(snapshot);
+  const { childrenByKey, bucketRoots } = buildExploreGraph(snapshot);
 
   const nodes: LayoutNode[] = [];
   const edges: LayoutEdge[] = [];
@@ -168,9 +252,42 @@ export function layoutExplore(
     }
   };
 
-  for (const root of roots) {
-    if (!isShown(root, active)) continue;
-    walk(root, 0);
+  // The six synthetic bucket root cards (in EXPLORE_BUCKETS display order), each
+  // grouping its shown-eligible roots — including [Empire Starting Techs]. A
+  // bucket carries no `tech`; the renderer branches on `bucket` to draw a
+  // BucketCard. When expanded, its grouped roots are revealed one column to the
+  // right (depth 1) and walk normally into their own unlocks.
+  for (const def of EXPLORE_BUCKETS) {
+    const assigned = (bucketRoots.get(def.id) ?? []).filter((t) =>
+      isShown(t, active),
+    );
+    const key = bucketKey(def.id);
+    const expandable = assigned.length > 0;
+    const expanded = expandedKeys.has(key);
+
+    nodes.push({
+      key,
+      x: 0,
+      y: rowIndex * ROW_H,
+      w: cardW,
+      h: cardH,
+      bucket: {
+        id: def.id,
+        label: def.label,
+        descriptor: def.descriptor,
+        count: assigned.length,
+      },
+      expandable,
+      expanded: expandable ? expanded : undefined,
+    });
+    rowIndex += 1;
+
+    if (!expandable || !expanded) continue;
+    for (const root of assigned) {
+      if (visited.has(root.key)) continue;
+      edges.push({ from: key, to: root.key, sections: [] });
+      walk(root, 1);
+    }
   }
 
   // Extent: enough to size `.tree-canvas` around every emitted row/column.
@@ -188,4 +305,116 @@ export function layoutExplore(
     width: maxRight,
     height: maxBottom,
   };
+}
+
+/**
+ * Focus layout (quick 260708-7fx): the full dependency neighborhood of ONE tech,
+ * for "jump to this tech and see everything around it" — find-in-explore and
+ * double-click-from-map. Lays out, as REAL cards with connecting edges:
+ *   • the focus tech, centered;
+ *   • its ENTIRE recursive prerequisite tree fanned out to the LEFT, layered by
+ *     longest-path distance so every prerequisite sits in a column left of
+ *     everything that needs it;
+ *   • the techs that DIRECTLY depend on it (its immediate unlocks) one column to
+ *     the RIGHT.
+ * Pure + synchronous (no ELK); same TreeLayout shape as the other layouts, so
+ * the renderer reuses the exact same cards + EdgeLayer + viewport transform.
+ */
+export function layoutFocus(
+  snapshot: TechSnapshot,
+  focusKey: string,
+  cardW: number,
+  cardH: number,
+): TreeLayout {
+  const empty: TreeLayout = {
+    nodes: [],
+    edges: [],
+    bands: [],
+    width: 0,
+    height: 0,
+  };
+  const focus = snapshot.techs[focusKey];
+  if (!focus) return empty;
+
+  const COL_W = cardW + COL_EXTRA;
+  const ROW_H = cardH + ROW_EXTRA;
+  const { childrenByKey } = buildExploreGraph(snapshot);
+
+  // Longest-path distance (in prerequisite hops) from the focus to each
+  // recursive ancestor. Longest-path layering guarantees a prereq is always in a
+  // column left of every tech that needs it. Cycle-guarded via a path set (the
+  // tech graph is a DAG, but never loop forever if the data isn't).
+  const dist = new Map<string, number>([[focusKey, 0]]);
+  const relax = (key: string, guard: Set<string>): void => {
+    const tech = snapshot.techs[key];
+    if (!tech || guard.has(key)) return;
+    guard.add(key);
+    const d = dist.get(key)!;
+    for (const p of tech.prerequisites) {
+      if (!snapshot.techs[p]) continue;
+      if (d + 1 > (dist.get(p) ?? -1)) dist.set(p, d + 1);
+      relax(p, guard);
+    }
+    guard.delete(key);
+  };
+  relax(focusKey, new Set());
+
+  const focusCol = Math.max(...dist.values()); // deepest ancestor → column 0
+  const dependents = (childrenByKey.get(focusKey) ?? []).map((t) => t.key);
+
+  // Column per node: ancestors + focus from `dist`; dependents one column right.
+  const colOf = new Map<string, number>();
+  for (const [key, d] of dist) colOf.set(key, focusCol - d);
+  for (const d of dependents) colOf.set(d, focusCol + 1);
+
+  // Group keys by column, stable-sort each, then stack it centered on y = 0.
+  const byCol = new Map<number, string[]>();
+  for (const [key, col] of colOf) {
+    const bucket = byCol.get(col);
+    if (bucket) bucket.push(key);
+    else byCol.set(col, [key]);
+  }
+
+  const nodes: LayoutNode[] = [];
+  let minY = Infinity;
+  for (const [col, keys] of byCol) {
+    keys.sort((a, b) => {
+      const ta = snapshot.techs[a];
+      const tb = snapshot.techs[b];
+      return ta && tb ? compareTechs(ta, tb) : a.localeCompare(b);
+    });
+    const n = keys.length;
+    keys.forEach((key, i) => {
+      const tech = snapshot.techs[key];
+      if (!tech) return;
+      const y = (i - (n - 1) / 2) * ROW_H;
+      minY = Math.min(minY, y);
+      nodes.push({ key, x: col * COL_W, y, w: cardW, h: cardH, tech });
+    });
+  }
+  // Normalise y so the topmost card sits at 0 (the canvas has no negative space).
+  const shift = Number.isFinite(minY) ? -minY : 0;
+  for (const node of nodes) node.y += shift;
+
+  // Edges: the whole prereq tree (prereq → tech for every shown ancestor + the
+  // focus) plus focus → each direct dependent. `sections: []` → EdgeLayer draws
+  // its own elbow, same as the other layouts.
+  const shown = new Set(colOf.keys());
+  const edges: LayoutEdge[] = [];
+  for (const key of dist.keys()) {
+    const tech = snapshot.techs[key];
+    if (!tech) continue;
+    for (const p of tech.prerequisites) {
+      if (shown.has(p)) edges.push({ from: p, to: key, sections: [] });
+    }
+  }
+  for (const d of dependents) edges.push({ from: focusKey, to: d, sections: [] });
+
+  let width = 0;
+  let height = 0;
+  for (const node of nodes) {
+    width = Math.max(width, node.x + node.w);
+    height = Math.max(height, node.y + node.h);
+  }
+  return { nodes, edges, bands: [], width, height };
 }

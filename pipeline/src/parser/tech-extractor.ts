@@ -262,6 +262,9 @@ export function extractTech(
   const isDangerous = raw.is_dangerous === true;
   const isRepeatable = raw.levels !== undefined;
   const isStarting = raw.start_tech === true;
+  // Pre-FTL "insight" techs (First Contact / observation-post research). Groups
+  // the [Insight] explore bucket; flagged in the game files as `is_insight = yes`.
+  const isInsight = raw.is_insight === true;
 
   const unlockContentRaw = extractUnlockContentRaw(raw);
 
@@ -281,7 +284,7 @@ export function extractTech(
     // Plan 02 Task 2 (dlc-classifier) fills this in downstream composition
     // (assemble.ts / Plan 05); left null at pure-extraction scope.
     dlc: null,
-    flags: { isRare, isDangerous, isRepeatable, isStarting },
+    flags: { isRare, isDangerous, isRepeatable, isStarting, isInsight },
     // Plan 03 resolves real localisation; extractor uses the key as a placeholder name.
     name: key,
     description: null,

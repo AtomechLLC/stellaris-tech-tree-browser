@@ -41,7 +41,7 @@ describe("layoutTree: category swimlane bands + tier-aligned columns", () => {
     // Every node carries a real tech + card size and a finite position.
     for (const node of layout.nodes) {
       expect(node.tech).toBeDefined();
-      expect(node.tech.key).toBe(node.key);
+      expect(node.tech!.key).toBe(node.key);
       expect(node.w).toBe(CARD_W);
       expect(node.h).toBe(CARD_H);
       expect(Number.isFinite(node.x)).toBe(true);
@@ -57,7 +57,7 @@ describe("layoutTree: category swimlane bands + tier-aligned columns", () => {
     const layout = await layoutTree(snapshot, CARD_W, CARD_H);
 
     for (const node of layout.nodes) {
-      expect(node.x).toBe(node.tech.tier * COL_W);
+      expect(node.x).toBe(node.tech!.tier * COL_W);
     }
     // Width spans all six tier columns.
     expect(layout.width).toBe(6 * COL_W);
@@ -69,7 +69,7 @@ describe("layoutTree: category swimlane bands + tier-aligned columns", () => {
     const layout = await layoutTree(snapshot, CARD_W, CARD_H);
 
     // One band per non-empty category.
-    const nonEmptyCats = new Set(layout.nodes.map((n) => categoryOf(n.tech)));
+    const nonEmptyCats = new Set(layout.nodes.map((n) => categoryOf(n.tech!)));
     expect(layout.bands.length).toBe(nonEmptyCats.size);
 
     // Bands stack in CATEGORY_ORDER, never overlap, and each band's y-range
@@ -92,7 +92,7 @@ describe("layoutTree: category swimlane bands + tier-aligned columns", () => {
     // Every node sits within its own category's band (contiguous grouping).
     const bandByCat = new Map(layout.bands.map((b) => [b.category, b] as const));
     for (const node of layout.nodes) {
-      const band = bandByCat.get(categoryOf(node.tech))!;
+      const band = bandByCat.get(categoryOf(node.tech!))!;
       expect(band).toBeDefined();
       expect(node.y).toBeGreaterThanOrEqual(band.top);
       expect(node.y + node.h).toBeLessThanOrEqual(band.top + band.height);
@@ -140,7 +140,7 @@ describe("layoutTree: category swimlane bands + tier-aligned columns", () => {
     const layout = await layoutTree(snapshot, CARD_W, CARD_H, active);
 
     // Only the two active categories' techs + bands appear.
-    const cats = new Set(layout.nodes.map((n) => categoryOf(n.tech)));
+    const cats = new Set(layout.nodes.map((n) => categoryOf(n.tech!)));
     expect([...cats].sort()).toEqual(["computing", "industry"]);
     expect(layout.bands.map((b) => b.category).sort()).toEqual([
       "computing",

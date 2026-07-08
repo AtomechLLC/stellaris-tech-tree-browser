@@ -3,7 +3,12 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { TechSnapshot, Tech } from "../types/tech-snapshot";
-import { layoutExplore } from "../lib/tree/exploreLayout";
+import {
+  layoutExplore,
+  layoutFocus,
+  EXPLORE_BUCKETS,
+  bucketKey,
+} from "../lib/tree/exploreLayout";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -20,28 +25,29 @@ function loadRealSnapshot(): TechSnapshot {
 }
 
 const categoryOf = (t: Tech): string => t.category[0] ?? "";
+const BUCKET_KEYS = new Set(EXPLORE_BUCKETS.map((b) => bucketKey(b.id)));
 
-describe("layoutExplore: collapsible forward tech tree", () => {
-  it("collapsed → only the entry-point roots (no prerequisites), no edges", () => {
+describe("layoutExplore: collapsible forward tech tree with bucket roots", () => {
+  it("collapsed → only the 6 synthetic bucket cards, no tech nodes, no edges", () => {
     const snapshot = loadRealSnapshot();
-    const roots = Object.values(snapshot.techs).filter(
-      (t) => t.prerequisites.length === 0,
-    );
 
     const layout = layoutExplore(snapshot, new Set(), undefined, CARD_W, CARD_H);
 
-    // Every collapsed node is a root; every root appears.
-    expect(layout.nodes.length).toBe(roots.length);
-    const nodeKeys = new Set(layout.nodes.map((n) => n.key));
-    for (const root of roots) expect(nodeKeys.has(root.key)).toBe(true);
-    for (const node of layout.nodes) {
-      expect(node.tech.prerequisites.length).toBe(0);
-    }
-    // Nothing expanded → no parent→child edges.
+    const bucketNodes = layout.nodes.filter((n) => n.bucket);
+    const techNodes = layout.nodes.filter((n) => n.tech);
+
+    // Exactly the buckets appear, one per bucket id, and each carries no tech.
+    expect(bucketNodes.length).toBe(EXPLORE_BUCKETS.length);
+    expect(new Set(bucketNodes.map((n) => n.key))).toEqual(BUCKET_KEYS);
+    for (const n of bucketNodes) expect(n.tech).toBeUndefined();
+
+    // No individual tech roots when collapsed — every root is bucketed.
+    expect(techNodes.length).toBe(0);
+    // Nothing expanded → no edges.
     expect(layout.edges.length).toBe(0);
   });
 
-  it("roots are one per row in column 0, sorted (tier, categoryIndex, name)", () => {
+  it("collapsed layout is the bucket cards, one-per-row in column 0, in display order", () => {
     const snapshot = loadRealSnapshot();
     const layout = layoutExplore(snapshot, new Set(), undefined, CARD_W, CARD_H);
 
@@ -52,73 +58,90 @@ describe("layoutExplore: collapsible forward tech tree", () => {
       expect(node.h).toBe(CARD_H);
     });
 
-    // Rows are in ascending (tier, categoryIndex, name) order.
-    for (let i = 1; i < layout.nodes.length; i++) {
-      const a = layout.nodes[i - 1].tech;
-      const b = layout.nodes[i].tech;
-      expect(a.tier).toBeLessThanOrEqual(b.tier);
-    }
+    // Every collapsed node is a bucket, in EXPLORE_BUCKETS display order
+    // ([Empire Starting Techs] first).
+    expect(layout.nodes.every((n) => n.bucket)).toBe(true);
+    expect(layout.nodes.map((n) => n.bucket!.id)).toEqual(
+      EXPLORE_BUCKETS.map((b) => b.id),
+    );
+    expect(layout.nodes[0].bucket!.id).toBe("starting");
   });
 
-  it("marks a root with unlocks as expandable, others as not", () => {
+  it("every no-prereq tech is grouped into exactly one bucket; starting techs → [Empire Starting Techs]", () => {
     const snapshot = loadRealSnapshot();
-    // A tech that some other tech lists as a prerequisite → has ≥1 child.
-    const childOf = new Set<string>();
-    for (const t of Object.values(snapshot.techs)) {
-      for (const p of t.prerequisites) childOf.add(p);
-    }
-    const layout = layoutExplore(snapshot, new Set(), undefined, CARD_W, CARD_H);
+    const roots = Object.values(snapshot.techs).filter(
+      (t) => t.prerequisites.length === 0,
+    );
+    const startingRoots = roots.filter((t) => t.flags.isStarting);
 
-    let sawExpandable = false;
-    for (const node of layout.nodes) {
-      const hasChildren = childOf.has(node.key);
-      expect(node.expandable).toBe(hasChildren);
-      if (hasChildren) sawExpandable = true;
-    }
-    expect(sawExpandable).toBe(true);
-  });
+    // Expand every bucket; the roots revealed at column 1 are its grouped roots.
+    const expanded = layoutExplore(
+      snapshot,
+      new Set(BUCKET_KEYS),
+      undefined,
+      CARD_W,
+      CARD_H,
+    );
 
-  it("expanding a root reveals its unlocks as rows to its right, with edges", () => {
-    const snapshot = loadRealSnapshot();
-    // Pick a root that unlocks at least one other tech.
-    const childrenByKey = new Map<string, string[]>();
-    for (const t of Object.values(snapshot.techs)) {
-      for (const p of t.prerequisites) {
-        (childrenByKey.get(p) ?? childrenByKey.set(p, []).get(p)!).push(t.key);
+    // Each bucket's grouped roots are the direct targets of its bucket edge.
+    const grouped = new Set<string>();
+    const startingGrouped = new Set<string>();
+    const startingKey = bucketKey("starting");
+    for (const def of EXPLORE_BUCKETS) {
+      const key = bucketKey(def.id);
+      for (const e of expanded.edges) {
+        if (e.from !== key) continue;
+        grouped.add(e.to);
+        if (key === startingKey) startingGrouped.add(e.to);
       }
     }
-    const root = Object.values(snapshot.techs).find(
-      (t) => t.prerequisites.length === 0 && (childrenByKey.get(t.key)?.length ?? 0) > 0,
-    )!;
-    expect(root).toBeDefined();
 
-    const collapsed = layoutExplore(snapshot, new Set(), undefined, CARD_W, CARD_H);
-    const expanded = layoutExplore(snapshot, new Set([root.key]), undefined, CARD_W, CARD_H);
-
-    // Expanding adds rows (the root's revealed children).
-    expect(expanded.nodes.length).toBeGreaterThan(collapsed.nodes.length);
-    // The root now reads as expanded.
-    const rootNode = expanded.nodes.find((n) => n.key === root.key)!;
-    expect(rootNode.expanded).toBe(true);
-
-    // Its direct children now appear, one column to the right (depth 1 → COL_W).
-    const directChildren = childrenByKey.get(root.key)!;
-    for (const childKey of directChildren) {
-      const childNode = expanded.nodes.find((n) => n.key === childKey);
-      // A child could be pre-visited under another root; if present it must sit
-      // at least one column to the right of column 0.
-      if (childNode) expect(childNode.x).toBeGreaterThanOrEqual(COL_W);
-    }
-    // There is at least one parent→child edge from the expanded root.
-    const rootEdges = expanded.edges.filter((e) => e.from === root.key);
-    expect(rootEdges.length).toBeGreaterThan(0);
-    for (const e of rootEdges) expect(e.sections).toEqual([]);
+    // The partition is total (every root grouped) and disjoint (sizes match).
+    expect(grouped.size).toBe(roots.length);
+    for (const t of roots) expect(grouped.has(t.key)).toBe(true);
+    // Every starting tech lands in [Empire Starting Techs], and only those.
+    expect(startingGrouped.size).toBe(startingRoots.length);
+    for (const t of startingRoots) expect(startingGrouped.has(t.key)).toBe(true);
   });
 
-  it("dedups multi-parent techs — each tech appears at most once", () => {
+  it("a non-empty bucket is expandable; expanding reveals its roots to the right with edges", () => {
     const snapshot = loadRealSnapshot();
-    // Expand ALL techs at once (full spanning tree) — the strongest dedup test.
-    const allKeys = new Set(Object.keys(snapshot.techs));
+
+    const collapsed = layoutExplore(snapshot, new Set(), undefined, CARD_W, CARD_H);
+    // [Event] is always populated in v4.5.0 — a stable target for the test.
+    const eventKey = bucketKey("event");
+    const eventCollapsed = collapsed.nodes.find((n) => n.key === eventKey)!;
+    expect(eventCollapsed.bucket!.count).toBeGreaterThan(0);
+    expect(eventCollapsed.expandable).toBe(true);
+    expect(eventCollapsed.expanded).toBe(false); // expandable but not yet open
+
+    const expanded = layoutExplore(
+      snapshot,
+      new Set([eventKey]),
+      undefined,
+      CARD_W,
+      CARD_H,
+    );
+    expect(expanded.nodes.length).toBeGreaterThan(collapsed.nodes.length);
+
+    const eventNode = expanded.nodes.find((n) => n.key === eventKey)!;
+    expect(eventNode.expanded).toBe(true);
+
+    // Its grouped roots appear one column to the right (depth 1), reached by an
+    // edge from the bucket, and each edge falls back to a plain elbow (no ELK).
+    const eventEdges = expanded.edges.filter((e) => e.from === eventKey);
+    expect(eventEdges.length).toBeGreaterThan(0);
+    for (const e of eventEdges) {
+      expect(e.sections).toEqual([]);
+      const child = expanded.nodes.find((n) => n.key === e.to)!;
+      expect(child.x).toBe(COL_W); // depth 1
+    }
+  });
+
+  it("dedups multi-parent techs — each key appears at most once when fully expanded", () => {
+    const snapshot = loadRealSnapshot();
+    // Expand every tech AND every bucket (full spanning tree) — strongest dedup.
+    const allKeys = new Set([...Object.keys(snapshot.techs), ...BUCKET_KEYS]);
     const layout = layoutExplore(snapshot, allKeys, undefined, CARD_W, CARD_H);
 
     const seen = new Set<string>();
@@ -126,41 +149,31 @@ describe("layoutExplore: collapsible forward tech tree", () => {
       expect(seen.has(node.key)).toBe(false); // never twice
       seen.add(node.key);
     }
-    // Every reachable-from-a-root tech is shown exactly once when fully expanded.
     expect(layout.nodes.length).toBe(seen.size);
   });
 
-  it("collapse removes a root's descendants", () => {
+  it("collapse removes an expanded bucket's revealed roots", () => {
     const snapshot = loadRealSnapshot();
-    const childrenByKey = new Map<string, string[]>();
-    for (const t of Object.values(snapshot.techs)) {
-      for (const p of t.prerequisites) {
-        (childrenByKey.get(p) ?? childrenByKey.set(p, []).get(p)!).push(t.key);
-      }
-    }
-    const root = Object.values(snapshot.techs).find(
-      (t) => t.prerequisites.length === 0 && (childrenByKey.get(t.key)?.length ?? 0) > 0,
-    )!;
-
-    const expanded = layoutExplore(snapshot, new Set([root.key]), undefined, CARD_W, CARD_H);
+    const eventKey = bucketKey("event");
+    const expanded = layoutExplore(snapshot, new Set([eventKey]), undefined, CARD_W, CARD_H);
     const collapsed = layoutExplore(snapshot, new Set(), undefined, CARD_W, CARD_H);
 
-    // Collapsing the root drops back to the plain root column.
     expect(collapsed.nodes.length).toBeLessThan(expanded.nodes.length);
     expect(collapsed.edges.length).toBe(0);
   });
 
-  it("respects the category filter — only shown-eligible techs appear", () => {
+  it("respects the category filter — only shown-eligible techs appear (buckets always show)", () => {
     const snapshot = loadRealSnapshot();
     const active = new Set(["computing"]);
     // Expand everything so any leaked non-computing tech would surface.
-    const allKeys = new Set(Object.keys(snapshot.techs));
+    const allKeys = new Set([...Object.keys(snapshot.techs), ...BUCKET_KEYS]);
     const layout = layoutExplore(snapshot, allKeys, active, CARD_W, CARD_H);
 
     for (const node of layout.nodes) {
-      expect(categoryOf(node.tech)).toBe("computing");
+      if (node.bucket) continue; // bucket cards are category-agnostic chrome
+      expect(categoryOf(node.tech!)).toBe("computing");
     }
-    // Edges only connect two shown techs.
+    // Edges only connect two shown nodes (tech or bucket).
     const keys = new Set(layout.nodes.map((n) => n.key));
     for (const edge of layout.edges) {
       expect(keys.has(edge.from)).toBe(true);
@@ -181,5 +194,86 @@ describe("layoutExplore: collapsible forward tech tree", () => {
     expect(layout.width).toBe(maxRight);
     expect(layout.height).toBe(maxBottom);
     expect(layout.bands).toEqual([]); // bands are map-only
+  });
+});
+
+describe("layoutFocus: a tech's dependency neighborhood", () => {
+  const childrenOf = (snapshot: TechSnapshot) => {
+    const m = new Map<string, string[]>();
+    for (const t of Object.values(snapshot.techs)) {
+      for (const p of t.prerequisites) {
+        const b = m.get(p);
+        if (b) b.push(t.key);
+        else m.set(p, [t.key]);
+      }
+    }
+    return m;
+  };
+
+  it("centers the focus, with prerequisites to the LEFT and direct dependents to the RIGHT", () => {
+    const snapshot = loadRealSnapshot();
+    const kids = childrenOf(snapshot);
+    const focus = Object.values(snapshot.techs).find(
+      (t) => t.prerequisites.length > 0 && (kids.get(t.key)?.length ?? 0) > 0,
+    )!;
+    expect(focus).toBeDefined();
+
+    const layout = layoutFocus(snapshot, focus.key, CARD_W, CARD_H);
+    const byKey = new Map(layout.nodes.map((n) => [n.key, n]));
+    const focusNode = byKey.get(focus.key)!;
+    expect(focusNode).toBeDefined();
+
+    // Every existing direct prerequisite is shown, left of the focus.
+    for (const p of focus.prerequisites) {
+      if (!snapshot.techs[p]) continue;
+      const pn = byKey.get(p);
+      expect(pn).toBeDefined();
+      expect(pn!.x).toBeLessThan(focusNode.x);
+    }
+    // Every direct dependent is shown, right of the focus.
+    for (const d of kids.get(focus.key)!) {
+      const dn = byKey.get(d);
+      expect(dn).toBeDefined();
+      expect(dn!.x).toBeGreaterThan(focusNode.x);
+    }
+    // Edges flow prereq → focus → dependent, and no bands.
+    expect(layout.edges.some((e) => e.to === focus.key)).toBe(true);
+    expect(layout.edges.some((e) => e.from === focus.key)).toBe(true);
+    expect(layout.bands).toEqual([]);
+  });
+
+  it("includes the FULL recursive prerequisite ancestry (not just direct prereqs)", () => {
+    const snapshot = loadRealSnapshot();
+    // A tech whose prerequisite itself has a prerequisite → ancestry depth ≥ 2.
+    const focus = Object.values(snapshot.techs).find((t) =>
+      t.prerequisites.some(
+        (p) => (snapshot.techs[p]?.prerequisites.length ?? 0) > 0,
+      ),
+    )!;
+    const layout = layoutFocus(snapshot, focus.key, CARD_W, CARD_H);
+    const keys = new Set(layout.nodes.map((n) => n.key));
+
+    // BFS the real ancestry; every ancestor must appear as a node.
+    const seen = new Set<string>([focus.key]);
+    const queue = [focus.key];
+    let depthTwoSeen = false;
+    while (queue.length > 0) {
+      const k = queue.shift()!;
+      for (const p of snapshot.techs[k]?.prerequisites ?? []) {
+        if (!snapshot.techs[p] || seen.has(p)) continue;
+        seen.add(p);
+        queue.push(p);
+        expect(keys.has(p)).toBe(true);
+        if (k !== focus.key) depthTwoSeen = true; // an ancestor-of-an-ancestor
+      }
+    }
+    expect(depthTwoSeen).toBe(true);
+  });
+
+  it("returns an empty layout for an unknown focus key (defensive)", () => {
+    const snapshot = loadRealSnapshot();
+    const layout = layoutFocus(snapshot, "tech_does_not_exist", CARD_W, CARD_H);
+    expect(layout.nodes).toEqual([]);
+    expect(layout.edges).toEqual([]);
   });
 });

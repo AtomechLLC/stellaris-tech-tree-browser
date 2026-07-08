@@ -35,6 +35,7 @@ function tech(
       isDangerous: false,
       isRepeatable: false,
       isStarting: false,
+      isInsight: false,
     },
     name: key,
     description: null,

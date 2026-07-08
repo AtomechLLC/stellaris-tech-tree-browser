@@ -35,6 +35,49 @@ const OPERATORS: Record<string, string> = {
 /** Condition keys that carry structural/meta info, not a real player condition. */
 const SKIP_KEYS = new Set(["factor", "inline_script", "add", "always"]);
 
+/**
+ * Known "has_/owns_ <game-entity>" conditions whose VALUE is a raw Clausewitz id
+ * token (e.g. `ethic_fanatic_militarist`, `r_pox_sample`). Each maps to a
+ * readable type noun + the id prefix/suffix to strip before prettifying, so the
+ * tooltip shows "Fanatic Militarist ethic" instead of the raw "ethic
+ * ethic_fanatic_militarist" token. (`has_technology` is handled separately —
+ * it resolves to the real tech display name via the snapshot.)
+ */
+const ENTITY_CONDITIONS: Record<string, { noun: string; strip?: RegExp }> = {
+  has_ethic: { noun: "ethic", strip: /^ethic_/ },
+  has_ascension_perk: { noun: "ascension perk", strip: /^ap_/ },
+  has_relic: { noun: "relic", strip: /^r_/ },
+  has_origin: { noun: "origin", strip: /^origin_/ },
+  has_civic: { noun: "civic", strip: /^civic_/ },
+  has_valid_civic: { noun: "civic", strip: /^civic_/ },
+  has_trait: { noun: "trait", strip: /^trait_(robot_)?/ },
+  has_policy_flag: { noun: "policy" },
+  has_modifier: { noun: "modifier" },
+  has_country_flag: { noun: "flag" },
+  owns_any_bypass: { noun: "bypass", strip: /_bypass$/ },
+  has_seen_any_bypass: { noun: "bypass", strip: /_bypass$/ },
+};
+
+/** Lowercase connective words inside a title-cased label (not the first word). */
+const SMALL_WORDS = new Set(["of", "the", "and", "or", "a", "an", "to", "in"]);
+
+/**
+ * Turn a raw id token into a Title Case label: strip an optional prefix/suffix,
+ * split on `_`, capitalise each word (keeping small connectives lowercase).
+ * "ethic_fanatic_militarist" → "Fanatic Militarist"; "ap_mastery_of_nature" →
+ * "Mastery of Nature".
+ */
+function prettifyToken(token: string, strip?: RegExp): string {
+  const base = strip ? token.replace(strip, "") : token;
+  return base
+    .split("_")
+    .filter(Boolean)
+    .map((w, i) =>
+      i > 0 && SMALL_WORDS.has(w) ? w : w[0].toUpperCase() + w.slice(1),
+    )
+    .join(" ");
+}
+
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
@@ -78,6 +121,27 @@ function describeCondition(
   if (key === "has_technology" && typeof value === "string") {
     const name = techByKey.get(value)?.name ?? prettifyTechKey(value);
     return `researched ${name}`;
+  }
+
+  // Tradition → the tree name, noting whether it's the adopt or finish bonus
+  // ("tr_harmony_adopt" → "Harmony tradition (adopted)").
+  if (key === "has_tradition" && typeof value === "string") {
+    let v = value.replace(/^tr_/, "");
+    let state = "";
+    if (v.endsWith("_adopt")) {
+      v = v.slice(0, -"_adopt".length);
+      state = " (adopted)";
+    } else if (v.endsWith("_finish")) {
+      v = v.slice(0, -"_finish".length);
+      state = " (completed)";
+    }
+    return `${prettifyToken(v)} tradition${state}`;
+  }
+
+  // Other known game-entity conditions → "<Prettified Name> <noun>".
+  const entity = ENTITY_CONDITIONS[key];
+  if (entity && typeof value === "string") {
+    return `${prettifyToken(value, entity.strip)} ${entity.noun}`;
   }
 
   // { OP: n } comparison → "<label> > n".
