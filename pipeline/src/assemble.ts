@@ -50,6 +50,14 @@ const LOCALISATION_SUBDIR = join("localisation", "english");
 const PLACEHOLDER_ICON_PATH = join(process.cwd(), "assets", PLACEHOLDER_ICON_NAME);
 
 /**
+ * Defense-in-depth (T-01-01): tech keys and swap names are parsed out of game
+ * files under the user-configurable gameRoot and flow into output file paths.
+ * They must be plain identifiers — no path separators, no drive/segment
+ * syntax — before being used as a path segment under data/v{version}/icons/.
+ */
+const SAFE_NAME = /^[a-zA-Z0-9_\-@.]+$/;
+
+/**
  * Runs the full pipeline and returns the path to the written tech.json
  * snapshot.
  */
@@ -122,6 +130,9 @@ export async function runAssemble(): Promise<string> {
       { key, icon: iconOverrideRaw, technology_swap: technologySwapRaw as TechSwap | TechSwap[] | undefined },
       gameRoot,
     );
+    if (!SAFE_NAME.test(key)) {
+      throw new Error(`runAssemble: unsafe tech key for output path: "${key}"`);
+    }
     const webpOutPath = join(iconsOutDir, `${key}.webp`);
     let iconRef: string;
     if (iconSource.base) {
@@ -141,6 +152,9 @@ export async function runAssemble(): Promise<string> {
     }
 
     for (const swap of iconSource.swaps) {
+      if (!SAFE_NAME.test(swap.name)) {
+        throw new Error(`runAssemble: unsafe technology_swap name for output path: "${swap.name}"`);
+      }
       const swapWebpPath = join(iconsOutDir, `${swap.name}.webp`);
       const swapPngTempPath = join(iconsOutDir, `${swap.name}.tmp.png`);
       try {
