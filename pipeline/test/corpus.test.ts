@@ -93,9 +93,9 @@ describe("corpus: full-corpus build + coverage (D-18)", () => {
 
     const missingOnDisk: string[] = [];
     for (const tech of Object.values(firstRun.techs)) {
-      const iconPath = tech.icon!.startsWith("placeholder-")
-        ? join(process.cwd(), "assets", tech.icon!)
-        : join(ICONS_DIR, tech.icon!);
+      // SCHEMA.md contract: EVERY icon ref (including the placeholder) is an
+      // emitted .webp under data/v{version}/icons/ — no special cases.
+      const iconPath = join(ICONS_DIR, tech.icon!);
       if (!existsSync(iconPath)) missingOnDisk.push(tech.key);
     }
     expect(missingOnDisk).toEqual([]);

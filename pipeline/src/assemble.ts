@@ -41,7 +41,7 @@ import { classifyDlc } from "./dlc/dlc-classifier.js";
 import { buildAndValidateGraph } from "./graph/build-dag.js";
 import { scanAllLocalisation, resolveTechText } from "./localisation/loc-scanner.js";
 import { resolveIconSource, type TechSwap } from "./icons/resolve.js";
-import { convertDdsToWebp, writePlaceholderIcon } from "./icons/convert.js";
+import { convertDdsToWebp } from "./icons/convert.js";
 import { buildUnlocks } from "./unlocks.js";
 import { buildReport, printReport, type ReportWarnings } from "./report.js";
 import { TechSnapshotSchema, type Tech, type TechSnapshot } from "./schema/tech-snapshot.js";
@@ -76,6 +76,25 @@ export async function runAssemble(): Promise<string> {
   const iconsOutDir = join(outDir, "icons");
   mkdirSync(iconsOutDir, { recursive: true });
 
+  // D-13: the placeholder is copied ONCE into the icons output dir and every
+  // fallback references that same emitted file — the shipped `icon` field must
+  // always point at a real file under data/v{version}/icons/ (SCHEMA.md
+  // contract). A copy failure warns rather than failing the build.
+  let placeholderEmitted = false;
+  const usePlaceholder = (): string => {
+    if (!placeholderEmitted) {
+      placeholderEmitted = true;
+      try {
+        copyFileSync(PLACEHOLDER_ICON_PATH, join(iconsOutDir, PLACEHOLDER_ICON_NAME));
+      } catch (err) {
+        console.warn(
+          `[assemble] failed to copy placeholder icon into ${iconsOutDir} (${err}) — placeholder refs may dangle`,
+        );
+      }
+    }
+    return PLACEHOLDER_ICON_NAME;
+  };
+
   const missingNames: string[] = [];
   let unresolvedGrantLocKeysTotal = 0;
 
@@ -107,8 +126,7 @@ export async function runAssemble(): Promise<string> {
       await convertDdsToWebp(iconSource.base, pngTempPath, webpOutPath);
       iconRef = `${key}.webp`;
     } else {
-      writePlaceholderIcon(PLACEHOLDER_ICON_PATH, webpOutPath);
-      iconRef = PLACEHOLDER_ICON_NAME;
+      iconRef = usePlaceholder();
       console.warn(`[assemble] no icon source resolved for "${key}" — using placeholder`);
     }
 
