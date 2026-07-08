@@ -11,6 +11,7 @@
     "pretest": "npm run copy-data",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4174",
     "test": "vitest run",
     "lint:types": "tsc --noEmit"
   },
