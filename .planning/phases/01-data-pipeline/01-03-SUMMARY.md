@@ -98,3 +98,7 @@ None - no external service configuration required. This task only reads local fi
 ---
 *Phase: 01-data-pipeline*
 *Completed: 2026-07-08*
+
+## Self-Check: PASSED
+
+All 2 created files verified present on disk (pipeline/src/localisation/loc-scanner.ts, pipeline/test/localisation.test.ts). All 3 referenced commit hashes (195402b, c61ca7f, 7b017e0) verified present in `git log --oneline --all`.

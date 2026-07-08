@@ -42,7 +42,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 01-02-PLAN.md — Full tech extraction (all 33 files) + DLC classification + prerequisite DAG validation
-- [ ] 01-03-PLAN.md — Localisation resolution (names/descriptions across all english .yml files)
+- [x] 01-03-PLAN.md — Localisation resolution (names/descriptions across all english .yml files)
 - [ ] 01-04-PLAN.md — Icon pipeline (DDS→WebP conversion + resolution + placeholder fallback)
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -90,6 +90,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Pipeline | 2/5 | In Progress|  |
+| 1. Data Pipeline | 3/5 | In Progress|  |
 | 2. Tech Tree Visualization | 0/TBD | Not started | - |
 | 3. Navigation & Discovery | 0/TBD | Not started | - |
