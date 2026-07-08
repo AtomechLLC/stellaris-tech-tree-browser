@@ -1,0 +1,69 @@
+/**
+ * Single source of truth for ALL color/spacing/typography values in this app
+ * (D-11, UIFX-01). Every DOM/CSS chrome rule AND every Sigma WebGL color
+ * (bridged via getComputedStyle in lib/sigma/theme.ts, D-12) originates
+ * here — no component or TS module may hardcode a hex value.
+ *
+ * Light theme ships as the :root default. Structured so a future
+ * `[data-theme="dark"]` block (v2, THEME-01, out of scope for Phase 2) is a
+ * pure token swap: no component/TS changes required, just override these
+ * same custom property names under a `[data-theme="dark"]` selector.
+ */
+:root {
+  /* Color — 60/30/10 UI palette (UI-SPEC Color) */
+  --color-bg: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-accent: #2563eb;
+  --color-danger: #b91c1c;
+  --color-edge: #cbd5e1;
+  --color-text: #111827;
+  --color-border: #e5e7eb;
+
+  /* Area colors — Okabe-Ito colorblind-safe categorical palette. Engineering
+     is deliberately vermillion (NOT green): green paired with blue+orange is
+     the classic deuteranopia failure mode (UI-SPEC Color / Area colors). */
+  --area-physics: #0072b2;
+  --area-society: #e69f00;
+  --area-engineering: #d55e00;
+
+  /* Spacing — 8-point scale (UI-SPEC Spacing Scale) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* Typography (UI-SPEC Typography) */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+
+  --font-size-body: 16px;
+  --font-weight-body: 400;
+  --line-height-body: 1.5;
+
+  --font-size-label: 14px;
+  --font-weight-label: 400;
+  --line-height-label: 1.2;
+
+  --font-size-heading: 20px;
+  --font-weight-heading: 600;
+  --line-height-heading: 1.2;
+
+  --font-size-display: 28px;
+  --font-weight-display: 600;
+  --line-height-display: 1.2;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}

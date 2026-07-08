@@ -1,5 +1,6 @@
 import { DirectedGraph } from "graphology";
 import type { TechSnapshot } from "../../types/tech-snapshot";
+import { readThemeTokens, AREA_COLOR, type ThemeTokens } from "../sigma/theme";
 
 /**
  * Builds a graphology DirectedGraph from the tech snapshot.
@@ -11,11 +12,26 @@ import type { TechSnapshot } from "../../types/tech-snapshot";
  * placeholder grid from Plan 02-01 is removed; layout.ts (ELK tier-partition
  * + area-band Y-remap) now owns node position and sets x/y before render.
  *
+ * Plan 02-03: each node also carries `areaColor` (the compound border
+ * program's ring color, D-09) and a `color` fallback (image-background
+ * fallback, D-12) — both sourced from the bridged CSS tokens, never a
+ * hardcoded hex. `tokens` is an OPTIONAL param so existing call sites
+ * (`buildGraph(snapshot)` from Plans 01/02) keep compiling unchanged; when
+ * omitted, `readThemeTokens()` is only invoked lazily AND only when
+ * `document` exists, so this function never touches getComputedStyle in a
+ * headless vitest run (layout.test.ts/smoke.test.ts pass no tokens and run
+ * in a DOM-less "node" test environment).
+ *
  * Node `label` is always plain text (`tech.name`) — never injected as HTML
  * (D-05 / T-02-01 mitigation).
  */
-export function buildGraph(snapshot: TechSnapshot): DirectedGraph {
+export function buildGraph(snapshot: TechSnapshot, tokens?: ThemeTokens): DirectedGraph {
   const graph = new DirectedGraph();
+
+  const resolvedTokens: ThemeTokens | undefined =
+    tokens ?? (typeof document !== "undefined" ? readThemeTokens() : undefined);
+  const areaColor = resolvedTokens ? AREA_COLOR(resolvedTokens) : undefined;
+  const fallbackBg = resolvedTokens?.bg;
 
   for (const tech of Object.values(snapshot.techs)) {
     graph.addNode(tech.key, {
@@ -28,7 +44,14 @@ export function buildGraph(snapshot: TechSnapshot): DirectedGraph {
       // unset here; Sigma is only handed final coordinates after layoutGraph.
       x: 0,
       y: 0,
-      color: "#F7F8FA",
+      // Image-background fallback color (D-12) — bridged from --color-bg,
+      // not hardcoded. Undefined in a headless/no-tokens context (tests that
+      // don't exercise the compound node program don't need this attribute).
+      color: fallbackBg,
+      // Area ring color consumed by the compound border program (Task 2,
+      // D-09) — bridged from --area-physics/society/engineering via the
+      // theme bridge (Pattern 4), never a literal.
+      areaColor: areaColor ? areaColor[tech.area] : undefined,
     });
   }
 
