@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-07-08T03:20:58.303Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-07-08T03:39:51.012Z"
 last_activity: 2026-07-08
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
   percent: 33
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 ## Current Position
 
 Phase: 2 (Tech Tree Visualization) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-07-08
 
-Progress: [████████░░] 75%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [████████░░] 75%
 | Phase 01-data-pipeline P04 | 32min | 2 tasks | 4 files |
 | Phase 01-data-pipeline P05 | 17min | 3 tasks | 7 files |
 | Phase 02-tech-tree-visualization P01 | 7min | 2 tasks | 16 files |
+| Phase 02-tech-tree-visualization P02 | 11min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,8 @@ Recent decisions affecting current work:
 - [Phase 02-tech-tree-visualization]: Added zod and @types/node as app/ dependencies beyond RESEARCH.md's install list — Required to literally satisfy the plan's own task actions: TechSnapshotSchema.parse() at runtime and node:fs/node:url/node:path in the smoke test
 - [Phase 02-tech-tree-visualization]: Dropped TypeScript project references between app/tsconfig.json and tsconfig.node.json — TS6306/TS6310 - project references require composite:true which conflicts with noEmit:true required by this plan
 - [Phase 02-tech-tree-visualization]: vitest environment set to node (not jsdom) for the app package — Smoke test is a pure graph-construction check reading tech.json from disk - no DOM needed for this plan's test scope
+- [Phase 02-tech-tree-visualization]: elk.separateConnectedComponents must be set to false at the ELK root -- default (true) silently breaks tier-partition monotonicity on the real DAG's many disconnected components; offset with elk.layered.thoroughness=1 to keep one-shot layout cost acceptable (~6.5s vs ~26-32s)
+- [Phase 02-tech-tree-visualization]: Area-band Y-remap implemented as a sort-stable remap only (physics/society/engineering order, 4000-unit bands, 400-unit gap) -- ELK has no native swim-lane mechanism for this axis, so this is required application code, not an ELK config flag
 
 ### Pending Todos
 
@@ -94,7 +97,6 @@ None yet.
 ### Blockers/Concerns
 
 - Phase 1 research flag: jomini's handling of `@variable` references, inline `@[ ]` math, and multi-condition `weight_modifier` blocks needs validation against the real 4.5.0 corpus (not assumed from general library reputation)
-- Phase 2 research flag: elkjs layout quality needs an explicit benchmark against the actual full parsed prerequisite graph (~600-900 nodes), not a toy sample, before being considered settled
 
 ## Deferred Items
 
@@ -113,6 +115,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-08T03:20:58.289Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-07-08T03:39:24.953Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

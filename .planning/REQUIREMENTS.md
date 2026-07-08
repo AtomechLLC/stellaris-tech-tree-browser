@@ -18,7 +18,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Tree Visualization
 
 - [x] **TREE-01**: User can view the full tech tree with prerequisite edges rendered as a true DAG (multi-prerequisite techs placed correctly, not tree-flattened)
-- [ ] **TREE-02**: Tree layout is readable at full scale — organized by tier and research area
+- [x] **TREE-02**: Tree layout is readable at full scale — organized by tier and research area
 - [x] **TREE-03**: User can pan and zoom smoothly at full-tree scale (hundreds of nodes) without lag
 - [ ] **TREE-04**: Tech nodes display icon, localized name, and tier at a glance
 
@@ -79,7 +79,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | DATA-04 | Phase 1 | Complete |
 | DATA-05 | Phase 1 | Complete |
 | TREE-01 | Phase 2 | Complete |
-| TREE-02 | Phase 2 | Pending |
+| TREE-02 | Phase 2 | Complete |
 | TREE-03 | Phase 2 | Complete |
 | TREE-04 | Phase 2 | Pending |
 | UIFX-01 | Phase 2 | Pending |

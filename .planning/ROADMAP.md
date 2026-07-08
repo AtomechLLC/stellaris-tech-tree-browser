@@ -74,7 +74,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 02-02-PLAN.md — Real DAG: all 613 prerequisite edges (multi-parent), elkjs tier-partitioned layout + area-band Y-remap (TREE-01, TREE-02)
+- [x] 02-02-PLAN.md — Real DAG: all 613 prerequisite edges (multi-parent), elkjs tier-partitioned layout + area-band Y-remap (TREE-01, TREE-02)
 
 **Wave 3** *(blocked on Wave 2)*
 
@@ -101,7 +101,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Scaffold app/ (Vite+React 19+TS), copy pipeline data, fetch/validate tech.json, render all 678 icon nodes on a pan/zoomable Sigma canvas (walking end-to-end slice)
+- [x] 02-01-PLAN.md — Scaffold app/ (Vite+React 19+TS), copy pipeline data, fetch/validate tech.json, render all 678 icon nodes on a pan/zoomable Sigma canvas (walking end-to-end slice)
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -119,5 +119,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Pipeline | 5/5 | Complete    | 2026-07-08 |
-| 2. Tech Tree Visualization | 1/3 | In Progress|  |
+| 2. Tech Tree Visualization | 2/3 | In Progress|  |
 | 3. Navigation & Discovery | 0/TBD | Not started | - |
