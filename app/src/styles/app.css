@@ -190,27 +190,30 @@
 .band {
   position: absolute;
   left: 0;
+  /* Repeating category-name watermark (set per-band via inline background-image
+     in BandLayer) tiles across the band; the tint above is the background-color. */
+  background-repeat: repeat;
 }
 
 /* Area tint, faint, alternating two strengths so adjacent same-area bands
    stay distinguishable. Tokens only (never hardcoded hex). */
 .band[data-area="physics"] {
-  background: color-mix(in srgb, var(--area-physics) 8%, transparent);
+  background-color: color-mix(in srgb, var(--area-physics) 8%, transparent);
 }
 .band[data-area="physics"][data-alt="1"] {
-  background: color-mix(in srgb, var(--area-physics) 14%, transparent);
+  background-color: color-mix(in srgb, var(--area-physics) 14%, transparent);
 }
 .band[data-area="society"] {
-  background: color-mix(in srgb, var(--area-society) 8%, transparent);
+  background-color: color-mix(in srgb, var(--area-society) 8%, transparent);
 }
 .band[data-area="society"][data-alt="1"] {
-  background: color-mix(in srgb, var(--area-society) 14%, transparent);
+  background-color: color-mix(in srgb, var(--area-society) 14%, transparent);
 }
 .band[data-area="engineering"] {
-  background: color-mix(in srgb, var(--area-engineering) 8%, transparent);
+  background-color: color-mix(in srgb, var(--area-engineering) 8%, transparent);
 }
 .band[data-area="engineering"][data-alt="1"] {
-  background: color-mix(in srgb, var(--area-engineering) 14%, transparent);
+  background-color: color-mix(in srgb, var(--area-engineering) 14%, transparent);
 }
 
 .band__label {
@@ -495,20 +498,20 @@
   border-color: var(--area-physics);
 }
 .tech-card[data-area="physics"] .tech-card__title {
-  background: color-mix(in srgb, var(--area-physics) 60%, #0c111a);
+  background-color: color-mix(in srgb, var(--area-physics) 60%, #0c111a);
 }
 .tech-card[data-area="society"] {
   border-color: var(--area-society);
 }
 .tech-card[data-area="society"] .tech-card__title {
   /* orange is light — mix a touch more dark in so off-white text stays legible. */
-  background: color-mix(in srgb, var(--area-society) 55%, #0c111a);
+  background-color: color-mix(in srgb, var(--area-society) 55%, #0c111a);
 }
 .tech-card[data-area="engineering"] {
   border-color: var(--area-engineering);
 }
 .tech-card[data-area="engineering"] .tech-card__title {
-  background: color-mix(in srgb, var(--area-engineering) 60%, #0c111a);
+  background-color: color-mix(in srgb, var(--area-engineering) 60%, #0c111a);
 }
 
 /* ── Level-of-detail: zoomed-out cards (canvas gets `.lod-simple`) ──────────
