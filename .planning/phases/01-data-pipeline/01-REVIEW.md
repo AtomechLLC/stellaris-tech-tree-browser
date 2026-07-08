@@ -1,6 +1,6 @@
 ---
 phase: 01-data-pipeline
-reviewed: 2026-07-08T00:59:04Z
+reviewed: 2026-07-08T01:42:38Z
 depth: standard
 files_reviewed: 24
 files_reviewed_list:
@@ -29,431 +29,307 @@ files_reviewed_list:
   - pipeline/test/tech-extractor.test.ts
   - pipeline/tsconfig.json
 findings:
-  critical: 4
-  warning: 8
-  info: 10
-  total: 22
+  critical: 1
+  warning: 2
+  info: 12
+  total: 15
 status: issues_found
 ---
 
-# Phase 01: Code Review Report
+# Phase 01: Code Review Report (iteration 2 — re-review after fix pass)
 
-**Reviewed:** 2026-07-08T00:59:04Z
+**Reviewed:** 2026-07-08T01:42:38Z
 **Depth:** standard
 **Files Reviewed:** 24
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the full data-pipeline package (18 source files, 5 test suites, config).
-The T-04-01 command-injection mitigation is genuinely in place: ImageMagick is
-invoked exclusively via `execFileSync` argument arrays, tests assert the exact
-call shape, and no shell string is ever built from `gameRoot`. The Zod
-validation gate before write, the DAG cycle/dangling validation, and the
-determinism sorting are implemented as designed.
+Re-reviewed all 24 files after the 12-finding fix pass (commits 786a556..0e210ed).
+Every fix was verified against the current source AND functionally against the
+live 4.5.0 corpus and the regenerated `pipeline/data/v4.5.0/tech.json`
+(678 techs, `tsc --noEmit` clean, 36/36 fast unit tests pass, snapshot
+invariants re-measured directly).
 
-However, several findings were **verified against the live 4.5.0 corpus and the
-actual generated snapshot** (`pipeline/data/v4.5.0/tech.json`), and four are
-Critical:
+**Fix verification results — 11 of 12 fixes are genuine and complete:**
 
-1. The documented `--game-root` CLI flag is dead code — the entrypoint passes
-   `[]` to `resolveConfig`, so a user-specified install path is silently
-   ignored and the default install is parsed instead.
-2. `tech_gene_expressions` ships `unlocks.grants: []` — both of its
-   `prereqfor_desc` unlock descriptions are silently dropped because the
-   extractor does not handle jomini's duplicate-key array form at the
-   `prereqfor_desc` level (the same Pitfall-5 arity handled everywhere else).
-3. `tech_gene_tailoring` ships literal garbage in user-facing grants text:
-   `"description_parameters: [object Object]"` and an unresolved
-   `"@tech_gene_tailoring_POINTS"` variable — while the validation report
-   prints a hardcoded "Unresolved @scripted_variable references: 0".
-4. The placeholder-icon fallback writes the placeholder to `{key}.webp` but
-   sets the tech's `icon` field to `"placeholder-icon.webp"`, a file that is
-   never emitted under `data/v{version}/icons/` — any tech hitting this path
-   ships a dangling icon reference, and the corpus test special-cases the
-   placeholder prefix in a way that masks the bug.
+- **CR-01 (--game-root ignored):** fixed. `runAssemble()` calls `resolveConfig()`
+  with default `process.argv.slice(2)` (assemble.ts:69); test files keep `[]`.
+- **CR-02 (duplicate prereqfor_desc dropped):** fixed. `normalizeToArray` loop
+  at tech-extractor.ts:168-183; verified `tech_gene_expressions` now ships
+  BOTH unlock descriptions in the snapshot.
+- **CR-04 (dangling placeholder ref):** fixed. Memoized `usePlaceholder()`
+  copies the placeholder once into the icons output dir (assemble.ts:92-105);
+  corpus.test.ts:96-99 special case removed; verified all 678 icon refs
+  resolve to real files on disk, 0 `.tmp.png` leftovers.
+- **WR-01 (conversion failures abort build):** fixed. Base conversion wrapped
+  in try/catch falling back to `usePlaceholder()` (assemble.ts:149-155); swap
+  conversions warn-and-skip (assemble.ts:170-175).
+- **WR-02 (asserted report constants):** fixed. `totalTechKeysFound` counted
+  pre-filter in `extractAllTechsWithStats` (tech-extractor.ts:344),
+  `unresolvedVariableCount` aggregated from `buildUnlocks` tallies,
+  `danglingPrerequisiteCount` measured from the validated snapshot
+  (assemble.ts:235-241), `placeholderIconCount` measures
+  `icon === PLACEHOLDER_ICON_NAME` (report.ts:94).
+- **WR-03 (unsanitized output paths):** fixed for writes. `SAFE_NAME` validates
+  both tech keys (assemble.ts:140) and swap names (assemble.ts:165) before any
+  output path is built; the character class cannot form a path separator or
+  drive segment, and the appended `.webp`/`.tmp.png` suffix defuses bare-dot
+  names. (Read paths remain unvalidated — see WR-02 below.)
+- **WR-04 (array-form host_has_dlc):** fixed (dlc-classifier.ts:78-85).
+- **WR-05 (zero-only prefix strip):** fixed — `/^\d+_?/` (dlc-classifier.ts:43);
+  DLC classification tests still pass.
+- **WR-06 (UTF-8 BOM):** fixed (clausewitz.ts:44-46), including the defensive
+  real-U+FEFF strip; BOM-only `00_repeatable.txt` still parses.
+- **WR-07 (swap-icon write collisions):** fixed via `extractedKeySet` skip
+  (assemble.ts:116,164) and documented in SCHEMA.md.
+- **WR-08 (silent area/tier defaults):** fixed — invalid area throws
+  (tech-extractor.ts:211-213); tier resolves through `resolveValue`
+  (tech-extractor.ts:222-232). Verified `tech_weaver_bio_healing_6` now ships
+  `tier: 5` (was silently 0).
 
-The warnings cluster around (a) the validation report asserting constants
-instead of measuring (several D-17 metrics are provably vacuous or false),
-(b) latent duplicate-key/arity and filename-prefix bugs of the exact same
-class as the confirmed Critical ones, and (c) a defense-in-depth gap where
-tech keys and swap names parsed from game files flow into output file paths
-unsanitized.
+**One fix is incomplete:** CR-03 eliminated the three named garbage patterns
+(`[object Object]`, raw `: @var`, `description`/`description_parameters`
+lines — all re-verified at zero occurrences), but the defect CLASS survives:
+two more modifier meta/display keys (`custom_tooltip`,
+`show_only_custom_tooltip`) ship 38 confirmed garbage lines across ~30 techs
+in the current snapshot (see CR-01 below). Additionally, the fix's
+skip-arrays guard introduced a new latent silent-drop of the exact
+duplicate-key arity class this codebase keeps getting bitten by (WR-01
+below), and the T-01-01 path validation stops at write paths, leaving the
+`icon =` override as an unvalidated read path (WR-02 below).
+
+The 10 prior Info findings were intentionally out of fix scope; 9 are carried
+forward below. Prior IN-07 (`scratch-debug/` not gitignored) is dropped as
+resolved — the directory is now empty (0 files), so nothing will be committed.
+Three new Info findings were introduced by the fix commits themselves.
 
 ## Critical Issues
 
-### CR-01: `--game-root` CLI argument is silently ignored by the pipeline entrypoint
+### CR-01: CR-03 fix incomplete — `custom_tooltip` / `show_only_custom_tooltip` modifier keys ship 38 garbage lines as user-facing grant text (confirmed in shipped snapshot)
 
-**File:** `pipeline/src/assemble.ts:58`
-**Issue:** `runAssemble()` calls `resolveConfig([])`, passing an empty argv
-array. `resolveConfig`'s CLI parsing (`config.ts:69-80`) therefore never sees
-`process.argv`, so the documented D-15 precedence #1 mechanism
-(`npm run build:data -- --game-root=<path>`) does nothing. On a machine where
-the default `Z:\SteamLibrary\...` install exists (this one), the pipeline
-silently parses the **wrong** install while the user believes they targeted a
-custom path — the exact corrupt-snapshot outcome the plan's threat model
-flags. The env var path still works, which makes the failure harder to
-notice. (The `resolveConfig([])` calls in the test files are deliberate to
-avoid vitest argv interference; the entrypoint call is not.)
+**File:** `pipeline/src/unlocks.ts:77` (`MODIFIER_META_KEYS`)
+**Issue:** The meta-key skip set contains only `description` and
+`description_parameters`. A full corpus scan (all top-level `modifier` blocks
+across the 33 tech files) shows two more non-stat keys, both confirmed
+shipping in the regenerated `data/v4.5.0/tech.json`:
+
+1. `show_only_custom_tooltip` (boolean engine directive — "hide the stat
+   lines, show only the custom tooltip") ships as literal grant text in 7
+   techs, e.g. `tech_construction_templates`:
+   `"show_only_custom_tooltip: false"`. This is the only boolean-valued
+   modifier key in the corpus, so it also produces the only
+   `true`/`false`-stringified user-facing lines.
+2. `custom_tooltip` ships as `"custom_tooltip: <raw_loc_key>"` in 31 techs —
+   e.g. `tech_battleship_build_speed` ships
+   `"custom_tooltip: tech_battleship_build_speed_effect"` and
+   `tech_storm_prediction_1` ships the literal `"custom_tooltip: BLANK_STRING"`.
+   These values are REAL localisation keys with real display strings
+   (verified: `tech_battleship_build_speed_effect:0 "$mod_ship_battleship_cost_mult$: §G-5%§!\n..."`
+   exists in localisation/english/) — the actual human-readable effect text
+   the tooltip is supposed to show is being discarded in favor of the raw key
+   with a `custom_tooltip:` prefix.
+
+This is the same defect class iteration 1 classified Critical in CR-03
+("ships literal garbage in user-facing grants text"), confirmed in the
+current artifact. The fix-pass verification scanned only for the two known
+meta-keys, so it reported "zero meta-key lines" while these shipped.
 **Fix:**
 ```ts
-// assemble.ts:58 — let resolveConfig use its default process.argv.slice(2)
-const { gameRoot } = resolveConfig();
-```
+// unlocks.ts
+const MODIFIER_META_KEYS = new Set(["description", "description_parameters", "show_only_custom_tooltip"]);
 
-### CR-02: Duplicate `prereqfor_desc` blocks are silently dropped — confirmed data loss in the shipped snapshot
-
-**File:** `pipeline/src/parser/tech-extractor.ts:154-167`
-**Issue:** `extractUnlockContentRaw` guards with
-`if (isPlainObject(prereqforDescBlock))`. When a tech declares
-`prereqfor_desc` twice, jomini auto-arrays the duplicate key (Pitfall 5), the
-value is an **array**, the guard fails, and ALL prereqfor_desc content for
-that tech is silently discarded. This is not latent: `tech_gene_expressions`
-(`00_soc_tech.txt:3150` and `:3157`) has two `prereqfor_desc` blocks, and the
-generated `data/v4.5.0/tech.json` ships it with `unlocks.grants: []` — both
-"Gene Expressions" and "Vocational Genes" unlock descriptions are lost. Every
-other duplicate-key site in this codebase uses `normalizeToArray`; this one
-was missed.
-**Fix:**
-```ts
-const prereqforDesc: PrereqforDescEntry[] = [];
-for (const block of normalizeToArray(
-  raw.prereqfor_desc as Record<string, unknown> | Record<string, unknown>[] | undefined,
-)) {
-  if (!isPlainObject(block)) continue;
-  for (const kindValue of Object.values(block)) {
-    // ...existing entry loop...
-  }
+// in grantsFromModifier, before the generic stat handling:
+if (statKey === "custom_tooltip" && typeof statValue === "string") {
+  const { text, resolved } = resolveOrVerbatim(statValue, locMap);
+  if (text.length > 0) out.push({ text, resolved, unresolvedVariable: false });
+  continue; // never emit the "custom_tooltip:" prefix or the raw key
 }
 ```
-
-### CR-03: `grantsFromModifier` ships `[object Object]` and raw `@variable` strings as user-facing grant text — confirmed in shipped snapshot
-
-**File:** `pipeline/src/unlocks.ts:75-85`
-**Issue:** `grantsFromModifier` iterates **every** key of a top-level
-`modifier` block and emits `` `${label}: ${String(statValue)}` ``. Three
-concrete failures, all confirmed in the generated `tech.json` for
-`tech_gene_tailoring` (`00_soc_tech.txt:2751-2757`):
-1. Nested-object values stringify to garbage:
-   `"description_parameters: [object Object]"` is in the shipped grants.
-2. Modifier meta-keys (`description`, `description_parameters`) are not stat
-   grants at all, but are emitted as fake "stat: value" lines
-   (`"description: tech_gene_tailoring_modifier_desc"`).
-3. `@scripted_variable` values pass through unresolved:
-   `"BIOLOGICAL_species_trait_points_add: @tech_gene_tailoring_POINTS"` ships
-   raw — note this is a file-local variable defined at `00_soc_tech.txt:2740`,
-   which `loadScriptedVariables` never sees (it only reads
-   `common/scripted_variables/`). Meanwhile the D-17 report prints a
-   hardcoded "Unresolved @scripted_variable references: 0" (see WR-02),
-   which this proves false for shipped output.
-**Fix:** In `grantsFromModifier`: skip the known meta-keys
-(`description`, `description_parameters`); skip or recurse-and-format
-object-valued entries (never `String()` an object); resolve `@`-prefixed
-string values through the scripted-variables map (including per-file local
-`@vars` captured during tech-file parsing — `parseClausewitzFile` already
-returns them as root-level `@`-keys, they just need to be collected per file
-and merged for lookup), and count any still-unresolved value in
-`unresolvedGrantLocKeys`.
-
-### CR-04: Placeholder icon fallback writes one filename but references another — dangling `icon` refs, masked by the test suite
-
-**File:** `pipeline/src/assemble.ts:101-108` (mask: `pipeline/test/corpus.test.ts:96-98`)
-**Issue:** When no icon source resolves, the code copies the placeholder to
-`webpOutPath` (= `data/v{ver}/icons/{key}.webp`) but sets
-`iconRef = "placeholder-icon.webp"`:
-```ts
-writePlaceholderIcon(PLACEHOLDER_ICON_PATH, webpOutPath); // writes {key}.webp
-iconRef = PLACEHOLDER_ICON_NAME;                          // references placeholder-icon.webp
-```
-`placeholder-icon.webp` is never written into the icons output dir, so the
-shipped `icon` field points at a file that does not exist under
-`data/v{version}/icons/` — violating SCHEMA.md's contract ("the emitted
-`.webp` filename under `data/v{version}/icons/`") and breaking every consumer
-image load. The orphaned `{key}.webp` placeholder copy is written but never
-referenced. Zero techs hit this path in the current corpus, but the first
-future patch with a missing icon ships broken references — and
-`corpus.test.ts:96-98` special-cases the `placeholder-` prefix to look in
-`pipeline/assets/` instead of the output dir, so the D-18 coverage test will
-still pass. Additionally, if `assets/placeholder-icon.webp` were missing,
-`copyFileSync` throws and fails the build, violating D-13's "warn, never
-fail".
-**Fix:** Pick one consistent scheme — simplest: copy the placeholder once
-into the icons dir and reference it:
-```ts
-// once, before the loop:
-copyFileSync(PLACEHOLDER_ICON_PATH, join(iconsOutDir, PLACEHOLDER_ICON_NAME));
-// in the fallback branch (no per-key copy):
-iconRef = PLACEHOLDER_ICON_NAME;
-```
-Then remove the `placeholder-` special case from corpus.test.ts Test 4 so the
-test checks the real contract.
+(Resolving via locMap ships the real effect text; an empty resolution — the
+`BLANK_STRING` case — should emit nothing.) Re-run the build and re-scan
+grants for `custom_tooltip`/`show_only_custom_tooltip`/`: (true|false)$` to
+confirm zero occurrences.
 
 ## Warnings
 
-### WR-01: `convertDdsToWebp` failures are not caught in assemble — violates the module's own documented D-13 contract
+### WR-01: CR-03's skip-arrays guard silently drops auto-arrayed duplicate stat keys — new latent instance of the Pitfall-5 arity class
 
-**File:** `pipeline/src/assemble.ts:103` (contract: `pipeline/src/icons/convert.ts:39-42`)
-**Issue:** convert.ts's docstring states "the caller (assemble.ts, per D-13)
-is responsible for catching a failure here and falling back to the shipped
-placeholder rather than failing the whole build." assemble.ts calls
-`await convertDdsToWebp(...)` with no try/catch — one corrupt/unreadable DDS
-(or a transient magick failure) aborts the entire build instead of degrading
-to the placeholder. Resolution failures (missing file) are handled; conversion
-failures are not. Same applies to the swap-icon conversions at lines 111-115.
+**File:** `pipeline/src/unlocks.ts:99`
+**Issue:** The fix's guard
+`if (typeof statValue !== "string" && typeof statValue !== "number" && typeof statValue !== "boolean") continue;`
+skips arrays wholesale. If a future patch declares the same stat key twice in
+one `modifier` block (e.g. `envoys_add = 1` then `envoys_add = @gain` —
+duplicate scalar keys jomini auto-arrays, the exact mechanism that caused
+CR-02 and WR-04 in iteration 1), BOTH values are silently dropped: no grant
+line, no `unresolvedGrantLocKeys` increment, no `unresolvedVariableRefs`
+increment, nothing in the D-17 report. Verified zero corpus instances today
+(scanned every top-level modifier block across all 33 files: 0 array-valued
+entries besides the known `description_parameters` object), so this is
+latent — but the failure on arrival is completely silent, which iteration 1
+consistently treated as Warning-level (WR-04 precedent).
 **Fix:**
 ```ts
-if (iconSource.base) {
-  try {
-    await convertDdsToWebp(iconSource.base, pngTempPath, webpOutPath);
-    iconRef = `${key}.webp`;
-  } catch (err) {
-    console.warn(`[assemble] conversion failed for "${key}" (${err}) — using placeholder`);
-    iconRef = usePlaceholder(); // shared fallback path from CR-04's fix
-  }
+// Expand auto-arrayed duplicate scalars instead of skipping them:
+const values = Array.isArray(statValue) ? statValue : [statValue];
+for (const v of values) {
+  if (typeof v !== "string" && typeof v !== "number" && typeof v !== "boolean") continue; // objects only
+  // ...existing label/value resolution per scalar v...
 }
 ```
 
-### WR-02: Validation report asserts constants instead of measuring — multiple D-17 metrics are vacuous or provably false
+### WR-02: `icon =` override and swap names flow into READ paths unvalidated — WR-03's traversal fix covers writes only
 
-**File:** `pipeline/src/assemble.ts:66,171-176`; `pipeline/src/report.ts:85-87,99-104`
-**Issue:** Four report metrics cannot detect what they claim to detect:
-1. `unresolvedVariableCount: 0` and `danglingPrerequisiteCount: 0` are
-   hardcoded literals (assemble.ts:173-174). CR-03 proves unresolved `@vars`
-   DO ship in grants text, so the printed "Unresolved @scripted_variable
-   references: 0" is false for the actual artifact.
-2. `totalTechKeysFound = extractedTechs.length` (assemble.ts:66) is the
-   **already-filtered** extraction count, not "total tech_* keys found before
-   filtering" as report.ts:30 documents. `techKeyCountMatches` can therefore
-   only ever catch duplicate-key Record collisions, not the technology_swap
-   leakage it claims to guard (report.ts:8).
-3. `missingIconCount` counts `!tech.icon` (report.ts:87), but after CR-04's
-   fallback `icon` is always a truthy string — the count is permanently 0
-   even when every tech uses the placeholder. Count
-   `icon === "placeholder-icon.webp"` instead.
-4. `missingNameCount` is dead: the strict-fail throw at assemble.ts:130 makes
-   a snapshot with missing names unreachable.
-**Fix:** Measure, don't assert: count raw `tech_*` keys during
-`extractAllTechs` before filtering and pass that through; count
-placeholder-icon techs during assembly; have `resolveValue`/unlocks return
-unresolved-variable tallies that assemble aggregates into the report.
+**File:** `pipeline/src/icons/resolve.ts:63-64,77-79,88`; `pipeline/src/assemble.ts:136-141`
+**Issue:** Iteration 1's WR-03 fix validates identifiers before building
+WRITE paths, but `resolveIconSource` runs BEFORE the `SAFE_NAME` check
+(assemble.ts:136 vs :140) and builds READ paths from unvalidated,
+game-file-controlled strings via
+`join(gameRoot, ICONS_SUBDIR, iconName + ".dds")`:
 
-### WR-03: Tech keys and swap names from game files flow into output file paths unsanitized (path-traversal defense-in-depth)
+- `iconOverrideRaw` (the tech's `icon = "..."` field) is never validated
+  anywhere. In a hostile/modded game root (threat T-01-01 — the same threat
+  model WR-03 cited), `icon = "..\\..\\..\\some\\path\\file"` resolves and
+  existence-probes an arbitrary location; if `<that path>.dds` exists,
+  `convertDdsToWebp` READS it via ImageMagick and publishes its converted
+  content into `data/v{ver}/icons/{key}.webp` — content from outside the
+  game root shipped into the public artifact.
+- `swap.name` and the tech key get the same unvalidated existence probe
+  (read-only; the `SAFE_NAME` throw fires before any conversion/write for
+  those, so impact there is limited to path probing).
 
-**File:** `pipeline/src/assemble.ts:99,102,112-113`
-**Issue:** `join(iconsOutDir, `${key}.webp`)` and
-`join(iconsOutDir, `${swap.name}.webp`)` build write paths from strings
-parsed out of game files. `TECH_KEY_PATTERN` (`/^tech_/`) does not constrain
-the rest of the key — a quoted Clausewitz key like `"tech_..\..\x"` in a
-modded/hostile game root (gameRoot is user-configurable, threat T-01-01)
-would escape `data/v{ver}/icons/` and write `.webp`/`.tmp.png` content to an
-arbitrary location. The plans explicitly flagged path traversal from the
-configurable install path; the mitigation stops at the execFileSync boundary
-and never validates the path segments themselves.
-**Fix:** Validate identifiers before using them in paths:
+The write-side fix is correct and complete; this closes the same threat
+model's read side.
+**Fix:** Apply the same identifier validation at the resolution boundary:
 ```ts
-const SAFE_NAME = /^[a-zA-Z0-9_\-@.]+$/;
-if (!SAFE_NAME.test(key)) throw new Error(`unsafe tech key for output path: "${key}"`);
-// same check for swap.name before building swapWebpPath/swapPngTempPath
-```
-
-### WR-04: Array-form `host_has_dlc` (duplicate keys) is silently ignored by the DLC classifier
-
-**File:** `pipeline/src/dlc/dlc-classifier.ts:72-89`
-**Issue:** `findHostHasDlc` only matches `typeof block.host_has_dlc ===
-"string"`. If a trigger block ever contains two `host_has_dlc` entries (e.g.
-`OR = { host_has_dlc = "A" host_has_dlc = "B" }` — a natural way to gate a
-tech on either of two DLCs), jomini auto-arrays them to `["A","B"]`, the
-string check fails, and the recursion skips string array entries — result:
-the override is missed and the tech silently misclassifies. This is the exact
-duplicate-key arity pattern confirmed live in CR-02; no current corpus case
-exists (verified: all 11 `host_has_dlc` occurrences are singletons), but the
-failure is silent when it arrives.
-**Fix:**
-```ts
-const hhd = block.host_has_dlc;
-if (typeof hhd === "string") return hhd;
-if (Array.isArray(hhd)) {
-  const first = hhd.find((v): v is string => typeof v === "string");
-  if (first) return first;
-}
-```
-
-### WR-05: `filenameStem` only strips zero-prefixes — docstring says "numeric prefix"; non-`00_` DLC files misclassify silently as base game
-
-**File:** `pipeline/src/dlc/dlc-classifier.ts:41-44`
-**Issue:** The docstring says "Strips the leading numeric prefix (00_/000_)",
-but `/^0+_?/` matches only zeros. A future `10_paragon_tech.txt` or
-`05_astral_tech.txt` keeps its numeric token (`"10"`/`"5"`), which will never
-be a subset of any DLC display-name token set, so `classifyByFilename`
-returns null and the tech silently ships as base game — a silent `dlc`-field
-data error on the project whose #1 constraint is data accuracy. All current
-corpus files are `00_`/`000_`, so this is latent.
-**Fix:**
-```ts
-return sourceFilename.replace(/\.txt$/i, "").replace(/^\d+_?/, "");
-```
-
-### WR-06: `parseClausewitzFile` does not strip a UTF-8 BOM — a future BOM+content file silently loses its first tech
-
-**File:** `pipeline/src/parser/clausewitz.ts:38-41`
-**Issue:** The raw bytes are decoded as latin1 and wrapped without stripping
-a BOM. The UTF-8 BOM bytes (EF BB BF) decode under latin1 to the three
-characters `ï»¿` (rendered "ï»¿"), which fuse with the file's
-first root token — the first tech key becomes `ï»¿tech_x`, fails
-`TECH_KEY_PATTERN`, and is **silently dropped** (compare loc-scanner.ts:48,
-which does strip the BOM — the two parsers are inconsistent). Today the only
-BOM'd tech file is the 3-byte BOM-only `00_repeatable.txt` (verified), so the
-wrap workaround holds, but the first future patch that saves a tech file as
-UTF-8-with-BOM loses a tech with no error, and WR-02's vacuous count-match
-check won't catch it.
-**Fix:**
-```ts
-let text = buf.toString("latin1");
-// UTF-8 BOM bytes decoded as latin1:
-if (text.startsWith("ï»¿")) text = text.slice(3);
-// Defensive: a real U+FEFF if the input was already unicode-decoded:
-if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
-```
-
-### WR-07: Swap-icon writes collide with real tech keys' outputs — last-writer-wins, currently benign only by luck
-
-**File:** `pipeline/src/assemble.ts:111-115`
-**Issue:** Swap icons are written to `{swap.name}.webp` in the same output
-dir as per-tech icons keyed `{key}.webp`. Verified against the corpus: 28
-swap names ARE real tech keys (e.g. `tech_basic_science_lab_3`,
-`tech_space_mining_1..5`, `tech_hyper_drive_3`). Each such file is written
-twice per run (redundant conversions), and if any colliding tech ever gains
-an `icon =` override (12 techs use overrides today; currently none collide),
-the two writes would have **different content** with iteration-order-dependent
-last-writer-wins — the wrong icon for a real tech, silently. Also note the
-swap `.webp` files are emitted but nothing in `tech.json` references them, so
-consumers cannot discover them (SCHEMA.md never mentions them).
-**Fix:** Skip the swap conversion when `swap.name` is an extracted tech key
-(its own pass will produce the file), or detect content-source divergence and
-fail loud; document the swap-icon emission contract in SCHEMA.md.
-
-### WR-08: Extractor silently defaults `area` to "physics" and `tier` to 0 on malformed data — contradicts the pipeline's own fail-loud policy
-
-**File:** `pipeline/src/parser/tech-extractor.ts:191,195`
-**Issue:** A tech with a missing/misspelled `area` is silently classified as
-physics; a missing `tier` becomes 0. Both are silent data corruption of
-exactly the kind D-16 elsewhere treats as strict-fail (unparseable file,
-unresolved variable, missing name all throw). A future patch introducing a
-new area value (or a typo'd file) ships misclassified techs with no signal —
-worse than failing the build, per the project's data-accuracy constraint.
-**Fix:**
-```ts
-if (typeof raw.area !== "string" || !VALID_AREAS.has(raw.area)) {
-  throw new Error(`extractTech: tech "${key}" has missing/invalid area ${JSON.stringify(raw.area)}`);
-}
-if (typeof raw.tier !== "number") {
-  throw new Error(`extractTech: tech "${key}" has missing/invalid tier`);
+// resolve.ts
+const SAFE_ICON_NAME = /^[a-zA-Z0-9_\-@.]+$/;
+function resolveIfExists(gameRoot: string, iconName: string): string | null {
+  if (!SAFE_ICON_NAME.test(iconName)) return null; // or throw, matching assemble's fail-loud writes
+  const path = iconPath(gameRoot, iconName);
+  return existsSync(path) ? path : null;
 }
 ```
 
 ## Info
 
-### IN-01: `gateway` token ships verbatim with no localisation attempt and no unresolved count
+### IN-01: `gateway` token ships verbatim with no localisation attempt and no unresolved count (carried from iteration 1)
 
-**File:** `pipeline/src/unlocks.ts:121-123`
-**Issue:** SCHEMA.md says every grant token is "resolved to a human-readable
-display string where a real localisation entry exists"; the gateway token
-(e.g. `"biological"`, confirmed shipped raw for tech_gene_tailoring) is
-pushed without a `locMap` lookup and never counted in
-`unresolvedGrantLocKeys`.
-**Fix:** Run gateway through `resolveOrVerbatim` (consider trying
-`gateway_${token}` first) and count fallbacks.
+**File:** `pipeline/src/unlocks.ts:160-162`
+**Issue:** The gateway token (confirmed: `"biological"` still ships raw for
+`tech_gene_tailoring`) is pushed without a `locMap` lookup and never counted
+in `unresolvedGrantLocKeys`, contradicting SCHEMA.md's "resolved where a real
+localisation entry exists".
+**Fix:** Run it through `resolveOrVerbatim` (consider `gateway_${token}`
+first) and count fallbacks.
 
-### IN-02: Misleading comment — numeric coercion cannot resolve chained `@a = @b` variable references
+### IN-02: Misleading comment — numeric coercion cannot resolve chained `@a = @b` references (carried)
 
 **File:** `pipeline/src/parser/scripted-variables.ts:69-74`
-**Issue:** The comment claims the looked-up value "might itself be … another
-reference; try one more numeric coercion before failing" — `Number("@other")`
-is NaN, so a chained reference always throws. Fail-loud is fine; the comment
-promises behavior the code doesn't have.
-**Fix:** Either implement one level of chained lookup or correct the comment.
+**Issue:** Comment claims the looked-up value "might itself be … another
+reference; try one more numeric coercion" — `Number("@other")` is NaN, so a
+chained reference always throws.
+**Fix:** Update the comment (the fail-loud behavior itself is fine) or
+implement one level of chained lookup.
 
-### IN-03: latin1 decode + `encoding: "windows1252"` on an already-decoded string mis-maps 0x80–0x9F characters
+### IN-03: latin1 decode + `encoding: "windows1252"` on an already-decoded string mis-maps 0x80-0x9F characters (carried)
 
-**File:** `pipeline/src/parser/clausewitz.ts:39-41`
-**Issue:** Bytes are decoded with latin1 (ISO-8859-1), then the
-windows1252 option is passed to `parseText` for a string input (where it has
-no effect). Windows-1252 characters in that range (curly quotes, §, em-dash)
-decode to C1 control chars. Harmless for keys/numbers; wrong for any string
-content extracted from script files.
-**Fix:** Decode via `new TextDecoder("windows-1252").decode(buf)` or pass the
-raw Buffer to jomini with the encoding option.
+**File:** `pipeline/src/parser/clausewitz.ts:39,48`
+**Issue:** Bytes decode as ISO-8859-1; the windows1252 option has no effect on
+a string input, so Windows-1252 punctuation (curly quotes, em-dash) becomes C1
+control chars in extracted string content.
+**Fix:** Decode via `new TextDecoder("windows-1252").decode(buf)`.
 
-### IN-04: `scanAllLocalisation` is non-recursive despite the "scans EVERY .yml file" docstring
+### IN-04: `scanAllLocalisation` is non-recursive despite the "scans EVERY .yml file" docstring (carried)
 
-**File:** `pipeline/src/localisation/loc-scanner.ts:42-47`
-**Issue:** `readdirSync(locDir)` skips subdirectories; 99 `.yml` files under
-`localisation/english/name_lists/` and `random_names/` (verified) are never
-scanned. No tech keys live there today, but the module's stated contract
-("never a hardcoded subset") is not what the code does.
-**Fix:** Use `readdirSync(locDir, { recursive: true })` (Node 20+) or note the
-one-level limitation in the docstring.
+**File:** `pipeline/src/localisation/loc-scanner.ts:45`
+**Issue:** `readdirSync(locDir)` skips subdirectories (`name_lists/`,
+`random_names/` — 99 files). No tech keys live there today; the stated
+contract is not what the code does.
+**Fix:** `readdirSync(locDir, { recursive: true })` or document the one-level
+limitation.
 
-### IN-05: Test name lies — "throws when rawVersion is absent" actually tests a nonexistent path
+### IN-05: Test name lies — "throws when rawVersion is absent" tests a nonexistent-path throw instead (carried)
 
 **File:** `pipeline/test/skeleton.test.ts:75-77`
-**Issue:** The test passes `"/nonexistent-path-xyz"`, which throws at the
-`existsSync` guard — the `rawVersion`-absent branch (detect.ts:22-26) is
-never exercised by any test.
-**Fix:** Add a fixture dir with a `launcher-settings.json` lacking
-`rawVersion` (or point at a temp file) and assert that specific error.
+**Issue:** `"/nonexistent-path-xyz"` throws at the `existsSync` guard; the
+rawVersion-absent branch (detect.ts:22-26) is never exercised by any test.
+**Fix:** Add a fixture with a `launcher-settings.json` lacking `rawVersion`
+and assert that specific error message.
 
-### IN-06: Corpus test hardcodes the `v4.5.0` output path the pipeline itself auto-detects
+### IN-06: Corpus test hardcodes the `v4.5.0` output path the pipeline auto-detects (carried)
 
 **File:** `pipeline/test/corpus.test.ts:28-29`
-**Issue:** `OUT_PATH`/`ICONS_DIR` pin `v4.5.0` while `runAssemble` derives the
-version from the install. The next game patch breaks the suite with a
-confusing missing-file error rather than a version-drift message.
-**Fix:** Derive the expected dir via `detectGameVersion(resolveConfig([]).gameRoot)`.
+**Issue:** The next game patch breaks the suite with a confusing missing-file
+error rather than a version-drift message.
+**Fix:** Derive the expected dir via
+`detectGameVersion(resolveConfig([]).gameRoot)`.
 
-### IN-07: `.gitignore` does not exclude the `scratch-debug/` working directory
+### IN-07: Duplicate root tech keys silently mishandled — same-file duplicates vanish entirely; cross-file duplicates last-write-win (carried as prior IN-08, extended)
 
-**File:** `pipeline/.gitignore:1-4`
-**Issue:** `pipeline/scratch-debug/` exists in the working tree and is not
-ignored (only `node_modules/`, `dist/`, `data/`, `*.log` are) — debug scratch
-files will be committed with the phase.
-**Fix:** Add `scratch-debug/` (or delete the directory before commit).
+**File:** `pipeline/src/parser/tech-extractor.ts:342-347`; `pipeline/src/assemble.ts:178`
+**Issue:** Cross-file duplicate keys: both records extracted, snapshot Record
+keeps the last, `leadsTo` gets duplicate edges. NEW observation this
+iteration: a duplicate tech key within the SAME file is auto-arrayed by
+jomini, fails `isPlainObject`, and the tech vanishes from the snapshot
+entirely (counted once in `totalTechKeysFound`, extracted zero times). Thanks
+to the WR-02 fix the report now prints `match=false` in both cases — but the
+build still succeeds with silently wrong data. Zero corpus instances today
+(678/678, match=true).
+**Fix:** Fail loud (or dedupe-with-warn) on a repeated key; treat an
+auto-arrayed top-level `tech_*` value as a duplicate-key error, not a skip.
 
-### IN-08: Duplicate root tech keys across files would silently last-write-win and duplicate `leadsTo` entries
+### IN-08: Icons are converted before the missing-name strict-fail — failed builds leave fully-populated icons output (carried as prior IN-09)
 
-**File:** `pipeline/src/parser/tech-extractor.ts:278-281`; `pipeline/src/graph/build-dag.ts:92-96`
-**Issue:** If a tech key appears in two files (Paradox override pattern),
-`extractAllTechs` yields both records; `assemble.ts:117` keeps the last
-silently, and `build-dag` pushes reverse edges once per record so `leadsTo`
-can contain duplicates. Verified none exist in the current 678-key corpus;
-the report's count mismatch would print `match=false` but not fail.
-**Fix:** Detect and fail loud (or dedupe explicitly with a warn) when a key
-repeats across files.
+**File:** `pipeline/src/assemble.ts:120-197`
+**Issue:** All icon conversion happens in the per-tech loop; the missing-name
+throw fires after it (line 191). A failing run leaves `data/v{ver}/icons/`
+populated with no `tech.json`, and repeats the conversion work every retry.
+**Fix:** Resolve all names (collect missing) before the conversion loop.
 
-### IN-09: Icons are written before the missing-name strict-fail — failed builds leave partial versioned output
-
-**File:** `pipeline/src/assemble.ts:80-136`
-**Issue:** All icon conversion (the expensive step) happens inside the loop,
-but the missing-name throw fires after it. A failing run leaves
-`data/v{ver}/icons/` fully populated with no `tech.json` — "throw, write
-nothing" holds for the snapshot only, and the wasted conversion work repeats
-on every retry.
-**Fix:** Resolve names (and collect missing) before the icon-conversion loop,
-throwing before any output is written.
-
-### IN-10: `.default()` on schema fields weakens the pre-write validation gate
+### IN-09: `.default()` on schema fields weakens the pre-write validation gate (carried as prior IN-10)
 
 **File:** `pipeline/src/schema/tech-snapshot.ts:41,60,63,68,70`
 **Issue:** `category`, `prerequisites`, `dlc`, `description`, and `icon` carry
 `.default(...)`, so a malformed tech missing `prerequisites` entirely passes
-the D-16 gate and is silently patched. For a schema whose documented job is
-to be the hard boundary that "gates every write", required-with-explicit-value
-is stricter and matches SCHEMA.md's nullability table.
-**Fix:** Drop `.default()` on pipeline-side validation (keep defaults, if
-desired, in a separate lenient schema for Phase-2 fixtures).
+the D-16 gate and is silently patched.
+**Fix:** Drop `.default()` in the pipeline-side validation schema.
+
+### IN-10: Unused `existsSync` import in assemble.ts — dead code introduced by the fix commits (new)
+
+**File:** `pipeline/src/assemble.ts:32`
+**Issue:** `existsSync` is imported but no longer referenced anywhere in the
+module (the CR-04 rework removed its last use). `tsc` doesn't catch it because
+`noUnusedLocals` is not enabled in tsconfig.
+**Fix:** Remove `existsSync` from the import; consider enabling
+`noUnusedLocals` in `pipeline/tsconfig.json`.
+
+### IN-11: `writePlaceholderIcon` is dead production code post-CR-04, and its test's comment describes a path assemble.ts no longer has (new)
+
+**File:** `pipeline/src/icons/convert.ts:70-72`; `pipeline/test/icons.test.ts:137-145`
+**Issue:** After the CR-04 fix, assemble.ts uses `copyFileSync` directly
+inside `usePlaceholder()`; `writePlaceholderIcon` is referenced only by
+icons.test.ts Test 3, whose comment ("Simulates assemble.ts's fallback path")
+is now false — the test exercises a helper production no longer calls.
+**Fix:** Either have `usePlaceholder()` call `writePlaceholderIcon` (keeping
+one copy-helper), or delete the helper and repoint/retire the test.
+
+### IN-12: Modifier grant labels never try the `mod_<statKey>` localisation convention — nearly every modifier grant ships a raw engine key as its label (new)
+
+**File:** `pipeline/src/unlocks.ts:101`
+**Issue:** `resolveOrVerbatim(statKey, locMap)` looks up the raw stat key,
+but Stellaris localises modifier display names under `mod_<statKey>`
+(verified: `$mod_ship_battleship_cost_mult$` and
+`$mod_shipsize_battleship_build_speed_mult$` exist in localisation/english/
+while the bare keys do not). Shipped grants therefore read
+`"planet_jobs_energy_produces_mult: 0.15"` instead of a human label, and each
+such line inflates `unresolvedGrantLocKeys`. SCHEMA.md promises resolution
+"where a real localisation entry exists" — one does, under the `mod_` prefix.
+Same family as IN-01; cosmetic per D-16.
+**Fix:** Try `locMap.get(`mod_${statKey}`)` before the bare-key lookup.
 
 ---
 
-_Reviewed: 2026-07-08T00:59:04Z_
+_Reviewed: 2026-07-08T01:42:38Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
