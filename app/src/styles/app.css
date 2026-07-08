@@ -89,6 +89,37 @@
   padding: 2px 0;
 }
 
+/* Grouped legend (quick 260707-we6 Task 5): each research area heads a group,
+   with its 13-way subdivided category names listed beneath in the area color. */
+.legend__group {
+  padding: 2px 0;
+}
+
+.legend__group + .legend__group {
+  margin-top: var(--space-xs);
+}
+
+.legend__label--area {
+  font-weight: var(--font-weight-heading);
+}
+
+.legend__categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  padding-left: 20px; /* align under the area label, past the swatch */
+  max-width: 220px;
+}
+
+.legend__category {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--color-text);
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
 .legend__swatch {
   display: inline-block;
   width: 12px;
