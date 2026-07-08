@@ -278,10 +278,14 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     [state, fitToNodes],
   );
 
+  // Toggle: when every category is already on, clicking "Show all" clears them
+  // all (everything off); otherwise it turns everything on. Only reset the
+  // camera on the show-all direction — clearing shouldn't yank the view.
   const onShowAll = useCallback(() => {
-    setActive(new Set(CATEGORY_ORDER));
-    applyTransform(DEFAULT_TRANSFORM);
-  }, [applyTransform]);
+    const turnOff = active.size === CATEGORY_ORDER.length;
+    setActive(turnOff ? new Set<string>() : new Set(CATEGORY_ORDER));
+    if (!turnOff) applyTransform(DEFAULT_TRANSFORM);
+  }, [active, applyTransform]);
 
   // ── Hover (tooltip) — stable callbacks so cards stay memoized ──────────────
   const onCardEnter = useCallback((tech: Tech, rect: DOMRect) => {
