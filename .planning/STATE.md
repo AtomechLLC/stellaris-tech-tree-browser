@@ -108,6 +108,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260707-we6 | Category swimlanes + reference-style zoom-LOD tech cards | 2026-07-08 | 17668cf..b58df93 | [260707-we6-...](./quick/260707-we6-category-swimlanes-and-square-tile-nodes/) |
 | 260708-0mk | Replace Sigma with a reference-styled DOM tech tree (ELK layout + DOM cards + SVG connectors) | 2026-07-08 | 73f2337..8c0059e | [260708-0mk-...](./quick/260708-0mk-replace-sigma-with-a-simple-dom-css-tech/) |
+| 260708-2v7 | Left category navigation panel (toggle categories + click to isolate) | 2026-07-08 | 7118c43 | [260708-2v7-...](./quick/260708-2v7-left-category-navigation-panel-with-togg/) |
 
 ## Deferred Items
 
