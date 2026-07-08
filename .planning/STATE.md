@@ -112,6 +112,7 @@ None yet.
 | 260708-39s | Pan/zoom performance (imperative transform, single-path edges, content-visibility) + hover tooltips | 2026-07-08 | f45a4ce | [260708-39s-...](./quick/260708-39s-pan-zoom-performance-and-hover-tooltips/) |
 | 260708-3zu | Category swimlane bands (tinted + rotated name watermark) + Re-pack button + dark header | 2026-07-08 | 55c044e..fef3d26 | [260708-3zu-...](./quick/260708-3zu-category-swimlane-bands-with-tints-redo-/) |
 | 260708-4io | Selectable cards + gold prereq/child edge highlight + hidden-ancestry drill-down panel | 2026-07-08 | 955c850..35ba563 | [260708-4io-...](./quick/260708-4io-selectable-cards-highlighted-edges-hidde/) |
+| 260708-4y2 | F-Find (search→jump) + hotkey list replaces legend + weight-modifier "Research Weight" detail | 2026-07-08 | 8ed2748..4b71cd0 | [260708-4y2-...](./quick/260708-4y2-find-hotkey-hotkey-list-replaces-legend-/) |
 
 ## Deferred Items
 
