@@ -1,5 +1,6 @@
 import type { Tech } from "../types/tech-snapshot";
 import { categoryLabel } from "../lib/graph/categories";
+import { describeWeightModifiers } from "../lib/graph/weight";
 
 /**
  * Hover tooltip — the reference tool's detail popover: name + meta, then
@@ -61,6 +62,9 @@ export function TechTooltip({
   const leadsTo = tech.unlocks.leadsTo.map(resolve);
   const description = isReadable(tech.description) ? clean(tech.description!) : null;
   const unlocks = tech.unlocks.grants.map(clean).filter(isReadable);
+  // "What boosts your chance of drawing this tech" — readable lines from the raw
+  // weight_modifier block (has_technology names resolved via techByKey).
+  const weightMods = describeWeightModifiers(tech.weightModifierRaw, techByKey);
 
   // Place to the right of the card if it fits, otherwise to its left.
   const placeRight = anchor.right + 12 + TOOLTIP_W <= window.innerWidth;
@@ -86,6 +90,18 @@ export function TechTooltip({
           {tech.flags.isDangerous && <span className="tech-badge tech-badge--danger">Dangerous</span>}
         </div>
       )}
+
+      <section className="tech-tooltip__sec">
+        <div className="tech-tooltip__sec-title">Research Weight</div>
+        <div className="tech-tooltip__weight-base">Base weight {tech.weight}</div>
+        {weightMods.length > 0 && (
+          <ul className="tech-tooltip__weight-mods">
+            {weightMods.map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {description && (
         <section className="tech-tooltip__sec">

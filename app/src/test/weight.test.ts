@@ -1,0 +1,131 @@
+import { describe, expect, it } from "vitest";
+import type { Tech } from "../types/tech-snapshot";
+import { describeWeightModifiers } from "../lib/graph/weight";
+
+/**
+ * Unit coverage for the pure weight-modifier humanizer (quick 260708-4y2).
+ * Exercises the real `weightModifierRaw` shapes seen in tech.json — base
+ * factor, has_technology boosts (name-resolved via techByKey), num_owned_planets
+ * comparisons, single-object vs array `modifier`, boolean flags — plus the
+ * defensive fall-throughs (empty/undefined/unknown shapes → no lines, no throw).
+ */
+
+/** Minimal Tech factory — only `key`/`name` matter for name resolution. */
+function tech(key: string, name: string): Tech {
+  return {
+    key,
+    area: "engineering",
+    category: ["propulsion"],
+    tier: 0,
+    cost: 0,
+    weight: 0,
+    prerequisites: [],
+    unlocks: { grants: [], leadsTo: [] },
+    dlc: null,
+    flags: { isRare: false, isDangerous: false, isRepeatable: false, isStarting: false },
+    name,
+    description: null,
+    icon: null,
+  };
+}
+
+function mapOf(...techs: Tech[]): Map<string, Tech> {
+  return new Map(techs.map((t) => [t.key, t]));
+}
+
+describe("describeWeightModifiers", () => {
+  it("resolves a has_technology boost to the tech's display name (thrusters example)", () => {
+    const techByKey = mapOf(tech("tech_thrusters_2", "Ion Thrusters"));
+    const raw = {
+      factor: 1.25,
+      modifier: [
+        { factor: 2, has_technology: "tech_thrusters_2" },
+        { factor: 2, has_technology: "tech_thrusters_3" },
+      ],
+    };
+    const lines = describeWeightModifiers(raw, techByKey);
+
+    expect(lines[0]).toBe("Base ×1.25");
+    expect(lines).toContain("×2 if researched Ion Thrusters");
+    // Unknown tech key falls back to a prettified key, still never throws.
+    expect(lines).toContain("×2 if researched Thrusters 3");
+  });
+
+  it("maps a num_owned_planets GREATER_THAN comparison to '> 2'", () => {
+    const raw = {
+      modifier: [{ factor: 1.5, num_owned_planets: { GREATER_THAN: 2 } }],
+    };
+    const lines = describeWeightModifiers(raw, mapOf());
+
+    expect(lines).toEqual(["×1.5 if owned planets > 2"]);
+  });
+
+  it("maps LESS_THAN to '<'", () => {
+    const raw = { modifier: { factor: 0.5, num_owned_planets: { LESS_THAN: 2 } } };
+    const lines = describeWeightModifiers(raw, mapOf());
+
+    expect(lines).toEqual(["×0.5 if owned planets < 2"]);
+  });
+
+  it("normalises a single-object modifier the same as a one-element array", () => {
+    const single = describeWeightModifiers(
+      { modifier: { factor: 1.5, is_specialist_subject_type: { TYPE: "scholarium" } } },
+      mapOf(),
+    );
+    // is_specialist_subject_type carries a non-operator object → that condition
+    // is skipped, so the modifier has no renderable clause and is dropped.
+    expect(single).toEqual([]);
+  });
+
+  it("omits a base factor of exactly 1 (no boost to report)", () => {
+    expect(describeWeightModifiers({ factor: 1 }, mapOf())).toEqual([]);
+  });
+
+  it("renders a base-only factor ≠ 1 as a 'Base ×N' line", () => {
+    expect(describeWeightModifiers({ factor: 1.5 }, mapOf())).toEqual(["Base ×1.5"]);
+    expect(describeWeightModifiers({ factor: 2 }, mapOf())).toEqual(["Base ×2"]);
+  });
+
+  it("renders a boolean flag condition ('with federation')", () => {
+    const raw = { modifier: { factor: 3, has_federation: true } };
+    expect(describeWeightModifiers(raw, mapOf())).toEqual(["×3 if with federation"]);
+  });
+
+  it("joins multiple conditions in one modifier with ' and '", () => {
+    const raw = {
+      modifier: {
+        factor: 2,
+        has_technology: "tech_x",
+        num_owned_planets: { GREATER_THAN: 4 },
+      },
+    };
+    const lines = describeWeightModifiers(raw, mapOf(tech("tech_x", "Tech X")));
+    expect(lines).toEqual(["×2 if researched Tech X and owned planets > 4"]);
+  });
+
+  it("preserves an unresolved @variable factor rather than dropping the line", () => {
+    const raw = { modifier: { factor: "@federation_perk_factor", has_federation: true } };
+    const lines = describeWeightModifiers(raw, mapOf());
+    expect(lines).toEqual(["×@federation_perk_factor if with federation"]);
+  });
+
+  it("skips deep logic blocks (OR/NOR/NOT) without throwing", () => {
+    const raw = {
+      modifier: {
+        factor: 2,
+        OR: { has_origin: "origin_storm_chasers", has_storm_attraction_civic: true },
+      },
+    };
+    // The only condition is a nested OR block → not renderable → line dropped.
+    expect(describeWeightModifiers(raw, mapOf())).toEqual([]);
+  });
+
+  it("returns [] for empty / undefined / non-object input (defensive)", () => {
+    expect(describeWeightModifiers(undefined, mapOf())).toEqual([]);
+    expect(describeWeightModifiers(null, mapOf())).toEqual([]);
+    expect(describeWeightModifiers({}, mapOf())).toEqual([]);
+    expect(describeWeightModifiers("nonsense", mapOf())).toEqual([]);
+    expect(describeWeightModifiers(42, mapOf())).toEqual([]);
+    expect(describeWeightModifiers([], mapOf())).toEqual([]);
+  });
+});

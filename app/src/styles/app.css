@@ -611,6 +611,31 @@
   opacity: 0.92;
 }
 
+/* Research Weight — base weight + readable "×N if …" modifier lines. */
+.tech-tooltip__weight-base {
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.92;
+}
+.tech-tooltip__weight-mods {
+  list-style: none;
+  margin: 3px 0 0;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+.tech-tooltip__weight-mods li {
+  position: relative;
+  padding-left: 10px;
+}
+.tech-tooltip__weight-mods li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  opacity: 0.5;
+}
+
 /* Required Technologies — icon thumbnail + name per prerequisite. */
 .tech-tooltip__prereqs {
   list-style: none;
