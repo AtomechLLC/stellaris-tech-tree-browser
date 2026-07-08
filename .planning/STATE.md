@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 Phase: 3
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-07-08
+Last activity: 2026-07-08 - Completed quick task 260707-we6: category swimlanes + reference-style zoom-LOD tech cards
 
 Progress: [██████████] 100%
 
@@ -101,6 +101,12 @@ None yet.
 ### Blockers/Concerns
 
 - Phase 1 research flag: jomini's handling of `@variable` references, inline `@[ ]` math, and multi-condition `weight_modifier` blocks needs validation against the real 4.5.0 corpus (not assumed from general library reputation)
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260707-we6 | Category swimlanes + reference-style zoom-LOD tech cards | 2026-07-08 | 17668cf..b58df93 | [260707-we6-...](./quick/260707-we6-category-swimlanes-and-square-tile-nodes/) |
 
 ## Deferred Items
 
