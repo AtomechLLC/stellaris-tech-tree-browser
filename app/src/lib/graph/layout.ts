@@ -1,7 +1,7 @@
 import type { DirectedGraph } from "graphology";
 import ELK from "elkjs/lib/elk.bundled.js";
 import type { ElkNode, ElkExtendedEdge } from "elkjs/lib/elk.bundled.js";
-import { remapAreaBands } from "./areaBands";
+import { remapSwimlanes, type LaneGeometry } from "./swimlanes";
 
 // Zero-config in-process ELK instance (RESEARCH Pattern 3 / Pitfall 4): no
 // workerUrl/workerFactory. elk.bundled.js's fake-worker fallback runs the
@@ -75,20 +75,24 @@ function buildElkGraph(graph: DirectedGraph): ElkNode {
 /**
  * Computes the tech tree layout once (D-08): tier columns pinned by ELK's
  * partitioning feature (from the game's own `tier` field, not edge-inferred
- * — D-06), then a post-layout area-band Y-remap (areaBands.ts — ELK has no
- * native swim-lane mechanism for this axis). Writes final x/y back onto the
- * graphology graph's node attributes; Sigma renders these as fixed
+ * — D-06), then a post-layout category-swimlane Y-remap (swimlanes.ts — ELK
+ * has no native swim-lane mechanism for this axis). Writes final x/y back onto
+ * the graphology graph's node attributes; Sigma renders these as fixed
  * coordinates and never re-invokes this function on pan/zoom.
+ *
+ * Returns the computed per-lane geometry (13 category lanes) so the lane axis
+ * + background overlay (CategoryAxis) can project lane centers/extents; the
+ * same geometry is also stashed module-side in swimlanes.ts (getLaneGeometry).
  *
  * Do NOT import graphology-layout / forceAtlas2 anywhere near this module —
  * it would overwrite ELK's computed x/y (RESEARCH Anti-Pattern).
  */
-export async function layoutGraph(graph: DirectedGraph): Promise<void> {
+export async function layoutGraph(graph: DirectedGraph): Promise<LaneGeometry[]> {
   const elkGraph = buildElkGraph(graph);
   const result = await elk.layout(elkGraph);
 
   // x is authoritative from ELK (tier-partitioned); y is remapped into
-  // fixed area bands by remapAreaBands, which also writes x through
-  // unchanged onto the graphology graph.
-  remapAreaBands(graph, result as ElkNode);
+  // fixed category lanes by remapSwimlanes, which also writes x through
+  // unchanged onto the graphology graph and returns the lane geometry.
+  return remapSwimlanes(graph, result as ElkNode);
 }

@@ -45,6 +45,16 @@ export function buildGraph(snapshot: TechSnapshot, tokens?: ThemeTokens): Direct
       label: tech.name,
       tier: tech.tier,
       area: tech.area,
+      // Every tech has exactly one category (all category[] are length 1 in
+      // the v4.5.0 corpus) — carried onto the node so swimlanes.ts can group
+      // by category lane and TechCardOverlay can render the `Category – Tier`
+      // line without re-reading the snapshot. Empty-string fallback keeps the
+      // attribute a defined string even for a hypothetical categoryless tech.
+      category: tech.category[0] ?? "",
+      // Extra fields consumed by the zoom-in HTML card overlay (Task 3).
+      name: tech.name,
+      cost: tech.cost,
+      weight: tech.weight,
       image: tech.icon ? `${iconBase}/${tech.icon}` : undefined,
       size: 12,
       // x/y are owned by layout.ts (ELK layout, Plan 02-02 Task 2) — left

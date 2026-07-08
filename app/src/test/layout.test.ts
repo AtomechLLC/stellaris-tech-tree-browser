@@ -4,10 +4,8 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { TechSnapshot } from "../types/tech-snapshot";
 import { buildGraph } from "../lib/graph/buildGraph";
-// RED (Task 1): layoutGraph does not exist yet until Task 2 creates
-// app/src/lib/graph/layout.ts — this import fails to resolve, which is the
-// intended failing state until Task 2 completes.
 import { layoutGraph } from "../lib/graph/layout";
+import { CATEGORY_AREA, CATEGORY_ORDER, type CategoryKey } from "../lib/graph/categories";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -47,7 +45,7 @@ describe("buildGraph: prerequisite edges (TREE-01 true DAG)", () => {
   });
 });
 
-describe("layoutGraph: ELK tier-partition + area-band Y-remap (TREE-02)", () => {
+describe("layoutGraph: ELK tier-partition + category-swimlane Y-remap (TREE-02)", () => {
   // ELK's layered layout at the real 678-node/613-edge scale takes several
   // seconds on the main thread (D-08 one-shot cost, benchmarked and recorded
   // in the plan SUMMARY) — well above vitest's default 5s test timeout, so
@@ -90,7 +88,7 @@ describe("layoutGraph: ELK tier-partition + area-band Y-remap (TREE-02)", () => 
     }
   }, LAYOUT_TEST_TIMEOUT);
 
-  it("groups nodes into three disjoint area bands (physics/society/engineering)", async () => {
+  it("preserves area order (all physics.y < all society.y < all engineering.y)", async () => {
     const snapshot = loadRealSnapshot();
     const graph = buildGraph(snapshot);
 
@@ -110,13 +108,72 @@ describe("layoutGraph: ELK tier-partition + area-band Y-remap (TREE-02)", () => 
     });
 
     expect(yRangeByArea.size).toBe(3);
-    const ranges = [...yRangeByArea.entries()].sort((a, b) => a[1].min - b[1].min);
 
-    // Each area's y-range must not overlap the next area's y-range.
-    for (let i = 0; i < ranges.length - 1; i++) {
-      const [, current] = ranges[i];
-      const [, next] = ranges[i + 1];
+    // Area order is authoritative: physics on top, then society, then
+    // engineering — every node in an earlier area sits strictly above every
+    // node in a later area.
+    const order = ["physics", "society", "engineering"] as const;
+    for (let i = 0; i < order.length - 1; i++) {
+      const current = yRangeByArea.get(order[i])!;
+      const next = yRangeByArea.get(order[i + 1])!;
       expect(current.max).toBeLessThanOrEqual(next.min);
+    }
+  }, LAYOUT_TEST_TIMEOUT);
+
+  it("groups every node into its 13-category swimlane, lanes non-overlapping in y", async () => {
+    const snapshot = loadRealSnapshot();
+    const graph = buildGraph(snapshot);
+
+    const geometry = await layoutGraph(graph);
+
+    // Lane geometry covers all 13 categories in CATEGORY_ORDER.
+    expect(geometry.map((g) => g.category)).toEqual([...CATEGORY_ORDER]);
+
+    // Lanes are non-overlapping and monotonically stacked downward.
+    for (let i = 0; i < geometry.length - 1; i++) {
+      const current = geometry[i];
+      const next = geometry[i + 1];
+      expect(current.top + current.height).toBeLessThanOrEqual(next.top);
+    }
+
+    // Every node's y lands within its own category lane's [top, top+height].
+    const laneByCategory = new Map(geometry.map((g) => [g.category, g]));
+    graph.forEachNode((_key, attrs) => {
+      const category = attrs.category as CategoryKey;
+      const y = attrs.y as number;
+      const lane = laneByCategory.get(category);
+      expect(lane).toBeDefined();
+      expect(y).toBeGreaterThanOrEqual(lane!.top);
+      expect(y).toBeLessThanOrEqual(lane!.top + lane!.height);
+    });
+
+    // Each lane's parent area matches CATEGORY_AREA (nesting is correct).
+    for (const lane of geometry) {
+      expect(lane.area).toBe(CATEGORY_AREA[lane.category]);
+    }
+  }, LAYOUT_TEST_TIMEOUT);
+
+  it("keeps x equal to ELK's tier-partitioned x (swimlane touches only y)", async () => {
+    const snapshot = loadRealSnapshot();
+    const graph = buildGraph(snapshot);
+
+    await layoutGraph(graph);
+
+    // Monotonic tier→x still holds after the y-only swimlane remap.
+    const minXByTier = new Map<number, number>();
+    const maxXByTier = new Map<number, number>();
+    graph.forEachNode((_key, attrs) => {
+      const tier = attrs.tier as number;
+      const x = attrs.x as number;
+      const curMin = minXByTier.get(tier);
+      if (curMin === undefined || x < curMin) minXByTier.set(tier, x);
+      const curMax = maxXByTier.get(tier);
+      if (curMax === undefined || x > curMax) maxXByTier.set(tier, x);
+    });
+    for (let tier = 0; tier < 5; tier++) {
+      if (minXByTier.has(tier + 1)) {
+        expect(maxXByTier.get(tier)!).toBeLessThanOrEqual(minXByTier.get(tier + 1)!);
+      }
     }
   }, LAYOUT_TEST_TIMEOUT);
 });
