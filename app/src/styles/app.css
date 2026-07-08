@@ -322,6 +322,39 @@
   opacity: 1;
 }
 
+/* View toggle (quick 260708-5di) — segmented Map ↔ Explore control, top-left of
+   the viewport. Mirrors the repack/zoom control chrome (tokens only). */
+.view-toggle {
+  position: absolute;
+  left: var(--space-md);
+  top: var(--space-md);
+  z-index: 12;
+  display: inline-flex;
+  gap: 0;
+  padding: 2px;
+  background: var(--tree-panel);
+  border: 1px solid var(--tree-border);
+  border-radius: 6px;
+}
+.view-toggle__btn {
+  padding: 5px 12px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-heading);
+  color: var(--tree-text);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.view-toggle__btn:hover:not([data-active]) {
+  background: var(--tree-border);
+}
+.view-toggle__btn[data-active] {
+  color: var(--color-select);
+  background: color-mix(in srgb, var(--color-select) 18%, transparent);
+}
+
 /* Re-pack button (quick 260708-3zu) — top-right of the viewport. Re-runs the
    layout on just the visible categories so their bands close up. */
 .repack-button {

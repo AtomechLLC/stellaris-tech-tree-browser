@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { TechSnapshot, Tech } from "../types/tech-snapshot";
 import { layoutTree, type TreeLayout, type LayoutNode } from "../lib/tree/layoutTree";
+import { layoutExplore } from "../lib/tree/exploreLayout";
 import { CATEGORY_ORDER, CATEGORY_AREA } from "../lib/graph/categories";
 import { TechCard, CARD_W, CARD_H } from "./TechCard";
 import { EdgeLayer } from "./EdgeLayer";
@@ -48,6 +49,10 @@ const LOD_THRESHOLD = 0.55;
 const DRAG_THRESHOLD = 4;
 
 type Area = Tech["area"];
+
+/** Which of the two views is showing: the banded swimlane Map, or the
+ *  collapsible forward Explore tree. */
+type ViewMode = "map" | "explore";
 
 type LayoutState =
   | { status: "loading" }
@@ -90,6 +95,12 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const repackSeq = useRef(0);
   // F-Find overlay open state (quick 260708-4y2).
   const [findOpen, setFindOpen] = useState(false);
+  // Which view is active (quick 260708-5di). "map" = the banded swimlane ELK
+  // layout; "explore" = the pure collapsible forward tree from the roots.
+  const [viewMode, setViewMode] = useState<ViewMode>("map");
+  // Explore-mode expand state: the set of tech keys currently expanded (open).
+  // Collapsed by default → Explore opens at just the entry-point techs.
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(() => new Set());
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -186,6 +197,15 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     const bands = layout.bands.filter((b) => active.has(b.category));
     return { ...layout, nodes, edges, bands };
   }, [state, active]);
+
+  // Explore-mode layout: a PURE, SYNCHRONOUS collapsible forward tree (no ELK),
+  // recomputed on each expand/collapse (cheap). Respects the active category
+  // filter internally. Only consumed when viewMode === "explore" (still cheap
+  // to memo unconditionally — it's a plain DFS over the reverse-prereq map).
+  const exploreLayout = useMemo(
+    () => layoutExplore(snapshot, expandedKeys, active, CARD_W, CARD_H),
+    [snapshot, expandedKeys, active],
+  );
 
   // Frame a set of nodes to fill the viewport (used when isolating a category).
   const fitToNodes = useCallback(
@@ -441,6 +461,69 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
 
   const resetView = useCallback(() => applyTransform(DEFAULT_TRANSFORM), [applyTransform]);
 
+  // ── Explore mode (quick 260708-5di) ───────────────────────────────────────
+  // Reverse-prereq map (tech key → the techs it unlocks), used to prune a
+  // collapsed node's now-hidden descendants from expandedKeys.
+  const childrenByKey = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const t of Object.values(snapshot.techs)) {
+      for (const prereq of t.prerequisites) {
+        if (!snapshot.techs[prereq]) continue;
+        const bucket = m.get(prereq);
+        if (bucket) bucket.push(t.key);
+        else m.set(prereq, [t.key]);
+      }
+    }
+    return m;
+  }, [snapshot]);
+
+  // Toggle a node's expansion. Expanding just adds the key. Collapsing removes
+  // the key AND every descendant reachable through still-expanded nodes — so
+  // re-expanding later starts fresh (its subtree isn't silently pre-opened).
+  const onToggleExpand = useCallback(
+    (key: string) => {
+      setExpandedKeys((prev) => {
+        const next = new Set(prev);
+        if (!next.has(key)) {
+          next.add(key);
+          return next;
+        }
+        // Collapse: BFS the currently-expanded subtree and drop every node in it.
+        next.delete(key);
+        const queue = [key];
+        while (queue.length > 0) {
+          const cur = queue.shift()!;
+          for (const child of childrenByKey.get(cur) ?? []) {
+            if (next.delete(child)) queue.push(child);
+          }
+        }
+        return next;
+      });
+    },
+    [childrenByKey],
+  );
+
+  // Switch views. Entering Explore fits/resets to the collapsed root column;
+  // returning to Map restores its default frame. (Selection/filter persist.)
+  const onSelectView = useCallback(
+    (mode: ViewMode) => {
+      setViewMode((prev) => {
+        if (prev === mode) return prev;
+        if (mode === "explore") {
+          // Frame the collapsed explore roots after the switch commits.
+          requestAnimationFrame(() => {
+            if (exploreLayout.nodes.length > 0) fitToNodes(exploreLayout.nodes);
+            else resetView();
+          });
+        } else {
+          applyTransform(DEFAULT_TRANSFORM);
+        }
+        return mode;
+      });
+    },
+    [exploreLayout, fitToNodes, resetView, applyTransform],
+  );
+
   // ── Re-pack: re-lay-out only the visible categories so their bands stack
   // with no gaps. Swaps state.layout IN PLACE (status stays "ready", no
   // unmount) and reframes; a stale result (active changed again mid-run) is
@@ -464,13 +547,23 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       });
   }, [state.status, repacking, snapshot, active, fitToNodes, resetView]);
 
-  // Memoize the card + edge elements against the (stable) filtered layout — NOT
-  // the transform (which is imperative now). Filter/hover re-renders reuse these.
-  const layoutReady = state.status === "ready" ? filtered ?? state.layout : null;
+  // The layout feeding the canvas: the banded map layout in Map mode, the pure
+  // collapsible tree in Explore mode. Both are the same TreeLayout shape, so the
+  // SAME cards + EdgeLayer + viewport transform render either one.
+  const layoutReady =
+    state.status !== "ready"
+      ? null
+      : viewMode === "explore"
+        ? exploreLayout
+        : filtered ?? state.layout;
+  const explore = viewMode === "explore";
   const content = useMemo(() => {
     if (!layoutReady) return null;
     return {
-      bands: <BandLayer bands={layoutReady.bands} width={layoutReady.width} />,
+      // Bands are MAP-ONLY — Explore renders no band/watermark backgrounds.
+      bands: explore ? null : (
+        <BandLayer bands={layoutReady.bands} width={layoutReady.width} />
+      ),
       edge: (
         <EdgeLayer
           edges={layoutReady.edges}
@@ -491,20 +584,34 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           onLeave={onCardLeave}
           selected={node.key === selectedKey}
           onSelect={onSelect}
+          // Explore-mode-only expand affordance. Map mode passes nothing →
+          // node.expandable is undefined → the chevron never renders.
+          expandable={explore ? node.expandable : undefined}
+          expanded={explore ? node.expanded : undefined}
+          onToggleExpand={explore ? onToggleExpand : undefined}
         />
       )),
     };
     // `selectedKey` in deps means only the 2 changed cards re-render on a
     // selection change (React.memo bails the rest); hover/pan never touch
     // selectedKey so they still reuse this memo cheaply.
-  }, [layoutReady, iconBase, onCardEnter, onCardLeave, selectedKey, onSelect]);
+  }, [
+    layoutReady,
+    explore,
+    iconBase,
+    onCardEnter,
+    onCardLeave,
+    selectedKey,
+    onSelect,
+    onToggleExpand,
+  ]);
 
   if (state.status === "loading") return <LoadingOverlay />;
   if (state.status === "error") {
     return <ErrorOverlay onRetry={() => setState({ status: "loading" })} />;
   }
 
-  const layout = filtered ?? state.layout;
+  const layout = explore ? exploreLayout : filtered ?? state.layout;
 
   return (
     <div className="tech-tree">
@@ -543,15 +650,41 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           {content?.cards}
         </div>
 
-        <button
-          type="button"
-          className="repack-button"
-          onClick={onRepack}
-          disabled={repacking}
-          aria-busy={repacking}
-        >
-          {repacking ? "Re-packing…" : "Re-pack layout"}
-        </button>
+        {/* View toggle (quick 260708-5di): Map (banded swimlanes) ↔ Explore
+            (collapsible forward tree). Top-left of the viewport. */}
+        <div className="view-toggle" role="group" aria-label="View mode">
+          <button
+            type="button"
+            className="view-toggle__btn"
+            data-active={viewMode === "map" ? "" : undefined}
+            aria-pressed={viewMode === "map"}
+            onClick={() => onSelectView("map")}
+          >
+            Map
+          </button>
+          <button
+            type="button"
+            className="view-toggle__btn"
+            data-active={viewMode === "explore" ? "" : undefined}
+            aria-pressed={viewMode === "explore"}
+            onClick={() => onSelectView("explore")}
+          >
+            Explore
+          </button>
+        </div>
+
+        {/* Re-pack is MAP-ONLY — the explore tree has no bands to close up. */}
+        {!explore && (
+          <button
+            type="button"
+            className="repack-button"
+            onClick={onRepack}
+            disabled={repacking}
+            aria-busy={repacking}
+          >
+            {repacking ? "Re-packing…" : "Re-pack layout"}
+          </button>
+        )}
 
         <div className="zoom-controls" role="group" aria-label="Zoom">
           <button type="button" onClick={() => zoomBy(ZOOM_STEP)} aria-label="Zoom in">
@@ -566,7 +699,10 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         </div>
       </div>
 
-      {selectedKey && selectedRect && (
+      {/* Ancestry drill-down is MAP-ONLY: it reveals filter-hidden PREREQUISITE
+          chains, which is a swimlane-map concern. Explore is a forward tree, so
+          the panel is suppressed there (selection/highlight still work). */}
+      {!explore && selectedKey && selectedRect && (
         <AncestryPanel
           selectedKey={selectedKey}
           active={active}
