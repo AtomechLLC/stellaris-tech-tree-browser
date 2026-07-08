@@ -296,10 +296,25 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // ── Selection ─────────────────────────────────────────────────────────────
   // Click toggles selection; a drag that ends on a card is suppressed via the
   // movedRef guard. Stable ref so the memoized cards don't re-render on hover/pan.
-  const onSelect = useCallback((key: string) => {
-    if (movedRef.current) return; // this "click" was actually a drag — ignore
-    setSelectedKey((k) => (k === key ? null : key));
-  }, []);
+  const onSelect = useCallback(
+    (key: string) => {
+      if (movedRef.current) return; // this "click" was actually a drag — ignore
+      setSelectedKey((k) => (k === key ? null : key));
+      // In Explore mode, selecting a card also reveals the techs that depend on
+      // it — its children appear in the next column to the right, with edges
+      // drawn by the explore layout (and highlighted gold since it's selected).
+      // Expand-only (never collapse on select); the chevron still toggles.
+      if (viewMode === "explore") {
+        setExpandedKeys((prev) => {
+          if (prev.has(key)) return prev;
+          const next = new Set(prev);
+          next.add(key);
+          return next;
+        });
+      }
+    },
+    [viewMode],
+  );
 
   // Escape clears the selection (window listener, mounted once).
   useEffect(() => {
