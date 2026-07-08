@@ -59,6 +59,15 @@ export interface ExtractedTech extends Tech {
   iconOverrideRaw: string | null;
   /** Raw `technology_swap` block(s), preserved verbatim so Plan 05's icon resolver can resolve swap-variant icons (D-10). */
   technologySwapRaw: unknown;
+  /**
+   * Scripted variables in scope for this tech's source file: the global
+   * `common/scripted_variables/` map merged with the file's own root-level
+   * `@var` definitions (file-local wins). Tech files can define local @vars
+   * (e.g. `@tech_gene_tailoring_POINTS` in 00_soc_tech.txt) that
+   * `loadScriptedVariables` never sees — the unlocks builder needs this map
+   * to resolve `@`-valued modifier grants.
+   */
+  fileVars: Map<string, number | string>;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -262,6 +271,9 @@ export function extractTech(
     potentialRaw: raw.potential,
     iconOverrideRaw: typeof raw.icon === "string" ? raw.icon : null,
     technologySwapRaw: raw.technology_swap,
+    // The caller (extractAllTechs) passes the per-file merged map; direct
+    // callers passing only the global map still get a valid (if smaller) scope.
+    fileVars: varMap,
   };
 }
 
@@ -282,9 +294,20 @@ export async function extractAllTechs(
     const filePath = join(gameRoot, TECHNOLOGY_SUBDIR, file);
     const rawFile = await parseClausewitzFile(filePath);
 
+    // Merge this file's own root-level @var definitions (jomini keeps the `@`
+    // prefix on root keys) over the global scripted_variables map — tech files
+    // can define file-local @vars (e.g. `@tech_gene_tailoring_POINTS` in
+    // 00_soc_tech.txt) that common/scripted_variables/ never sees.
+    const fileVars = new Map(varMap);
+    for (const [k, v] of Object.entries(rawFile)) {
+      if (k.startsWith("@") && (typeof v === "number" || typeof v === "string")) {
+        fileVars.set(k, v);
+      }
+    }
+
     for (const [key, value] of Object.entries(rawFile)) {
       if (!TECH_KEY_PATTERN.test(key) || !isPlainObject(value)) continue;
-      techs.push(extractTech(key, value, varMap, file));
+      techs.push(extractTech(key, value, fileVars, file));
     }
   }
 

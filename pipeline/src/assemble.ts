@@ -82,7 +82,7 @@ export async function runAssemble(): Promise<string> {
   const techs: Record<string, Tech> = {};
 
   for (const extracted of extractedTechs) {
-    const { key, sourceFile, unlockContentRaw, potentialRaw, iconOverrideRaw, technologySwapRaw, ...techFields } =
+    const { key, sourceFile, unlockContentRaw, potentialRaw, iconOverrideRaw, technologySwapRaw, fileVars, ...techFields } =
       extracted;
 
     const dlc = classifyDlc({ potentialRaw }, sourceFile, dlcRegistry);
@@ -93,7 +93,7 @@ export async function runAssemble(): Promise<string> {
     }
 
     const leadsToForTech = graph.get(key)?.leadsTo ?? [];
-    const unlocksResult = buildUnlocks(unlockContentRaw, locMap, leadsToForTech);
+    const unlocksResult = buildUnlocks(unlockContentRaw, locMap, leadsToForTech, fileVars);
     unresolvedGrantLocKeysTotal += unlocksResult.unresolvedGrantLocKeys;
 
     const iconSource = resolveIconSource(

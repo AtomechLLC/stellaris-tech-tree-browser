@@ -71,15 +71,45 @@ function grantFromPrereqforDesc(
   return { text: parts.join(" — "), resolved: !unresolvedAny };
 }
 
-/** Produces a human-readable "stat: value" grant string for a single top-level modifier block. */
+/** Modifier meta-keys that describe the modifier block itself — NOT stat grants. */
+const MODIFIER_META_KEYS = new Set(["description", "description_parameters"]);
+
+/**
+ * Produces a human-readable "stat: value" grant string for a single top-level
+ * modifier block.
+ *
+ * - Meta-keys (`description`, `description_parameters`) are skipped — they
+ *   describe the modifier block, they are not stat grants.
+ * - Object/array-valued entries are skipped — never `String()` an object
+ *   (that ships "[object Object]" garbage as user-facing text).
+ * - `@scripted_variable` string values are resolved through `varMap` (the
+ *   global scripted-variables map merged with the tech file's local @vars);
+ *   a still-unresolved `@var` ships verbatim and is counted as unresolved.
+ */
 function grantsFromModifier(
   modifier: GrantsModifier,
   locMap: Map<string, string>,
+  varMap: Map<string, number | string>,
 ): Array<{ text: string; resolved: boolean }> {
   const out: Array<{ text: string; resolved: boolean }> = [];
   for (const [statKey, statValue] of Object.entries(modifier)) {
-    const { text: label, resolved } = resolveOrVerbatim(statKey, locMap);
-    out.push({ text: `${label}: ${String(statValue)}`, resolved });
+    if (MODIFIER_META_KEYS.has(statKey)) continue;
+    if (typeof statValue !== "string" && typeof statValue !== "number" && typeof statValue !== "boolean") continue;
+
+    const { text: label, resolved: labelResolved } = resolveOrVerbatim(statKey, locMap);
+
+    let valueText = String(statValue);
+    let valueResolved = true;
+    if (typeof statValue === "string" && statValue.startsWith("@")) {
+      const hit = varMap.get(statValue);
+      if (hit !== undefined) {
+        valueText = String(hit);
+      } else {
+        valueResolved = false;
+      }
+    }
+
+    out.push({ text: `${label}: ${valueText}`, resolved: labelResolved && valueResolved });
   }
   return out;
 }
@@ -94,6 +124,7 @@ export function buildUnlocks(
   unlockContentRaw: UnlockContentRaw,
   locMap: Map<string, string>,
   leadsTo: string[],
+  varMap: Map<string, number | string>,
 ): BuildUnlocksResult {
   const grants: string[] = [];
   let unresolvedGrantLocKeys = 0;
@@ -112,7 +143,7 @@ export function buildUnlocks(
   }
 
   for (const modifier of unlockContentRaw.grantsModifiers) {
-    for (const { text, resolved } of grantsFromModifier(modifier, locMap)) {
+    for (const { text, resolved } of grantsFromModifier(modifier, locMap, varMap)) {
       grants.push(text);
       if (!resolved) unresolvedGrantLocKeys++;
     }
