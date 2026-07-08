@@ -72,8 +72,16 @@ function classifyByFilename(sourceFilename: string, dlcRegistry: Map<string, str
 function findHostHasDlc(block: unknown): string | null {
   if (!isPlainObject(block)) return null;
 
-  if (typeof block.host_has_dlc === "string") {
-    return block.host_has_dlc;
+  // Pitfall 5 arity: duplicate `host_has_dlc` keys (e.g. inside an OR block
+  // gating on either of two DLCs) are auto-arrayed by jomini — handle both
+  // the scalar and the array form; take the first string entry.
+  const hhd = block.host_has_dlc;
+  if (typeof hhd === "string") {
+    return hhd;
+  }
+  if (Array.isArray(hhd)) {
+    const first = hhd.find((v): v is string => typeof v === "string");
+    if (first) return first;
   }
 
   for (const value of Object.values(block)) {
