@@ -1,12 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseClausewitzFile, normalizeToArray } from "../src/parser/clausewitz.js";
 import { loadScriptedVariables, resolveValue } from "../src/parser/scripted-variables.js";
 import { resolveConfig } from "../src/config.js";
 import { detectGameVersion } from "../src/version/detect.js";
 import { TechSnapshotSchema } from "../src/schema/tech-snapshot.js";
-import { runAssemble } from "../src/assemble.js";
 
 const { gameRoot } = resolveConfig([]);
 
@@ -143,20 +141,12 @@ describe("schema: TechSnapshotSchema unlocks shape", () => {
   });
 });
 
-describe("assemble: end-to-end walking skeleton", () => {
-  it("writes data/v4.5.0/tech.json, round-trips through the schema, and resolves a real @variable cost", async () => {
-    const outPath = await runAssemble();
-    expect(existsSync(outPath)).toBe(true);
-
-    const written = JSON.parse(readFileSync(outPath, "utf8"));
-    const parsedSnapshot = TechSnapshotSchema.parse(written);
-
-    expect(parsedSnapshot.meta.gameVersion).toBe("v4.5.0");
-    expect(parsedSnapshot.meta.techCount).toBeGreaterThanOrEqual(1);
-
-    const first = Object.values(parsedSnapshot.techs)[0];
-    expect(typeof first.cost).toBe("number");
-    expect(Array.isArray(first.unlocks.grants)).toBe(true);
-    expect(Array.isArray(first.unlocks.leadsTo)).toBe(true);
-  });
-});
+// NOTE: the original walking-skeleton end-to-end assemble test (Plan 01) ran
+// runAssemble() against a single fast file. Plan 05 Task 2 rewrote
+// assemble.ts into the FULL pipeline (all 33 files + icon conversion for the
+// full corpus), which takes well over a minute -- incompatible with this
+// suite's fast per-file unit-test scope, and running it here in parallel
+// with the dedicated full-corpus suite raced on shared icon temp files.
+// The equivalent (and stronger) end-to-end assertion now lives in
+// test/corpus.test.ts (D-18 full-corpus suite), which is the single place
+// that invokes the real full-pipeline runAssemble().
