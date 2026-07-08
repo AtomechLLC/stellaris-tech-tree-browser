@@ -33,6 +33,17 @@ import { normalizeToArray } from "../parser/clausewitz.js";
 
 const ICONS_SUBDIR = join("gfx", "interface", "icons", "technologies");
 
+/**
+ * Icon names come from game files (`icon = "..."` overrides, `technology_swap`
+ * names) and are attacker-controlled under a hostile/modded game root
+ * (threat T-01-01). Confine them to a safe character class BEFORE building a
+ * read path so a value like `..\..\secret` cannot escape the icons dir and
+ * publish arbitrary file content into the output artifact. The class excludes
+ * path separators, so no traversal is possible; it mirrors the write-side
+ * `SAFE_NAME` guard in assemble.ts.
+ */
+const SAFE_ICON_NAME = /^[a-zA-Z0-9_\-@.]+$/;
+
 /** Mirrors the verified real shape of a `technology_swap` block (RESEARCH.md). */
 export interface TechSwap {
   name: string;
@@ -65,6 +76,7 @@ function iconPath(gameRoot: string, iconName: string): string {
 }
 
 function resolveIfExists(gameRoot: string, iconName: string): string | null {
+  if (!SAFE_ICON_NAME.test(iconName)) return null;
   const path = iconPath(gameRoot, iconName);
   return existsSync(path) ? path : null;
 }
