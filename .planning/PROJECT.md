@@ -13,10 +13,9 @@ Players can quickly find any technology and understand how to reach it — accur
 ### Validated
 
 - ✓ Parse technology definitions from the local Stellaris 4.5.0 install (`common/technology/`, categories, tiers, localisation, icons) — Phase 1 (Data Pipeline): one command builds `data/v4.5.0/tech.json` (678 techs) + 803 WebP icons
+- ✓ Render the full tech tree visually with prerequisite relationships — Phase 2 (Tech Tree Visualization): `app/` renders the 678-tech / 613-edge DAG on a sigma.js WebGL canvas, tier-column × area-band layout, with pan/zoom
 
 ### Active
-
-- [ ] Render the full tech tree visually with prerequisite relationships
 - [ ] Fast, responsive navigation — pan, zoom, and search without lag
 - [ ] Better data presentation than the reference site — filter by research area, category, tier, and DLC; clear tech detail display (cost, weight, prerequisites, unlocks)
 - [ ] UI elements that actually work (search, filters, links between techs)
@@ -67,4 +66,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-08 after Phase 1 (Data Pipeline) completion*
+*Last updated: 2026-07-08 after Phase 2 (Tech Tree Visualization) completion*

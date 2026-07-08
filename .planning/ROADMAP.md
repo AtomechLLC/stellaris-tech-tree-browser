@@ -109,7 +109,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 02-03-PLAN.md — Node icon+area-ring+label, camera-synced tier-axis, legend, tokens.css single source + getComputedStyle theme bridge, loading/error/empty states (TREE-04, UIFX-01)
+- [x] 02-03-PLAN.md — Node icon+area-ring+label, camera-synced tier-axis, legend, tokens.css single source + getComputedStyle theme bridge, loading/error/empty states (TREE-04, UIFX-01)
 
 ## Progress
 
@@ -119,5 +119,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Pipeline | 5/5 | Complete    | 2026-07-08 |
-| 2. Tech Tree Visualization | 3/3 | Complete   | 2026-07-08 |
+| 2. Tech Tree Visualization | 3/3 | Complete    | 2026-07-08 |
 | 3. Navigation & Discovery | 0/TBD | Not started | - |
