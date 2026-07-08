@@ -73,17 +73,45 @@ function grantFromPrereqforDesc(
   return { text: parts.join(" — "), resolved: !unresolvedAny };
 }
 
-/** Modifier meta-keys that describe the modifier block itself — NOT stat grants. */
-const MODIFIER_META_KEYS = new Set(["description", "description_parameters"]);
+/**
+ * Modifier keys that describe how the modifier block is DISPLAYED — not stat
+ * grants. `show_only_custom_tooltip` is a boolean engine directive; the human
+ * text it points at lives in the sibling `custom_tooltip` key, which is
+ * resolved separately below.
+ */
+const MODIFIER_META_KEYS = new Set([
+  "description",
+  "description_parameters",
+  "show_only_custom_tooltip",
+]);
 
 /**
- * Produces a human-readable "stat: value" grant string for a single top-level
+ * Normalizes a modifier value to a list of scalar (string/number/boolean)
+ * values: a stat key jomini auto-arrayed (the same key declared twice in one
+ * block) expands to one entry per value, and any object/nested element is
+ * dropped so it is never `String()`-ed into "[object Object]" garbage.
+ */
+function asScalarArray(value: unknown): Array<string | number | boolean> {
+  const items = Array.isArray(value) ? value : [value];
+  return items.filter(
+    (v): v is string | number | boolean =>
+      typeof v === "string" || typeof v === "number" || typeof v === "boolean",
+  );
+}
+
+/**
+ * Produces human-readable "stat: value" grant strings for a single top-level
  * modifier block.
  *
- * - Meta-keys (`description`, `description_parameters`) are skipped — they
- *   describe the modifier block, they are not stat grants.
- * - Object/array-valued entries are skipped — never `String()` an object
- *   (that ships "[object Object]" garbage as user-facing text).
+ * - Meta/display keys (`description`, `description_parameters`,
+ *   `show_only_custom_tooltip`) are skipped — they describe the modifier
+ *   block's presentation, they are not stat grants.
+ * - `custom_tooltip` carries a localisation KEY whose display string IS the
+ *   real human-readable effect text — it is resolved through `locMap` and
+ *   shipped as that text (never the raw key or a `custom_tooltip:` prefix).
+ *   An empty / `BLANK_STRING` / unresolvable tooltip emits nothing.
+ * - Object-valued entries are dropped — never `String()` an object (that
+ *   ships "[object Object]" garbage as user-facing text).
  * - `@scripted_variable` string values are resolved through `varMap` (the
  *   global scripted-variables map merged with the tech file's local @vars);
  *   a still-unresolved `@var` ships verbatim and is counted as unresolved.
@@ -96,26 +124,39 @@ function grantsFromModifier(
   const out: Array<{ text: string; resolved: boolean; unresolvedVariable: boolean }> = [];
   for (const [statKey, statValue] of Object.entries(modifier)) {
     if (MODIFIER_META_KEYS.has(statKey)) continue;
-    if (typeof statValue !== "string" && typeof statValue !== "number" && typeof statValue !== "boolean") continue;
+
+    // custom_tooltip's value is a loc-key whose resolved string is the effect
+    // text — ship that, not the raw key. Empty/BLANK_STRING/unresolved → skip.
+    if (statKey === "custom_tooltip") {
+      for (const raw of asScalarArray(statValue)) {
+        if (typeof raw !== "string" || raw.length === 0 || raw === "BLANK_STRING") continue;
+        const { text, resolved } = resolveOrVerbatim(raw, locMap);
+        if (text.length === 0) continue;
+        out.push({ text, resolved, unresolvedVariable: false });
+      }
+      continue;
+    }
 
     const { text: label, resolved: labelResolved } = resolveOrVerbatim(statKey, locMap);
 
-    let valueText = String(statValue);
-    let valueResolved = true;
-    if (typeof statValue === "string" && statValue.startsWith("@")) {
-      const hit = varMap.get(statValue);
-      if (hit !== undefined) {
-        valueText = String(hit);
-      } else {
-        valueResolved = false;
+    for (const scalar of asScalarArray(statValue)) {
+      let valueText = String(scalar);
+      let valueResolved = true;
+      if (typeof scalar === "string" && scalar.startsWith("@")) {
+        const hit = varMap.get(scalar);
+        if (hit !== undefined) {
+          valueText = String(hit);
+        } else {
+          valueResolved = false;
+        }
       }
-    }
 
-    out.push({
-      text: `${label}: ${valueText}`,
-      resolved: labelResolved && valueResolved,
-      unresolvedVariable: !valueResolved,
-    });
+      out.push({
+        text: `${label}: ${valueText}`,
+        resolved: labelResolved && valueResolved,
+        unresolvedVariable: !valueResolved,
+      });
+    }
   }
   return out;
 }
