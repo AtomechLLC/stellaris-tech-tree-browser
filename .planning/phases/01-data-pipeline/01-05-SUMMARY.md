@@ -150,3 +150,7 @@ None - no external service configuration required. The full pipeline runs entire
 ---
 *Phase: 01-data-pipeline*
 *Completed: 2026-07-08*
+
+## Self-Check: PASSED
+
+All 8 created/modified files verified present on disk (pipeline/src/unlocks.ts, pipeline/src/report.ts, pipeline/SCHEMA.md, pipeline/test/corpus.test.ts, pipeline/src/assemble.ts, pipeline/src/parser/tech-extractor.ts, pipeline/test/skeleton.test.ts, .planning/phases/01-data-pipeline/01-05-SUMMARY.md). All 4 referenced commit hashes (babdec9, bf170af, 577aa1e, 683f94d) verified present in `git log --oneline --all`.
