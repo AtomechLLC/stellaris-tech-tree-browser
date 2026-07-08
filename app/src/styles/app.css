@@ -116,6 +116,78 @@
   color: var(--color-text);
 }
 
+/* ── Category swimlane axis: backgrounds + left labels (quick 260707-we6
+   Task 4). Both are camera-synced re-projections (CategoryAxis) — the bands
+   span the full canvas width behind the nodes; the labels are pinned to the
+   left edge at each lane's vertical center. Both are pointer-events:none. */
+.category-bands {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1; /* behind nodes/edges chrome — subtle background only */
+}
+
+.category-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* Faint area tint; alternating lanes get a touch more contrast so adjacent
+     lanes within one area are still distinguishable. */
+  opacity: 0.05;
+}
+
+.category-band--striped {
+  opacity: 0.1;
+}
+
+.category-band[data-area="physics"] {
+  background: var(--area-physics);
+}
+.category-band[data-area="society"] {
+  background: var(--area-society);
+}
+.category-band[data-area="engineering"] {
+  background: var(--area-engineering);
+}
+
+.category-axis {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0; /* labels overflow to the right of the left edge */
+  pointer-events: none;
+  z-index: 7; /* above bands + cards' layer so lane names stay readable */
+}
+
+.category-axis__label {
+  position: absolute;
+  left: var(--space-sm);
+  transform: translateY(-50%);
+  white-space: nowrap;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--color-surface);
+  border-left: 3px solid var(--color-border);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-heading);
+  line-height: var(--line-height-label);
+  color: var(--color-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.category-axis__label[data-area="physics"] {
+  border-left-color: var(--area-physics);
+}
+.category-axis__label[data-area="society"] {
+  border-left-color: var(--area-society);
+}
+.category-axis__label[data-area="engineering"] {
+  border-left-color: var(--area-engineering);
+}
+
 /* ── Zoom-LOD tech-card overlay (quick 260707-we6 Task 3) ──────────────────
    A full-viewport HTML layer that appears only when zoomed in; each card is
    absolutely positioned at its node's projected screen coordinate and scaled
