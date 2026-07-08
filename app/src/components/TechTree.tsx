@@ -12,6 +12,7 @@ import { layoutTree, type TreeLayout, type LayoutNode } from "../lib/tree/layout
 import { CATEGORY_ORDER, CATEGORY_AREA } from "../lib/graph/categories";
 import { TechCard, CARD_W, CARD_H } from "./TechCard";
 import { EdgeLayer } from "./EdgeLayer";
+import { BandLayer } from "./BandLayer";
 import { CategoryNav } from "./CategoryNav";
 import { TechTooltip } from "./TechTooltip";
 import { Legend } from "./Legend";
@@ -69,6 +70,11 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const [state, setState] = useState<LayoutState>({ status: "loading" });
   const [active, setActive] = useState<Set<string>>(() => new Set<string>(CATEGORY_ORDER));
   const [hover, setHover] = useState<{ tech: Tech; rect: DOMRect } | null>(null);
+  // Re-pack busy state (button label + guard). Bumped each time a re-pack
+  // starts; the resolving handler ignores its result if this changed meanwhile
+  // (stale-result guard) so a rapid re-toggle+re-pack can't swap in old layout.
+  const [repacking, setRepacking] = useState(false);
+  const repackSeq = useRef(0);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -141,7 +147,10 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     const nodes = layout.nodes.filter((n) => active.has(categoryOf(n)));
     const visible = new Set(nodes.map((n) => n.key));
     const edges = layout.edges.filter((e) => visible.has(e.from) && visible.has(e.to));
-    return { ...layout, nodes, edges };
+    // Drop toggled-off bands so their tinted backgrounds vanish too (leaving a
+    // gap until Re-pack closes it up).
+    const bands = layout.bands.filter((b) => active.has(b.category));
+    return { ...layout, nodes, edges, bands };
   }, [state, active]);
 
   // Frame a set of nodes to fill the viewport (used when isolating a category).
@@ -298,12 +307,36 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
 
   const resetView = useCallback(() => applyTransform(DEFAULT_TRANSFORM), [applyTransform]);
 
+  // ── Re-pack: re-lay-out only the visible categories so their bands stack
+  // with no gaps. Swaps state.layout IN PLACE (status stays "ready", no
+  // unmount) and reframes; a stale result (active changed again mid-run) is
+  // ignored via a monotonic sequence guard.
+  const onRepack = useCallback(() => {
+    if (state.status !== "ready" || repacking) return;
+    const seq = ++repackSeq.current;
+    setRepacking(true);
+    layoutTree(snapshot, CARD_W, CARD_H, active)
+      .then((layout) => {
+        if (seq !== repackSeq.current) return; // stale — a newer re-pack won
+        setState({ status: "ready", layout });
+        setRepacking(false);
+        // Frame the freshly-packed tree.
+        if (layout.nodes.length > 0) fitToNodes(layout.nodes);
+        else resetView();
+      })
+      .catch(() => {
+        if (seq !== repackSeq.current) return;
+        setRepacking(false);
+      });
+  }, [state.status, repacking, snapshot, active, fitToNodes, resetView]);
+
   // Memoize the card + edge elements against the (stable) filtered layout — NOT
   // the transform (which is imperative now). Filter/hover re-renders reuse these.
   const layoutReady = state.status === "ready" ? filtered ?? state.layout : null;
   const content = useMemo(() => {
     if (!layoutReady) return null;
     return {
+      bands: <BandLayer bands={layoutReady.bands} width={layoutReady.width} />,
       edge: (
         <EdgeLayer
           edges={layoutReady.edges}
@@ -364,9 +397,20 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
             willChange: "transform",
           }}
         >
+          {content?.bands}
           {content?.edge}
           {content?.cards}
         </div>
+
+        <button
+          type="button"
+          className="repack-button"
+          onClick={onRepack}
+          disabled={repacking}
+          aria-busy={repacking}
+        >
+          {repacking ? "Re-packing…" : "Re-pack layout"}
+        </button>
 
         <div className="zoom-controls" role="group" aria-label="Zoom">
           <button type="button" onClick={() => zoomBy(ZOOM_STEP)} aria-label="Zoom in">

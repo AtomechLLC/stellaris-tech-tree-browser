@@ -251,6 +251,31 @@
   opacity: 0.55;
 }
 
+/* Re-pack button (quick 260708-3zu) — top-right of the viewport. Re-runs the
+   layout on just the visible categories so their bands close up. */
+.repack-button {
+  position: absolute;
+  right: var(--space-md);
+  top: var(--space-md);
+  z-index: 12;
+  padding: 6px 12px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-heading);
+  color: var(--tree-text);
+  background: var(--tree-panel);
+  border: 1px solid var(--tree-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.repack-button:hover:not(:disabled) {
+  background: var(--tree-border);
+}
+.repack-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 /* Zoom +/- / reset control — bottom-right of the viewport. */
 .zoom-controls {
   position: absolute;
