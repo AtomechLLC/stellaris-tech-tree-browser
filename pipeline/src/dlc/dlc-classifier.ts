@@ -38,9 +38,9 @@ function tokenize(input: string): Set<string> {
   );
 }
 
-/** Strips the leading numeric prefix (00_/000_) and trailing .txt from a source filename. */
+/** Strips the leading numeric prefix (00_/000_/10_/etc.) and trailing .txt from a source filename. */
 function filenameStem(sourceFilename: string): string {
-  return sourceFilename.replace(/\.txt$/i, "").replace(/^0+_?/, "");
+  return sourceFilename.replace(/\.txt$/i, "").replace(/^\d+_?/, "");
 }
 
 /**
