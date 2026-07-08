@@ -13,15 +13,33 @@ const APP_ROOT = join(__dirname, "..");
 const REPO_ROOT = join(APP_ROOT, "..");
 const PIPELINE_DATA_DIR = join(REPO_ROOT, "pipeline", "data");
 
+/**
+ * Compares two `v<major>.<minor>.<patch>` dir names numerically per component
+ * (WR-03) so `v4.10.0` sorts after `v4.9.0` — a plain lexicographic `.sort()`
+ * would pick v4.9.0 and silently ship stale data, the exact failure this tool
+ * exists to prevent. Non-numeric components (e.g. a `-beta` suffix) coerce to
+ * 0, degrading gracefully rather than throwing.
+ */
+function compareVersions(a, b) {
+  const parse = (s) => s.replace(/^v/, "").split(/[.\-+]/).map((n) => Number(n) || 0);
+  const na = parse(a);
+  const nb = parse(b);
+  for (let i = 0; i < Math.max(na.length, nb.length); i++) {
+    const diff = (na[i] || 0) - (nb[i] || 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
 function resolveVersion() {
-  // Derived from the snapshot's meta.gameVersion — pipeline/data/ currently
-  // contains a single v* directory per generated snapshot. Pick the only
-  // (or lexicographically latest) v* dir rather than hardcoding, so a future
-  // pipeline re-run against a new game version needs no edit here.
+  // Derived from the on-disk snapshot dir(s) — pipeline/data/ currently
+  // contains a single v* directory per generated snapshot. Pick the
+  // numerically-latest v* dir rather than hardcoding, so a future pipeline
+  // re-run against a new game version needs no edit here.
   const entries = readdirSync(PIPELINE_DATA_DIR, { withFileTypes: true })
     .filter((e) => e.isDirectory() && e.name.startsWith("v"))
     .map((e) => e.name)
-    .sort();
+    .sort(compareVersions);
 
   if (entries.length === 0) {
     throw new Error(`No v* data directory found under ${PIPELINE_DATA_DIR}`);
