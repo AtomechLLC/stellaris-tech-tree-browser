@@ -175,6 +175,64 @@
   will-change: transform;
 }
 
+/* ── Category swimlane bands (quick 260708-3zu) ───────────────────────────
+   Faint area-tinted background strip behind each contiguous category band,
+   with a plain-text category label. First child of `.tree-canvas`, at
+   z-index 0 — behind the edges (1) and cards (2). Non-interactive. */
+.band-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.band {
+  position: absolute;
+  left: 0;
+}
+
+/* Area tint, faint, alternating two strengths so adjacent same-area bands
+   stay distinguishable. Tokens only (never hardcoded hex). */
+.band[data-area="physics"] {
+  background: color-mix(in srgb, var(--area-physics) 8%, transparent);
+}
+.band[data-area="physics"][data-alt="1"] {
+  background: color-mix(in srgb, var(--area-physics) 14%, transparent);
+}
+.band[data-area="society"] {
+  background: color-mix(in srgb, var(--area-society) 8%, transparent);
+}
+.band[data-area="society"][data-alt="1"] {
+  background: color-mix(in srgb, var(--area-society) 14%, transparent);
+}
+.band[data-area="engineering"] {
+  background: color-mix(in srgb, var(--area-engineering) 8%, transparent);
+}
+.band[data-area="engineering"][data-alt="1"] {
+  background: color-mix(in srgb, var(--area-engineering) 14%, transparent);
+}
+
+.band__label {
+  position: absolute;
+  left: 10px;
+  top: 6px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.band[data-area="physics"] .band__label {
+  color: var(--area-physics);
+}
+.band[data-area="society"] .band__label {
+  color: var(--area-society);
+}
+.band[data-area="engineering"] .band__label {
+  color: var(--area-engineering);
+}
+
 /* SVG connector layer — below the cards, non-interactive. */
 .edge-layer {
   position: absolute;
