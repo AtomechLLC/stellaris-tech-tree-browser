@@ -41,6 +41,16 @@ interface TechCardProps {
   /** Click → select this card (toggle in the parent). Stable ref; the parent
    *  suppresses the call if the click was actually a drag (drag-safe). */
   onSelect?: (key: string) => void;
+  /**
+   * Explore-mode only: when set, this tech has ≥1 revealable child, so a chevron
+   * toggle is rendered on the card's right edge. Map mode passes nothing → no
+   * chevron (cards render exactly as before).
+   */
+  expandable?: boolean;
+  /** Explore-mode only: whether this card is currently expanded (chevron open). */
+  expanded?: boolean;
+  /** Explore-mode only: chevron click → toggle expand in the parent. Stable ref. */
+  onToggleExpand?: (key: string) => void;
 }
 
 // Memoized: pan/zoom re-renders the parent every tick, but a card's props
@@ -56,6 +66,9 @@ export const TechCard = memo(function TechCard({
   onLeave,
   selected,
   onSelect,
+  expandable,
+  expanded,
+  onToggleExpand,
 }: TechCardProps) {
   const category = tech.category[0] ?? "";
   return (
@@ -89,6 +102,23 @@ export const TechCard = memo(function TechCard({
           Cost: {tech.cost} · Weight: {tech.weight}
         </div>
       </div>
+      {/* Explore-mode expand toggle — only when this tech has revealable
+          children. stopPropagation so expanding never selects the card. */}
+      {expandable && (
+        <button
+          type="button"
+          className="tech-card__chevron"
+          data-expanded={expanded ? "" : undefined}
+          aria-label={expanded ? "Collapse" : "Expand"}
+          aria-expanded={expanded ? true : false}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleExpand?.(tech.key);
+          }}
+        >
+          {expanded ? "▾" : "▸"}
+        </button>
+      )}
     </div>
   );
 });
