@@ -255,6 +255,17 @@
   opacity: 0.55;
 }
 
+/* Selected node's prereq + child edges (quick 260708-4io): solid, thick, gold,
+   fully opaque — drawn on top of the dim dashed base path so the picked tech's
+   direct connections pop. Token-driven (same --color-select as the card). */
+.edge-layer__path--highlight {
+  fill: none;
+  stroke: var(--color-select);
+  stroke-width: 3;
+  stroke-dasharray: none;
+  opacity: 1;
+}
+
 /* Re-pack button (quick 260708-3zu) — top-right of the viewport. Re-runs the
    layout on just the visible categories so their bands close up. */
 .repack-button {
@@ -490,6 +501,25 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Cards are clickable to "target" them — signal that affordance. */
+.tech-card {
+  cursor: pointer;
+}
+
+/* Selected ("targeted") card (quick 260708-4io): a bright gold outline + glow
+   so the picked node reads clearly against the dark viewport. The outline sits
+   outside the border so it never disturbs the area-colored 2px card border, and
+   the raised z-index lifts it above neighbouring cards. Token-driven (no bare
+   hex) — the same --color-select drives the highlighted edges + ancestry panel. */
+.tech-card[data-selected] {
+  outline: 2px solid var(--color-select);
+  outline-offset: 1px;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--color-select) 45%, transparent),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+  z-index: 3; /* above other cards (2) so the glow isn't clipped by neighbours */
 }
 
 /* Area colors drive both the border and the header bar — sourced from the
