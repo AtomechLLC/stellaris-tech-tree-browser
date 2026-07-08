@@ -4,11 +4,12 @@ import type { TechSnapshot } from "../../types/tech-snapshot";
 /**
  * Builds a graphology DirectedGraph from the tech snapshot.
  *
- * This plan (02-01) places nodes on a deterministic placeholder grid only —
- * there is no ELK layout yet. Real tier-column + area-band layout is Plan
- * 02-02. Prerequisite edges are intentionally NOT added yet either (also
- * Plan 02-02's scope) — this slice proves full-scale node rendering + pan/
- * zoom, not the final DAG structure.
+ * Plan 02-02: adds every prerequisite relationship as a real directed edge
+ * (prerequisite -> dependent, D-07) — 613 edges across the full 678-tech
+ * corpus, with the 88 multi-parent techs connecting to ALL their parents
+ * (true DAG, not tree-flattened). x/y are no longer assigned here — the
+ * placeholder grid from Plan 02-01 is removed; layout.ts (ELK tier-partition
+ * + area-band Y-remap) now owns node position and sets x/y before render.
  *
  * Node `label` is always plain text (`tech.name`) — never injected as HTML
  * (D-05 / T-02-01 mitigation).
@@ -16,28 +17,36 @@ import type { TechSnapshot } from "../../types/tech-snapshot";
 export function buildGraph(snapshot: TechSnapshot): DirectedGraph {
   const graph = new DirectedGraph();
 
-  // Track how many nodes have been placed in each tier so far, to space
-  // siblings out vertically. PLACEHOLDER GRID — replaced by ELK layout in
-  // Plan 02.
-  const tierCounts = new Map<number, number>();
-
-  const TIER_COLUMN_WIDTH = 300;
-  const SIBLING_ROW_HEIGHT = 40;
-
   for (const tech of Object.values(snapshot.techs)) {
-    const indexInTier = tierCounts.get(tech.tier) ?? 0;
-    tierCounts.set(tech.tier, indexInTier + 1);
-
     graph.addNode(tech.key, {
       label: tech.name,
       tier: tech.tier,
       area: tech.area,
       image: tech.icon ? `/data/v4.5.0/icons/${tech.icon}` : undefined,
       size: 12,
-      x: tech.tier * TIER_COLUMN_WIDTH,
-      y: indexInTier * SIBLING_ROW_HEIGHT,
+      // x/y are owned by layout.ts (ELK layout, Plan 02-02 Task 2) — left
+      // unset here; Sigma is only handed final coordinates after layoutGraph.
+      x: 0,
+      y: 0,
       color: "#F7F8FA",
     });
+  }
+
+  for (const tech of Object.values(snapshot.techs)) {
+    for (const prereqKey of tech.prerequisites) {
+      // D-07: every prerequisite is a real DAG edge, including OR-alternatives
+      // (already flattened upstream by the pipeline per SCHEMA.md).
+      if (graph.hasNode(prereqKey)) {
+        graph.addEdge(prereqKey, tech.key);
+      } else {
+        // SCHEMA.md's D-16 strict-fail policy guarantees this never occurs
+        // in a valid tech.json — surface loudly rather than silently skip,
+        // since it signals a contract violation between pipeline and app.
+        console.error(
+          `buildGraph: dangling prerequisite reference "${prereqKey}" on tech "${tech.key}" — contract violation (SCHEMA.md D-16)`,
+        );
+      }
+    }
   }
 
   return graph;
