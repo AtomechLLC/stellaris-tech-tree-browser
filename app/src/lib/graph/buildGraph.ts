@@ -33,12 +33,19 @@ export function buildGraph(snapshot: TechSnapshot, tokens?: ThemeTokens): Direct
   const areaColor = resolvedTokens ? AREA_COLOR(resolvedTokens) : undefined;
   const fallbackBg = resolvedTokens?.bg;
 
+  // Derive the icon base path from the snapshot's OWN version (WR-02) so a
+  // future game-patch snapshot needs no edit here — matches the parameterized
+  // fetch and copy-data's dynamic version resolution (the project's
+  // cheap-version-update goal). meta.gameVersion (e.g. "v4.5.0") equals the
+  // data directory name copy-data.mjs writes under public/data/.
+  const iconBase = `/data/${snapshot.meta.gameVersion}/icons`;
+
   for (const tech of Object.values(snapshot.techs)) {
     graph.addNode(tech.key, {
       label: tech.name,
       tier: tech.tier,
       area: tech.area,
-      image: tech.icon ? `/data/v4.5.0/icons/${tech.icon}` : undefined,
+      image: tech.icon ? `${iconBase}/${tech.icon}` : undefined,
       size: 12,
       // x/y are owned by layout.ts (ELK layout, Plan 02-02 Task 2) — left
       // unset here; Sigma is only handed final coordinates after layoutGraph.
