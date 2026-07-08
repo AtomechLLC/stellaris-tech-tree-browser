@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import type { LayoutEdge, LayoutNode } from "../lib/tree/layoutTree";
 
 /**
@@ -44,7 +44,9 @@ function fallbackPath(from: LayoutNode, to: LayoutNode): string {
   ]);
 }
 
-export function EdgeLayer({ edges, nodes, width, height }: EdgeLayerProps) {
+// Memoized: props (edges/nodes/width/height) are stable across pan/zoom, so the
+// 613-path SVG bails out of re-rendering on every transform tick.
+export const EdgeLayer = memo(function EdgeLayer({ edges, nodes, width, height }: EdgeLayerProps) {
   const paths = useMemo(() => {
     const nodeByKey = new Map(nodes.map((n) => [n.key, n]));
     const out: string[] = [];
@@ -82,4 +84,4 @@ export function EdgeLayer({ edges, nodes, width, height }: EdgeLayerProps) {
       ))}
     </svg>
   );
-}
+});

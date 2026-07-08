@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Tech } from "../types/tech-snapshot";
 import { categoryLabel } from "../lib/graph/categories";
 
@@ -34,7 +35,10 @@ interface TechCardProps {
   y: number;
 }
 
-export function TechCard({ tech, image, x, y }: TechCardProps) {
+// Memoized: pan/zoom re-renders the parent every tick, but a card's props
+// (tech, image, x, y) are stable across transform changes, so memo lets all 678
+// cards bail out of re-rendering — only the single canvas CSS transform updates.
+export const TechCard = memo(function TechCard({ tech, image, x, y }: TechCardProps) {
   const category = tech.category[0] ?? "";
   return (
     <div
@@ -64,4 +68,4 @@ export function TechCard({ tech, image, x, y }: TechCardProps) {
       </div>
     </div>
   );
-}
+});

@@ -171,6 +171,34 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     setTransform({ x: 40, y: 40, scale: 0.4 });
   }, []);
 
+  // Memoize the card + edge elements against the (stable) layout — NOT the
+  // transform. Pan/zoom re-renders this component every tick, but with this
+  // memo (plus React.memo on TechCard/EdgeLayer) that tick only updates the one
+  // canvas CSS transform instead of reconciling 678 cards + 613 SVG paths.
+  const layoutReady = state.status === "ready" ? filtered ?? state.layout : null;
+  const content = useMemo(() => {
+    if (!layoutReady) return null;
+    return {
+      edge: (
+        <EdgeLayer
+          edges={layoutReady.edges}
+          nodes={layoutReady.nodes}
+          width={layoutReady.width}
+          height={layoutReady.height}
+        />
+      ),
+      cards: layoutReady.nodes.map((node) => (
+        <TechCard
+          key={node.key}
+          tech={node.tech}
+          image={node.tech.icon ? `${iconBase}/${node.tech.icon}` : undefined}
+          x={node.x}
+          y={node.y}
+        />
+      )),
+    };
+  }, [layoutReady, iconBase]);
+
   if (state.status === "loading") return <LoadingOverlay />;
   if (state.status === "error") {
     return <ErrorOverlay onRetry={() => setState({ status: "loading" })} />;
@@ -215,21 +243,8 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
             transformOrigin: "0 0",
           }}
         >
-          <EdgeLayer
-            edges={layout.edges}
-            nodes={layout.nodes}
-            width={layout.width}
-            height={layout.height}
-          />
-          {layout.nodes.map((node) => (
-            <TechCard
-              key={node.key}
-              tech={node.tech}
-              image={node.tech.icon ? `${iconBase}/${node.tech.icon}` : undefined}
-              x={node.x}
-              y={node.y}
-            />
-          ))}
+          {content?.edge}
+          {content?.cards}
         </div>
 
         <div className="zoom-controls" role="group" aria-label="Zoom">
