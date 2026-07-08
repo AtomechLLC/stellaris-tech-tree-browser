@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 UI-SPEC approved
-last_updated: "2026-07-08T03:03:41.983Z"
-last_activity: 2026-07-08 -- Phase 2 planning complete
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-07-08T03:20:58.303Z"
+last_activity: 2026-07-08
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 8
-  completed_plans: 5
+  completed_plans: 6
   percent: 33
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Players can quickly find any technology and understand how to reach it — accurate 4.5.0 data, presented clearly, navigable without friction.
-**Current focus:** Phase 2 — tech tree visualization
+**Current focus:** Phase 2 — Tech Tree Visualization
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
+Phase: 2 (Tech Tree Visualization) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-07-08 -- Phase 2 planning complete
+Last activity: 2026-07-08
 
-Progress: [██████████] 100%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [██████████] 100%
 | Phase 01-data-pipeline P03 | 12min | 1 tasks | 2 files |
 | Phase 01-data-pipeline P04 | 32min | 2 tasks | 4 files |
 | Phase 01-data-pipeline P05 | 17min | 3 tasks | 7 files |
+| Phase 02-tech-tree-visualization P01 | 7min | 2 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,9 @@ Recent decisions affecting current work:
 - [Phase 01]: buildUnlocks resolves feature_flags/prereqfor_desc/modifier/gateway grant content independently via locMap (resolve-or-verbatim), keeping each as its own list entry rather than one blob per tech
 - [Phase 01]: assemble.ts collects all tech keys missing a resolved name before strict-failing, giving one complete error report per run instead of failing on the first miss
 - [Phase 01]: Full-corpus (D-18) integration tests live in a dedicated corpus.test.ts with explicit long timeouts, isolated from fast per-module unit test files to avoid races on shared full-pipeline output paths
+- [Phase 02-tech-tree-visualization]: Added zod and @types/node as app/ dependencies beyond RESEARCH.md's install list — Required to literally satisfy the plan's own task actions: TechSnapshotSchema.parse() at runtime and node:fs/node:url/node:path in the smoke test
+- [Phase 02-tech-tree-visualization]: Dropped TypeScript project references between app/tsconfig.json and tsconfig.node.json — TS6306/TS6310 - project references require composite:true which conflicts with noEmit:true required by this plan
+- [Phase 02-tech-tree-visualization]: vitest environment set to node (not jsdom) for the app package — Smoke test is a pure graph-construction check reading tech.json from disk - no DOM needed for this plan's test scope
 
 ### Pending Todos
 
@@ -109,6 +113,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-08T02:27:50.860Z
-Stopped at: Phase 2 UI-SPEC approved
-Resume file: .planning/phases/02-tech-tree-visualization/02-UI-SPEC.md
+Last session: 2026-07-08T03:20:58.289Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None
