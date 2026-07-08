@@ -20,36 +20,58 @@ export function TierAxis() {
 
   useEffect(() => {
     const graph = sigma.getGraph();
+    const camera = sigma.getCamera();
 
-    // Derive each tier's representative graph-x once from the laid-out
-    // nodes (min x per tier — ELK's tier-partition guarantees monotonic
-    // columns, so min-x is a stable representative screen position for the
-    // whole column, D-06).
-    const minXByTier = new Map<number, number>();
-    graph.forEachNode((_key, attrs) => {
-      const tier = attrs.tier as number;
-      const x = attrs.x as number;
-      const current = minXByTier.get(tier);
-      if (current === undefined || x < current) minXByTier.set(tier, x);
-    });
-    const tiers = [...minXByTier.entries()].sort((a, b) => a[0] - b[0]);
+    // Each tier's representative graph-x = min x per tier (ELK's tier-partition
+    // guarantees monotonic columns, so min-x is a stable column anchor, D-06).
+    // Recomputed whenever the graph's node set changes rather than once on
+    // mount, so the axis is correct regardless of whether nodes are already
+    // loaded when this effect runs or arrive afterward via GraphLoader — no
+    // reliance on sibling-effect ordering (WR-04).
+    let anchors: Array<[number, number]> = [];
+    let rafId = 0;
 
     function reproject() {
       setLabels(
-        tiers.map(([tier, graphX]) => ({
+        anchors.map(([tier, graphX]) => ({
           tier,
           screenX: sigma.graphToViewport({ x: graphX, y: 0 }).x,
         })),
       );
     }
 
-    reproject();
+    function recomputeAnchors() {
+      const minXByTier = new Map<number, number>();
+      graph.forEachNode((_key, attrs) => {
+        const tier = attrs.tier as number;
+        const x = attrs.x as number;
+        const current = minXByTier.get(tier);
+        if (current === undefined || x < current) minXByTier.set(tier, x);
+      });
+      anchors = [...minXByTier.entries()].sort((a, b) => a[0] - b[0]);
+      reproject();
+    }
 
-    const camera = sigma.getCamera();
+    // Coalesce the burst of per-node "nodeAdded" events from a graph import
+    // into a single recompute on the next frame (O(n), not O(n^2)).
+    function scheduleRecompute() {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        recomputeAnchors();
+      });
+    }
+
+    recomputeAnchors();
+    graph.on("nodeAdded", scheduleRecompute);
+    graph.on("cleared", scheduleRecompute);
     camera.on("updated", reproject);
     sigma.on("resize", reproject);
 
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      graph.removeListener("nodeAdded", scheduleRecompute);
+      graph.removeListener("cleared", scheduleRecompute);
       camera.removeListener("updated", reproject);
       sigma.removeListener("resize", reproject);
     };
