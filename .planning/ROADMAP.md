@@ -13,7 +13,7 @@ The journey runs from raw game files to a navigable tool: first, build a rock-so
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Data Pipeline** - Parse all Stellaris 4.5.0 tech data into an accurate, versioned, one-command-regenerable JSON snapshot
+- [x] **Phase 1: Data Pipeline** - Parse all Stellaris 4.5.0 tech data into an accurate, versioned, one-command-regenerable JSON snapshot (completed 2026-07-08)
 - [ ] **Phase 2: Tech Tree Visualization** - Render the full tech tree as a true DAG with icons, readable layout, and smooth pan/zoom
 - [ ] **Phase 3: Navigation & Discovery** - Find any tech and understand how to reach it — search, filters, prerequisite chains, detail panel, working links
 
@@ -47,7 +47,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-05-PLAN.md — Full assembler + validation report + idempotency/corpus test + SCHEMA.md
+- [x] 01-05-PLAN.md — Full assembler + validation report + idempotency/corpus test + SCHEMA.md
 
 ### Phase 2: Tech Tree Visualization
 
@@ -90,6 +90,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Pipeline | 4/5 | In Progress|  |
+| 1. Data Pipeline | 5/5 | Complete   | 2026-07-08 |
 | 2. Tech Tree Visualization | 0/TBD | Not started | - |
 | 3. Navigation & Discovery | 0/TBD | Not started | - |

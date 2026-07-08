@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-07-08T00:18:55.494Z"
+status: verifying
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-07-08T00:45:03.823Z"
 last_activity: 2026-07-08
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
-  percent: 0
+  completed_plans: 5
+  percent: 33
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 
 Phase: 1 (Data Pipeline) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-08
 
-Progress: [████████░░] 80%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [████████░░] 80%
 | Phase 01-data-pipeline P02 | 45min | 3 tasks | 5 files |
 | Phase 01-data-pipeline P03 | 12min | 1 tasks | 2 files |
 | Phase 01-data-pipeline P04 | 32min | 2 tasks | 4 files |
+| Phase 01-data-pipeline P05 | 17min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Raw localisation strings ship unmodified as plain text -- no HTML conversion of color codes or variable tokens in the pipeline, per Security Domain guidance (T-03-02)
 - [Phase 01]: technology_swap.name refers to another tech's key, not an icon filename -- inherit_icon flag is the sole signal for whether the swap has its own icon file
 - [Phase 01]: A fully-opaque alpha channel is correctly dropped by sharp's lossless WebP encoder (verified via ImageMagick channel min/max) -- not a fidelity bug, so alpha-preservation tests must use a fixture with genuinely non-uniform alpha
+- [Phase 01]: buildUnlocks resolves feature_flags/prereqfor_desc/modifier/gateway grant content independently via locMap (resolve-or-verbatim), keeping each as its own list entry rather than one blob per tech
+- [Phase 01]: assemble.ts collects all tech keys missing a resolved name before strict-failing, giving one complete error report per run instead of failing on the first miss
+- [Phase 01]: Full-corpus (D-18) integration tests live in a dedicated corpus.test.ts with explicit long timeouts, isolated from fast per-module unit test files to avoid races on shared full-pipeline output paths
 
 ### Pending Todos
 
@@ -105,6 +109,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-08T00:18:37.870Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-07-08T00:45:03.810Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None
