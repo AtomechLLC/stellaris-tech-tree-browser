@@ -8,6 +8,7 @@ import { Header } from "./components/Header";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { ErrorOverlay } from "./components/ErrorOverlay";
 import { EmptyOverlay } from "./components/EmptyOverlay";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 type LoadState =
   | { status: "loading" }
@@ -61,7 +62,18 @@ export function App() {
       {state.status === "error" && <ErrorOverlay onRetry={retry} />}
       {state.status === "ready" && state.techCount === 0 && <EmptyOverlay />}
       {state.status === "ready" && state.techCount > 0 && (
-        <TechTreeCanvas graph={state.graph} />
+        <ErrorBoundary
+          fallback={(_error, reset) => (
+            <ErrorOverlay
+              onRetry={() => {
+                reset();
+                retry();
+              }}
+            />
+          )}
+        >
+          <TechTreeCanvas graph={state.graph} />
+        </ErrorBoundary>
       )}
     </div>
   );
