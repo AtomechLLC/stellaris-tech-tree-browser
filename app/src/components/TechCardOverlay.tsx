@@ -10,8 +10,13 @@ import { categoryLabel } from "../lib/graph/categories";
  * HTML cards; when ratio >= RATIO_THRESHOLD (zoomed out) we render nothing and
  * the compact square Sigma tiles show through. Raise to make cards appear
  * sooner (further out); lower to require a closer zoom.
+ *
+ * Tuned against real on-screen densities for this (tall, tightly-packed)
+ * layout: at 0.9 the first zoom-in showed ~380 cards at once (an unreadable
+ * pile); ~0.1 keeps it to a few dozen. THIS IS THE HEADLINE KNOB — adjust to
+ * taste in a live (visible) browser; lower = cards only when more zoomed in.
  */
-const RATIO_THRESHOLD = 0.9;
+const RATIO_THRESHOLD = 0.1;
 /**
  * Viewport-pixel margin around the container used for culling — a node whose
  * projected position is within [−MARGIN, size+MARGIN] gets a card. Keeps cards
@@ -121,7 +126,8 @@ export function TechCardOverlay({ graph }: { graph: DirectedGraph }) {
       setCards(next);
     }
 
-    // Coalesce a burst of camera "updated" events into one recompute per frame.
+    // Post-mount settle nudge (parallels TierAxis/CategoryAxis) for the case
+    // where layout/geometry settles a tick after this effect runs.
     function schedule() {
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
@@ -130,14 +136,20 @@ export function TechCardOverlay({ graph }: { graph: DirectedGraph }) {
       });
     }
 
+    // Attach `recompute` DIRECTLY to the camera event (like CategoryAxis /
+    // TierAxis) rather than routing through requestAnimationFrame: rAF
+    // callbacks are throttled/paused in a backgrounded tab, which would freeze
+    // the cards mid-pan. The per-event cost is one cheap affine transform per
+    // node plus a re-render of only the (few) on-screen cards.
     recompute();
-    camera.on("updated", schedule);
-    sigma.on("resize", schedule);
+    camera.on("updated", recompute);
+    sigma.on("resize", recompute);
+    schedule();
 
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
-      camera.removeListener("updated", schedule);
-      sigma.removeListener("resize", schedule);
+      camera.removeListener("updated", recompute);
+      sigma.removeListener("resize", recompute);
     };
   }, [sigma, graph]);
 
