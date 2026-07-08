@@ -1,0 +1,7484 @@
+{
+ "tech_arcane_deciphering": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_archeology_lab_ancrel": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeostudies": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_secrets_cybrex": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_secrets_league": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_secrets_irassian": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_secrets_vultaum": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_secrets_yuht": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_secrets_baol": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_secrets_zroni": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeoshield": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeoarmor": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeo_detection_scrambler": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeo_titan_beam": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeo_pk_devolving_beam": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "host_has_dlc",
+     "value": "Apocalypse",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ancrel",
+     "value": true,
+     "static": true
+    }
+   ]
+  }
+ },
+ "tech_archaeo_mass_drivers": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeo_lasers": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeo_point_defence": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeo_missiles": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeo_mass_accelerator": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeo_strike_crafts": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeo_rampart": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ancrel",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_archaeo_overcharger": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_archaeo_refinery": {
+  "prerequisites": [
+   "tech_archaeostudies"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ancrel",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_colossus": {
+  "prerequisites": [
+   "tech_titans"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "host_has_dlc",
+   "value": "Apocalypse",
+   "static": true
+  }
+ },
+ "tech_pk_cracker": {
+  "prerequisites": [
+   "tech_colossus"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "host_has_dlc",
+     "value": "Apocalypse",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_country_flag",
+     "value": "colossus_project",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_pacifist",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_pk_shielder": {
+  "prerequisites": [
+   "tech_colossus"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "host_has_dlc",
+     "value": "Apocalypse",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_country_flag",
+     "value": "colossus_project",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_pk_neutron": {
+  "prerequisites": [
+   "tech_colossus"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "host_has_dlc",
+     "value": "Apocalypse",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_country_flag",
+     "value": "colossus_project",
+     "static": false
+    },
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "is_spiritualist",
+       "value": false,
+       "static": false
+      },
+      {
+       "op": "not",
+       "children": [
+        {
+         "op": "leaf",
+         "trigger": "has_psionic_ascension",
+         "value": true,
+         "static": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_pacifist",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_pk_godray": {
+  "prerequisites": [
+   "tech_colossus"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "host_has_dlc",
+     "value": "Apocalypse",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_country_flag",
+     "value": "colossus_project",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_spiritualist",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_psionic_ascension",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_pk_nanobots": {
+  "prerequisites": [
+   "tech_colossus"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "host_has_dlc",
+     "value": "Apocalypse",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_country_flag",
+     "value": "colossus_project",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_valid_civic",
+     "value": "civic_machine_assimilator",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_btc_1": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_nemesis",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_become_the_crisis",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_country_flag",
+     "value": "can_build_star_eaters",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_pk_smelter": {
+  "prerequisites": [
+   "tech_colossus"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "host_has_dlc",
+     "value": "Apocalypse",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_country_flag",
+     "value": "colossus_project",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "can_get_planet_smelter",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_rift_sphere": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_astral_planes_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_astral_harvesting": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_astral_planes_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_maulers": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_mauler_build_speed": {
+  "prerequisites": [
+   "tech_maulers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_mauler_growth_1": {
+  "prerequisites": [
+   "tech_maulers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_mauler_growth_2": {
+  "prerequisites": [
+   "tech_mauler_growth_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weavers": {
+  "prerequisites": [
+   "tech_maulers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_build_speed": {
+  "prerequisites": [
+   "tech_weavers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_growth_1": {
+  "prerequisites": [
+   "tech_weavers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_growth_2": {
+  "prerequisites": [
+   "tech_weaver_growth_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_harbingers": {
+  "prerequisites": [
+   "tech_weavers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_harbinger_build_speed": {
+  "prerequisites": [
+   "tech_harbingers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_harbinger_growth_1": {
+  "prerequisites": [
+   "tech_harbingers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_harbinger_growth_2": {
+  "prerequisites": [
+   "tech_harbinger_growth_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_stingers": {
+  "prerequisites": [
+   "tech_harbingers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_stinger_build_speed": {
+  "prerequisites": [
+   "tech_stingers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_stinger_growth_1": {
+  "prerequisites": [
+   "tech_stingers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_stinger_growth_2": {
+  "prerequisites": [
+   "tech_stinger_growth_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_growth_chamber_1": {
+  "prerequisites": [
+   "tech_stingers",
+   "tech_mauler_growth_1",
+   "tech_stinger_growth_1",
+   "tech_weaver_growth_1",
+   "tech_harbinger_growth_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_growth_chamber_2": {
+  "prerequisites": [
+   "tech_growth_chamber_1",
+   "tech_mauler_growth_2",
+   "tech_stinger_growth_2",
+   "tech_weaver_growth_2",
+   "tech_harbinger_growth_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_mandibles_2": {
+  "prerequisites": [
+   "tech_maulers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_mandibles_3": {
+  "prerequisites": [
+   "tech_mandibles_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_healing_1": {
+  "prerequisites": [
+   "tech_weavers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_healing_2": {
+  "prerequisites": [
+   "tech_weaver_bio_healing_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_healing_3": {
+  "prerequisites": [
+   "tech_weaver_bio_healing_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_healing_4": {
+  "prerequisites": [
+   "tech_weaver_bio_healing_3"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_healing_5": {
+  "prerequisites": [
+   "tech_weaver_bio_healing_4"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_healing_6": {
+  "prerequisites": [
+   "tech_weaver_bio_healing_5"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_evasion_1": {
+  "prerequisites": [
+   "tech_weavers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_evasion_2": {
+  "prerequisites": [
+   "tech_weaver_bio_evasion_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_evasion_3": {
+  "prerequisites": [
+   "tech_weaver_bio_evasion_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_evasion_4": {
+  "prerequisites": [
+   "tech_weaver_bio_evasion_3"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_evasion_5": {
+  "prerequisites": [
+   "tech_weaver_bio_evasion_4"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_evasion_6": {
+  "prerequisites": [
+   "tech_weaver_bio_evasion_5"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_fire_rate_1": {
+  "prerequisites": [
+   "tech_weavers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_fire_rate_2": {
+  "prerequisites": [
+   "tech_weaver_bio_fire_rate_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_fire_rate_3": {
+  "prerequisites": [
+   "tech_weaver_bio_fire_rate_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_fire_rate_4": {
+  "prerequisites": [
+   "tech_weaver_bio_fire_rate_3"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_fire_rate_5": {
+  "prerequisites": [
+   "tech_weaver_bio_fire_rate_4"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_fire_rate_6": {
+  "prerequisites": [
+   "tech_weaver_bio_fire_rate_5"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_confuser_1": {
+  "prerequisites": [
+   "tech_weavers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_confuser_2": {
+  "prerequisites": [
+   "tech_weaver_bio_confuser_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_confuser_3": {
+  "prerequisites": [
+   "tech_weaver_bio_confuser_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_confuser_4": {
+  "prerequisites": [
+   "tech_weaver_bio_confuser_3"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_confuser_5": {
+  "prerequisites": [
+   "tech_weaver_bio_confuser_4"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_confuser_6": {
+  "prerequisites": [
+   "tech_weaver_bio_confuser_5"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_anti_evasion_1": {
+  "prerequisites": [
+   "tech_weavers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_anti_evasion_2": {
+  "prerequisites": [
+   "tech_weaver_bio_anti_evasion_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_anti_evasion_3": {
+  "prerequisites": [
+   "tech_weaver_bio_anti_evasion_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_anti_evasion_4": {
+  "prerequisites": [
+   "tech_weaver_bio_anti_evasion_3"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_anti_evasion_5": {
+  "prerequisites": [
+   "tech_weaver_bio_anti_evasion_4"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_anti_evasion_6": {
+  "prerequisites": [
+   "tech_weaver_bio_anti_evasion_5"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_anti_fire_rate_1": {
+  "prerequisites": [
+   "tech_weavers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_anti_fire_rate_2": {
+  "prerequisites": [
+   "tech_weaver_bio_anti_fire_rate_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_anti_fire_rate_3": {
+  "prerequisites": [
+   "tech_weaver_bio_anti_fire_rate_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_anti_fire_rate_4": {
+  "prerequisites": [
+   "tech_weaver_bio_anti_fire_rate_3"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_anti_fire_rate_5": {
+  "prerequisites": [
+   "tech_weaver_bio_anti_fire_rate_4"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_weaver_bio_anti_fire_rate_6": {
+  "prerequisites": [
+   "tech_weaver_bio_anti_fire_rate_5"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_deep_space_citadel": {
+  "prerequisites": [
+   "tech_starbase_3"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_biogenesis_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_wilderness_terraform": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_storm_manipulation": {
+  "prerequisites": [
+   "tech_industrial_storm_protection"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_cosmic_storms_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_advanced_storm_manipulation": {
+  "prerequisites": [
+   "tech_storm_manipulation"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_cosmic_storms_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_industrial_storm_protection": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_cosmic_storms_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_advanced_industrial_storm_protection": {
+  "prerequisites": [
+   "tech_industrial_storm_protection"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_cosmic_storms_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_storm_prediction_1": {
+  "prerequisites": [
+   "tech_industrial_storm_protection"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_cosmic_storms_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_storm_prediction_2": {
+  "prerequisites": [
+   "tech_storm_prediction_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_cosmic_storms_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_ship_hull_storm_breaker_1": {
+  "prerequisites": [
+   "tech_storm_prediction_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_cosmic_storms_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_ship_hull_storm_breaker_2": {
+  "prerequisites": [
+   "tech_ship_hull_storm_breaker_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_cosmic_storms_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_ship_storm_weapons_1": {
+  "prerequisites": [
+   "tech_storm_prediction_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_cosmic_storms_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_ship_storm_weapons_2": {
+  "prerequisites": [
+   "tech_ship_storm_weapons_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_cosmic_storms_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_gargantuan_evolution": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_lgate_activation": {
+  "prerequisites": [],
+  "gate": {
+   "op": "not",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_global_flag",
+     "value": "l_cluster_opened",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_repeatable_lcluster_clue": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_country_flag",
+     "value": "encountered_first_lgate",
+     "static": false
+    },
+    {
+     "op": "not",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_country_flag",
+       "value": "completed_lcluster_chain",
+       "static": false
+      }
+     ]
+    },
+    {
+     "op": "not",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_global_flag",
+       "value": "l_cluster_opened",
+       "static": false
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_experimental_subspace_navigation": {
+  "prerequisites": [
+   "tech_sensors_2"
+  ],
+  "gate": null
+ },
+ "tech_neuroregeneration": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_nanite_repair_system": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_nanite_autocannon": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_nanite_flak_batteries": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_solar_panel_network": {
+  "prerequisites": [
+   "tech_starbase_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_corvettes": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_destroyers": {
+  "prerequisites": [
+   "tech_corvettes"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_cruisers": {
+  "prerequisites": [
+   "tech_destroyers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_battleships": {
+  "prerequisites": [
+   "tech_cruisers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_titans": {
+  "prerequisites": [
+   "tech_battleships",
+   "tech_stinger_growth_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "host_has_dlc",
+   "value": "Apocalypse",
+   "static": true
+  }
+ },
+ "tech_juggernaut": {
+  "prerequisites": [
+   "tech_starbase_5",
+   "tech_arkship_construction",
+   "tech_battleships",
+   "tech_harbinger_growth_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "host_has_dlc",
+   "value": "Federations",
+   "static": true
+  }
+ },
+ "tech_corvette_build_speed": {
+  "prerequisites": [
+   "tech_corvettes"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_corvette_hull_1": {
+  "prerequisites": [
+   "tech_corvettes"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_corvette_hull_2": {
+  "prerequisites": [
+   "tech_corvette_hull_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_destroyer_build_speed": {
+  "prerequisites": [
+   "tech_destroyers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_destroyer_hull_1": {
+  "prerequisites": [
+   "tech_destroyers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_destroyer_hull_2": {
+  "prerequisites": [
+   "tech_destroyer_hull_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_cruiser_build_speed": {
+  "prerequisites": [
+   "tech_cruisers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_cruiser_hull_1": {
+  "prerequisites": [
+   "tech_cruisers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_cruiser_hull_2": {
+  "prerequisites": [
+   "tech_cruiser_hull_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_battleship_build_speed": {
+  "prerequisites": [
+   "tech_battleships"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_battleship_hull_1": {
+  "prerequisites": [
+   "tech_battleships"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_battleship_hull_2": {
+  "prerequisites": [
+   "tech_battleship_hull_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_titan_hull_1": {
+  "prerequisites": [
+   "tech_titans"
+  ],
+  "gate": null
+ },
+ "tech_titan_hull_2": {
+  "prerequisites": [
+   "tech_titan_hull_1"
+  ],
+  "gate": null
+ },
+ "tech_starbase_1": {
+  "prerequisites": [
+   "tech_space_construction"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_starbase_2": {
+  "prerequisites": [
+   "tech_starbase_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_starbase_3": {
+  "prerequisites": [
+   "tech_starbase_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_starbase_4": {
+  "prerequisites": [
+   "tech_starbase_3"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_starbase_5": {
+  "prerequisites": [
+   "tech_starbase_4"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_habitat_1": {
+  "prerequisites": [
+   "tech_starbase_3"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": false,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_habitat_2": {
+  "prerequisites": [
+   "tech_habitat_1",
+   "tech_starbase_4"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": false,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_habitat_3": {
+  "prerequisites": [
+   "tech_habitat_2",
+   "tech_starbase_5"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": false,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_modular_engineering": {
+  "prerequisites": [
+   "tech_starbase_3",
+   "tech_waystation_2"
+  ],
+  "gate": null
+ },
+ "tech_space_defense_station_improvement": {
+  "prerequisites": [
+   "tech_starbase_4",
+   "tech_modular_engineering"
+  ],
+  "gate": null
+ },
+ "tech_strike_craft_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_strike_craft_2": {
+  "prerequisites": [
+   "tech_strike_craft_1"
+  ],
+  "gate": null
+ },
+ "tech_strike_craft_3": {
+  "prerequisites": [
+   "tech_strike_craft_2"
+  ],
+  "gate": null
+ },
+ "tech_strike_craft_skrand": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_paragon_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_assault_armies": {
+  "prerequisites": [
+   "tech_planetary_defenses"
+  ],
+  "gate": null
+ },
+ "tech_ship_armor_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_ship_armor_2": {
+  "prerequisites": [
+   "tech_ship_armor_1"
+  ],
+  "gate": null
+ },
+ "tech_ship_armor_3": {
+  "prerequisites": [
+   "tech_ship_armor_2"
+  ],
+  "gate": null
+ },
+ "tech_ship_armor_4": {
+  "prerequisites": [
+   "tech_ship_armor_3"
+  ],
+  "gate": null
+ },
+ "tech_ship_armor_5": {
+  "prerequisites": [
+   "tech_ship_armor_4"
+  ],
+  "gate": null
+ },
+ "tech_crystal_armor_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_crystal_armor_2": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_armor_hardeners_1": {
+  "prerequisites": [
+   "tech_advanced_metallurgy_1",
+   "tech_rare_crystals"
+  ],
+  "gate": null
+ },
+ "tech_armor_hardeners_2": {
+  "prerequisites": [
+   "tech_armor_hardeners_1",
+   "tech_mine_living_metal"
+  ],
+  "gate": null
+ },
+ "tech_thrusters_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_thrusters_2": {
+  "prerequisites": [
+   "tech_thrusters_1"
+  ],
+  "gate": null
+ },
+ "tech_thrusters_3": {
+  "prerequisites": [
+   "tech_thrusters_2"
+  ],
+  "gate": null
+ },
+ "tech_thrusters_4": {
+  "prerequisites": [
+   "tech_thrusters_3"
+  ],
+  "gate": null
+ },
+ "tech_space_defense_station_1": {
+  "prerequisites": [
+   "tech_starbase_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_defense_platform_hull_1": {
+  "prerequisites": [
+   "tech_starbase_3"
+  ],
+  "gate": null
+ },
+ "tech_basic_industry": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_mechanized_mining": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_powered_exoskeletons": {
+  "prerequisites": [
+   "tech_basic_industry"
+  ],
+  "gate": null
+ },
+ "tech_space_mining_1": {
+  "prerequisites": [
+   "tech_space_construction"
+  ],
+  "gate": null
+ },
+ "tech_space_mining_2": {
+  "prerequisites": [
+   "tech_space_mining_1"
+  ],
+  "gate": null
+ },
+ "tech_space_mining_3": {
+  "prerequisites": [
+   "tech_space_mining_2"
+  ],
+  "gate": null
+ },
+ "tech_space_mining_4": {
+  "prerequisites": [
+   "tech_space_mining_3"
+  ],
+  "gate": null
+ },
+ "tech_space_mining_5": {
+  "prerequisites": [
+   "tech_space_mining_4"
+  ],
+  "gate": null
+ },
+ "tech_mining_1": {
+  "prerequisites": [
+   "tech_basic_industry"
+  ],
+  "gate": null
+ },
+ "tech_mining_2": {
+  "prerequisites": [
+   "tech_mining_1"
+  ],
+  "gate": null
+ },
+ "tech_mining_3": {
+  "prerequisites": [
+   "tech_mining_2"
+  ],
+  "gate": null
+ },
+ "tech_mineral_purification_1": {
+  "prerequisites": [
+   "tech_mining_1"
+  ],
+  "gate": null
+ },
+ "tech_mineral_purification_2": {
+  "prerequisites": [
+   "tech_mineral_purification_1",
+   "tech_colonial_centralization"
+  ],
+  "gate": null
+ },
+ "tech_alloys_1": {
+  "prerequisites": [
+   "tech_basic_industry"
+  ],
+  "gate": null
+ },
+ "tech_alloys_2": {
+  "prerequisites": [
+   "tech_alloys_1",
+   "tech_colonial_centralization"
+  ],
+  "gate": null
+ },
+ "tech_advanced_metallurgy_1": {
+  "prerequisites": [
+   "tech_alloys_1",
+   "tech_ship_armor_2"
+  ],
+  "gate": null
+ },
+ "tech_advanced_metallurgy_2": {
+  "prerequisites": [
+   "tech_advanced_metallurgy_1",
+   "tech_alloys_2",
+   "tech_ship_armor_4"
+  ],
+  "gate": null
+ },
+ "tech_luxuries_1": {
+  "prerequisites": [
+   "tech_basic_industry"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_consumer_goods",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_luxuries_2": {
+  "prerequisites": [
+   "tech_luxuries_1",
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_consumer_goods",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_engineering_1": {
+  "prerequisites": [
+   "tech_basic_science_lab_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_engineering_2": {
+  "prerequisites": [
+   "tech_engineering_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_engineering_3": {
+  "prerequisites": [
+   "tech_engineering_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_robotic_workers": {
+  "prerequisites": [
+   "tech_powered_exoskeletons"
+  ],
+  "gate": {
+   "op": "nor",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_droid_workers": {
+  "prerequisites": [
+   "tech_robotic_workers",
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "nor",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_synthetic_workers": {
+  "prerequisites": [
+   "tech_droid_workers",
+   "tech_galactic_administration",
+   "tech_sapient_ai"
+  ],
+  "gate": {
+   "op": "nor",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_synthetic_leaders": {
+  "prerequisites": [
+   "tech_synthetic_workers"
+  ],
+  "gate": {
+   "op": "nor",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_robot_assembly_complex": {
+  "prerequisites": [
+   "tech_robomodding",
+   "tech_galactic_administration"
+  ],
+  "gate": {
+   "op": "not",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    }
+   ]
+  }
+ },
+ "tech_integrated_cybernetics": {
+  "prerequisites": [
+   "tech_powered_exoskeletons",
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "and",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "is_machine_empire",
+       "value": false,
+       "static": true
+      },
+      {
+       "op": "leaf",
+       "trigger": "is_individual_machine",
+       "value": false,
+       "static": false
+      }
+     ]
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_civic",
+     "value": "civic_machine_assimilator",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_space_construction": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_afterburners_1": {
+  "prerequisites": [
+   "tech_thrusters_1"
+  ],
+  "gate": null
+ },
+ "tech_afterburners_2": {
+  "prerequisites": [
+   "tech_afterburners_1",
+   "tech_thrusters_3"
+  ],
+  "gate": null
+ },
+ "tech_assembly_pattern": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_construction_templates": {
+  "prerequisites": [
+   "tech_assembly_pattern"
+  ],
+  "gate": null
+ },
+ "tech_housing_1": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_housing_2": {
+  "prerequisites": [
+   "tech_housing_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_leviathan_techgenesis": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_machine_age_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_repeatable_improved_tile_mineral_output": {
+  "prerequisites": [
+   "tech_mineral_purification_2"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_improved_military_station_damage": {
+  "prerequisites": [
+   "tech_defense_platform_hull_1"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_improved_military_station_health": {
+  "prerequisites": [
+   "tech_defense_platform_hull_1"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_improved_armor_output": {
+  "prerequisites": [
+   "tech_ship_armor_3"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_weapon_type_explosive_damage": {
+  "prerequisites": [
+   "tech_missiles_3",
+   "tech_swarmer_missiles_2"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_weapon_type_explosive_fire_rate": {
+  "prerequisites": [
+   "tech_missiles_3",
+   "tech_swarmer_missiles_2"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_weapon_type_kinetic_damage": {
+  "prerequisites": [
+   "tech_mass_drivers_3"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_weapon_type_kinetic_fire_rate": {
+  "prerequisites": [
+   "tech_mass_drivers_3"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_reduced_building_time": {
+  "prerequisites": [
+   "tech_construction_templates"
+  ],
+  "gate": null
+ },
+ "tech_mass_drivers_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_mass_drivers_2": {
+  "prerequisites": [
+   "tech_mass_drivers_1"
+  ],
+  "gate": null
+ },
+ "tech_mass_drivers_3": {
+  "prerequisites": [
+   "tech_mass_drivers_2"
+  ],
+  "gate": null
+ },
+ "tech_mass_drivers_4": {
+  "prerequisites": [
+   "tech_mass_drivers_3"
+  ],
+  "gate": null
+ },
+ "tech_mass_drivers_5": {
+  "prerequisites": [
+   "tech_mass_drivers_4"
+  ],
+  "gate": null
+ },
+ "tech_kinetic_artillery_1": {
+  "prerequisites": [
+   "tech_mass_drivers_4"
+  ],
+  "gate": null
+ },
+ "tech_kinetic_artillery_2": {
+  "prerequisites": [
+   "tech_mass_drivers_5",
+   "tech_kinetic_artillery_1"
+  ],
+  "gate": null
+ },
+ "tech_mass_accelerator_1": {
+  "prerequisites": [
+   "tech_mass_drivers_4",
+   "tech_battleships",
+   "tech_stingers"
+  ],
+  "gate": null
+ },
+ "tech_mass_accelerator_2": {
+  "prerequisites": [
+   "tech_mass_drivers_5",
+   "tech_mass_accelerator_1"
+  ],
+  "gate": null
+ },
+ "tech_autocannons_1": {
+  "prerequisites": [
+   "tech_mass_drivers_2"
+  ],
+  "gate": null
+ },
+ "tech_autocannons_2": {
+  "prerequisites": [
+   "tech_autocannons_1"
+  ],
+  "gate": null
+ },
+ "tech_autocannons_3": {
+  "prerequisites": [
+   "tech_autocannons_2"
+  ],
+  "gate": null
+ },
+ "tech_flak_batteries_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_flak_batteries_2": {
+  "prerequisites": [
+   "tech_flak_batteries_1"
+  ],
+  "gate": null
+ },
+ "tech_flak_batteries_3": {
+  "prerequisites": [
+   "tech_flak_batteries_2"
+  ],
+  "gate": null
+ },
+ "tech_missiles_1": {
+  "prerequisites": [],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "country_uses_bio_ships",
+     "value": false,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_tradition",
+     "value": "tr_nanotech_4",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_crisis_level",
+     "value": "crisis_level_2",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_technology",
+     "value": "tech_cosmogenesis_escort",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_missiles_2": {
+  "prerequisites": [
+   "tech_missiles_1",
+   "tech_fusion_power"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_missiles_3": {
+  "prerequisites": [
+   "tech_missiles_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_missiles_4": {
+  "prerequisites": [
+   "tech_missiles_3"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_missiles_5": {
+  "prerequisites": [
+   "tech_missiles_4"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_swarmer_missiles_1": {
+  "prerequisites": [
+   "tech_harbingers",
+   "tech_stingers",
+   "tech_missiles_2"
+  ],
+  "gate": null
+ },
+ "tech_swarmer_missiles_2": {
+  "prerequisites": [
+   "tech_swarmer_missiles_1"
+  ],
+  "gate": null
+ },
+ "tech_torpedoes_1": {
+  "prerequisites": [
+   "tech_corvettes"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "country_uses_bio_ships",
+     "value": false,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_tradition",
+     "value": "tr_nanotech_4",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_crisis_level",
+     "value": "crisis_level_2",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_technology",
+     "value": "tech_cosmogenesis_escort",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_torpedoes_2": {
+  "prerequisites": [
+   "tech_torpedoes_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_torpedoes_3": {
+  "prerequisites": [
+   "tech_torpedoes_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_bio_ships",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_pyroclastic_resonation": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_alloy_fossilization": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_orbital_maneuvers": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_cryovault": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_shroud_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_living_test_subjects": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_georadiation_terraforming": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_dark_matter_deflector": {
+  "prerequisites": [
+   "tech_shields_5"
+  ],
+  "gate": null
+ },
+ "tech_dark_matter_power_core": {
+  "prerequisites": [
+   "tech_zero_point_power"
+  ],
+  "gate": null
+ },
+ "tech_dark_matter_propulsion": {
+  "prerequisites": [
+   "tech_thrusters_4"
+  ],
+  "gate": null
+ },
+ "tech_fe_affluence_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_affluence_2": {
+  "prerequisites": [
+   "tech_fe_affluence_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_nourishment_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_nourishment_2": {
+  "prerequisites": [
+   "tech_fe_nourishment_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_fabricator_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_fabricator_2": {
+  "prerequisites": [
+   "tech_fe_fabricator_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_singularity_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_singularity_2": {
+  "prerequisites": [
+   "tech_fe_singularity_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_forge_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_forge_2": {
+  "prerequisites": [
+   "tech_fe_forge_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_dome_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_dome_2": {
+  "prerequisites": [
+   "tech_fe_dome_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_fortress_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_fortress_2": {
+  "prerequisites": [
+   "tech_fe_fortress_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_administration_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_administration_2": {
+  "prerequisites": [
+   "tech_fe_administration_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_assembly_1": {
+  "prerequisites": [
+   "tech_robomodding",
+   "tech_robomodding_m"
+  ],
+  "gate": null
+ },
+ "tech_fe_assembly_2": {
+  "prerequisites": [
+   "tech_fe_assembly_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_clinic_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_clinic_2": {
+  "prerequisites": [
+   "tech_fe_clinic_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_security_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_security_2": {
+  "prerequisites": [
+   "tech_fe_security_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_market_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_market_2": {
+  "prerequisites": [
+   "tech_fe_market_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_silo_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_silo_2": {
+  "prerequisites": [
+   "tech_fe_silo_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_entertainment_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_entertainment_2": {
+  "prerequisites": [
+   "tech_fe_entertainment_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_lab_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_lab_2": {
+  "prerequisites": [
+   "tech_fe_lab_1"
+  ],
+  "gate": null
+ },
+ "tech_fe_mine_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fe_mine_2": {
+  "prerequisites": [
+   "tech_fe_mine_1"
+  ],
+  "gate": null
+ },
+ "tech_cloaking_1": {
+  "prerequisites": [
+   "tech_shields_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_cloaking_2": {
+  "prerequisites": [
+   "tech_cloaking_1",
+   "tech_shields_3"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_cloaking_3": {
+  "prerequisites": [
+   "tech_cloaking_2",
+   "tech_shields_4"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_cloaking_dark_matter": {
+  "prerequisites": [
+   "tech_dark_matter_deflector",
+   "tech_cloaking_3"
+  ],
+  "gate": null
+ },
+ "tech_cloaking_psi": {
+  "prerequisites": [
+   "tech_psi_jump_drive_1"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_shroud_dlc",
+       "value": true,
+       "static": true
+      },
+      {
+       "op": "not",
+       "children": [
+        {
+         "op": "leaf",
+         "trigger": "has_ethic",
+         "value": "ethic_gestalt_consciousness",
+         "static": true
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_first_contact_dlc",
+     "value": true,
+     "static": true
+    }
+   ]
+  }
+ },
+ "tech_detection_array": {
+  "prerequisites": [
+   "tech_sensors_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_dark_matter_detection": {
+  "prerequisites": [
+   "tech_detection_array",
+   "tech_mine_dark_matter"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_assisted_detection": {
+  "prerequisites": [
+   "tech_detection_array"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_subspace_drive": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_unusual_senses": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_new_numbers": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_trinary_computing": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_atmospheric_orbital_mechanics": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_predatory_tactics": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_satisfying_insults": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_compact_living": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_alien_topography": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_xeno_aesthetics": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_lost_building_methods": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_supreme_alloy": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_ordered_retreat": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_temple_of_transportation": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_first_contact_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_galactic_archivism": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_grand_archive_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_gravity_wells": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_grand_archive_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_encountered_any_fauna",
+       "value": true,
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "is_beastmasters_empire",
+       "value": true,
+       "static": false
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_gravity_snare_capacity_1": {
+  "prerequisites": [
+   "tech_gravity_wells"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_grand_archive_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_gravity_snare_capacity_2": {
+  "prerequisites": [
+   "tech_gravity_snare_capacity_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_grand_archive_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_gravity_snare_capacity_3": {
+  "prerequisites": [
+   "tech_gravity_snare_capacity_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_grand_archive_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_containment_vessel": {
+  "prerequisites": [
+   "tech_gravity_wells"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_grand_archive_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_voidworm_immunity": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_grand_archive_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_asteroidal_carapace": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_grand_archive_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_alien_cloning": {
+  "prerequisites": [
+   "tech_gravity_wells"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_grand_archive_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "is_beastmasters_empire",
+       "value": true,
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "can_research_technology",
+       "value": "tech_genome_mapping",
+       "static": false
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_improved_incubators": {
+  "prerequisites": [
+   "tech_alien_cloning"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_grand_archive_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_metabolic_gases": {
+  "prerequisites": [
+   "tech_improved_incubators"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_grand_archive_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_boarding_cables": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_grand_archive_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_controlled_mutations": {
+  "prerequisites": [
+   "tech_alien_cloning"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_beastmasters_empire",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_any_dna",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_controlled_mutations_2": {
+  "prerequisites": [
+   "tech_controlled_mutations"
+  ],
+  "gate": null
+ },
+ "tech_unique_mutation_space_amoeba": {
+  "prerequisites": [
+   "tech_controlled_mutations_2"
+  ],
+  "gate": null
+ },
+ "tech_unique_mutation_tiyanki": {
+  "prerequisites": [
+   "tech_controlled_mutations_2"
+  ],
+  "gate": null
+ },
+ "tech_unique_mutation_voidworm": {
+  "prerequisites": [
+   "tech_controlled_mutations_2"
+  ],
+  "gate": null
+ },
+ "tech_unique_mutation_cutholoid": {
+  "prerequisites": [
+   "tech_controlled_mutations_2"
+  ],
+  "gate": null
+ },
+ "tech_unique_mutation_crystalline_entity": {
+  "prerequisites": [
+   "tech_controlled_mutations_2"
+  ],
+  "gate": null
+ },
+ "tech_unique_mutation_restorative_enzymes": {
+  "prerequisites": [
+   "tech_controlled_mutations_2"
+  ],
+  "gate": null
+ },
+ "tech_unique_mutation_starborne_biology": {
+  "prerequisites": [
+   "tech_controlled_mutations_2"
+  ],
+  "gate": null
+ },
+ "tech_thrusters_bio_integration": {
+  "prerequisites": [
+   "tech_controlled_mutations"
+  ],
+  "gate": null
+ },
+ "tech_hyper_drive_bio_integration": {
+  "prerequisites": [
+   "tech_controlled_mutations"
+  ],
+  "gate": null
+ },
+ "tech_sensors_bio_integration": {
+  "prerequisites": [
+   "tech_controlled_mutations"
+  ],
+  "gate": null
+ },
+ "tech_combat_computers_bio_integration": {
+  "prerequisites": [
+   "tech_controlled_mutations"
+  ],
+  "gate": null
+ },
+ "tech_akx_worm_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_akx_worm_2": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_akx_worm_3": {
+  "prerequisites": [
+   "tech_akx_worm_1",
+   "tech_akx_worm_2"
+  ],
+  "gate": null
+ },
+ "tech_dragon_armor": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_enigmatic_encoder": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_enigmatic_decoder": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_identity_copy": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_machine_age_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_identity_fusion": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_country_flag",
+     "value": "advanced_identity_creation",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_identity_initialization": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_country_flag",
+     "value": "advanced_identity_creation",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_synth_queen_knowledge": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_country_flag",
+     "value": "synth_queen_knowledge",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_crisis_1": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_crisis_2": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_crisis_3": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_crisis_4": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_crisis_5": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_escort": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "country_uses_bio_ships",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_battlecruiser": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "country_uses_bio_ships",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_FE_titan": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "country_uses_bio_ships",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_weaver": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "country_uses_bio_ships",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_mauler": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "country_uses_bio_ships",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_harbinger": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "country_uses_bio_ships",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_stinger": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "country_uses_bio_ships",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_world": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_cosmogenesis_thesis": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    },
+    {
+     "op": "not",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_country_flag",
+       "value": "cosmogenesis_aborted",
+       "static": false
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_lathe_resonator": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_technology",
+     "value": "tech_cosmogenesis_world",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_lathe_overclocker": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_technology",
+     "value": "tech_cosmogenesis_world",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_lathe_preserver": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_technology",
+     "value": "tech_cosmogenesis_world",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_lathe_life_support": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_technology",
+     "value": "tech_cosmogenesis_world",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_lathe_cogitator": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_technology",
+     "value": "tech_cosmogenesis_world",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_lathe_validator": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_machine_age_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_ascension_perk",
+     "value": "ap_cosmogenesis",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_technology",
+     "value": "tech_cosmogenesis_world",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_orbital_arc_furnace": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_machine_age_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_dyson_swarm": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_machine_age_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_nanite_repair_system_synth_queen": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_machine_age_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_orbital_trash_dispersal": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_xeno_tourism_agency": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_megacorp",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_executive_retreat": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_megacorp",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_mega_engineering": {
+  "prerequisites": [
+   "tech_starbase_5",
+   "tech_arkship_tier_3",
+   "tech_zero_point_power",
+   "tech_battleships",
+   "tech_stingers"
+  ],
+  "gate": null
+ },
+ "tech_science_nexus": {
+  "prerequisites": [
+   "tech_mega_engineering"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_sentry_array": {
+  "prerequisites": [
+   "tech_mega_engineering"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_strategic_coordination": {
+  "prerequisites": [
+   "tech_mega_engineering"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_megacorp",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_interstellar_assembly": {
+  "prerequisites": [
+   "tech_mega_engineering"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_megacorp",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_mega_art": {
+  "prerequisites": [
+   "tech_mega_engineering"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_megacorp",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_gateway_activation": {
+  "prerequisites": [
+   "tech_hyper_drive_3"
+  ],
+  "gate": null
+ },
+ "tech_gateway_construction": {
+  "prerequisites": [
+   "tech_gateway_activation",
+   "tech_mega_engineering"
+  ],
+  "gate": null
+ },
+ "tech_dyson_sphere": {
+  "prerequisites": [
+   "tech_mega_engineering"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_matter_decompressor": {
+  "prerequisites": [
+   "tech_mega_engineering"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_megacorp",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_ring_world": {
+  "prerequisites": [
+   "tech_mega_engineering"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": false,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_mega_shipyard": {
+  "prerequisites": [
+   "tech_mega_engineering"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_federations_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_arkship_construction": {
+  "prerequisites": [
+   "tech_destroyers",
+   "tech_weavers"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_arkship_tier_2": {
+  "prerequisites": [
+   "tech_cruisers",
+   "tech_harbingers",
+   "tech_arkship_construction"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_arkship_tier_3": {
+  "prerequisites": [
+   "tech_stingers",
+   "tech_battleships",
+   "tech_arkship_tier_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_civilian_arkship": {
+  "prerequisites": [
+   "tech_planetary_engineering",
+   "tech_arkship_construction"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_science_arkship": {
+  "prerequisites": [
+   "tech_sensors_2",
+   "tech_arkship_construction"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_military_arkship": {
+  "prerequisites": [
+   "tech_destroyers",
+   "tech_mauler_growth_2",
+   "tech_arkship_construction"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_arkship_planetary_refinery": {
+  "prerequisites": [
+   "tech_arkship_tier_3",
+   "tech_planetary_engineering"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_arkship_stellar_igniter": {
+  "prerequisites": [
+   "tech_arkship_tier_3",
+   "tech_mine_dark_matter"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_arkship_system_scanner": {
+  "prerequisites": [
+   "tech_arkship_tier_3",
+   "tech_sensors_2",
+   "tech_automated_exploration"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_arkship_exodus_jump": {
+  "prerequisites": [
+   "tech_arkship_tier_3",
+   "tech_jump_drive_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_nomads_mechanized_mining": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_waystation_1": {
+  "prerequisites": [
+   "tech_space_construction"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_waystation_2": {
+  "prerequisites": [
+   "tech_waystation_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_waystation_3": {
+  "prerequisites": [
+   "tech_waystation_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_planetary_engineering": {
+  "prerequisites": [
+   "tech_space_exploration",
+   "tech_space_mining_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_dyson_gun": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_nomads_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_quantum_catapult": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_overlord_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_technology",
+       "value": "tech_mega_engineering",
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_country_flag",
+       "value": "has_quantum_catapult_insight",
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_origin",
+       "value": "origin_star_slingshot",
+       "static": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_orbital_ring_tier_1": {
+  "prerequisites": [
+   "tech_starbase_3",
+   "tech_galactic_administration",
+   "tech_planetary_infrastructure_1"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_overlord_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_hyper_relays": {
+  "prerequisites": [
+   "tech_hyper_drive_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_overlord_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_space_exploration": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_basic_science_lab_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_basic_science_lab_2": {
+  "prerequisites": [
+   "tech_basic_science_lab_1"
+  ],
+  "gate": null
+ },
+ "tech_basic_science_lab_3": {
+  "prerequisites": [
+   "tech_basic_science_lab_2",
+   "tech_colonial_centralization"
+  ],
+  "gate": null
+ },
+ "tech_global_research_initiative": {
+  "prerequisites": [
+   "tech_basic_science_lab_2",
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_curator_lab": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_archeology_lab": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ancrel",
+   "value": false,
+   "static": true
+  }
+ },
+ "tech_space_science_1": {
+  "prerequisites": [
+   "tech_space_construction"
+  ],
+  "gate": null
+ },
+ "tech_space_science_2": {
+  "prerequisites": [
+   "tech_space_science_1"
+  ],
+  "gate": null
+ },
+ "tech_space_science_3": {
+  "prerequisites": [
+   "tech_space_science_2"
+  ],
+  "gate": null
+ },
+ "tech_space_science_4": {
+  "prerequisites": [
+   "tech_space_science_3"
+  ],
+  "gate": null
+ },
+ "tech_space_science_5": {
+  "prerequisites": [
+   "tech_space_science_4"
+  ],
+  "gate": null
+ },
+ "tech_physics_1": {
+  "prerequisites": [
+   "tech_basic_science_lab_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_physics_2": {
+  "prerequisites": [
+   "tech_physics_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_physics_3": {
+  "prerequisites": [
+   "tech_physics_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_administrative_ai": {
+  "prerequisites": [
+   "tech_basic_science_lab_1"
+  ],
+  "gate": null
+ },
+ "tech_cryostasis_1": {
+  "prerequisites": [
+   "tech_administrative_ai",
+   "tech_colonization_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_cryostasis_2": {
+  "prerequisites": [
+   "tech_self_aware_logic",
+   "tech_cryostasis_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_self_aware_logic": {
+  "prerequisites": [
+   "tech_administrative_ai"
+  ],
+  "gate": null
+ },
+ "tech_automated_exploration": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_sapient_ai": {
+  "prerequisites": [
+   "tech_self_aware_logic"
+  ],
+  "gate": {
+   "op": "not",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    }
+   ]
+  }
+ },
+ "tech_positronic_implants": {
+  "prerequisites": [
+   "tech_self_aware_logic"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ethic",
+   "value": "ethic_gestalt_consciousness",
+   "static": true
+  }
+ },
+ "tech_combat_computers_1": {
+  "prerequisites": [
+   "tech_administrative_ai"
+  ],
+  "gate": null
+ },
+ "tech_combat_computers_2": {
+  "prerequisites": [
+   "tech_combat_computers_1",
+   "tech_self_aware_logic"
+  ],
+  "gate": null
+ },
+ "tech_combat_computers_3": {
+  "prerequisites": [
+   "tech_combat_computers_2",
+   "tech_sapient_ai"
+  ],
+  "gate": {
+   "op": "not",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    }
+   ]
+  }
+ },
+ "tech_combat_computers_autonomous": {
+  "prerequisites": [
+   "tech_combat_computers_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ethic",
+   "value": "ethic_gestalt_consciousness",
+   "static": true
+  }
+ },
+ "tech_auxiliary_fire_control": {
+  "prerequisites": [
+   "tech_combat_computers_1"
+  ],
+  "gate": null
+ },
+ "tech_synchronized_defences": {
+  "prerequisites": [
+   "tech_self_aware_logic"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_consumer_good_refinement_1": {
+  "prerequisites": [
+   "tech_luxuries_1",
+   "tech_administrative_ai"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_consumer_goods",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_consumer_good_refinement_2": {
+  "prerequisites": [
+   "tech_luxuries_2",
+   "tech_consumer_good_refinement_1",
+   "tech_self_aware_logic"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "country_uses_consumer_goods",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_neuro_quantum_links": {
+  "prerequisites": [
+   "tech_basic_science_lab_2",
+   "tech_integrated_cybernetics"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": false,
+     "static": false
+    },
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "is_machine_empire",
+       "value": false,
+       "static": true
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_civic",
+       "value": "civic_machine_assimilator",
+       "static": false
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_encryption_1": {
+  "prerequisites": [
+   "tech_colonial_bureaucracy"
+  ],
+  "gate": null
+ },
+ "tech_encryption_2": {
+  "prerequisites": [
+   "tech_encryption_1"
+  ],
+  "gate": null
+ },
+ "tech_encryption_3": {
+  "prerequisites": [
+   "tech_encryption_2"
+  ],
+  "gate": null
+ },
+ "tech_decryption_1": {
+  "prerequisites": [
+   "tech_colonial_bureaucracy"
+  ],
+  "gate": null
+ },
+ "tech_decryption_2": {
+  "prerequisites": [
+   "tech_decryption_1"
+  ],
+  "gate": null
+ },
+ "tech_decryption_3": {
+  "prerequisites": [
+   "tech_decryption_2"
+  ],
+  "gate": null
+ },
+ "tech_fission_power": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_fusion_power": {
+  "prerequisites": [
+   "tech_fission_power"
+  ],
+  "gate": null
+ },
+ "tech_cold_fusion_power": {
+  "prerequisites": [
+   "tech_fusion_power"
+  ],
+  "gate": null
+ },
+ "tech_antimatter_power": {
+  "prerequisites": [
+   "tech_cold_fusion_power"
+  ],
+  "gate": null
+ },
+ "tech_zero_point_power": {
+  "prerequisites": [
+   "tech_antimatter_power"
+  ],
+  "gate": null
+ },
+ "tech_reactor_boosters_1": {
+  "prerequisites": [
+   "tech_fission_power"
+  ],
+  "gate": null
+ },
+ "tech_reactor_boosters_2": {
+  "prerequisites": [
+   "tech_fusion_power",
+   "tech_reactor_boosters_1"
+  ],
+  "gate": null
+ },
+ "tech_reactor_boosters_3": {
+  "prerequisites": [
+   "tech_antimatter_power",
+   "tech_reactor_boosters_2"
+  ],
+  "gate": null
+ },
+ "tech_shields_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_shields_2": {
+  "prerequisites": [
+   "tech_shields_1"
+  ],
+  "gate": null
+ },
+ "tech_shields_3": {
+  "prerequisites": [
+   "tech_shields_2"
+  ],
+  "gate": null
+ },
+ "tech_shields_4": {
+  "prerequisites": [
+   "tech_shields_3"
+  ],
+  "gate": null
+ },
+ "tech_shields_5": {
+  "prerequisites": [
+   "tech_shields_4"
+  ],
+  "gate": null
+ },
+ "tech_shield_rechargers_1": {
+  "prerequisites": [
+   "tech_shields_3"
+  ],
+  "gate": null
+ },
+ "tech_shield_hardeners_1": {
+  "prerequisites": [
+   "tech_shield_rechargers_1",
+   "tech_exotic_gases"
+  ],
+  "gate": null
+ },
+ "tech_shield_hardeners_2": {
+  "prerequisites": [
+   "tech_shield_hardeners_1",
+   "tech_mine_zro"
+  ],
+  "gate": null
+ },
+ "tech_planetary_shield_generator": {
+  "prerequisites": [
+   "tech_shields_3"
+  ],
+  "gate": null
+ },
+ "tech_sensors_2": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_sensors_3": {
+  "prerequisites": [
+   "tech_sensors_2"
+  ],
+  "gate": null
+ },
+ "tech_sensors_4": {
+  "prerequisites": [
+   "tech_sensors_3"
+  ],
+  "gate": null
+ },
+ "tech_power_plant_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_power_plant_2": {
+  "prerequisites": [
+   "tech_power_plant_1"
+  ],
+  "gate": null
+ },
+ "tech_power_plant_3": {
+  "prerequisites": [
+   "tech_power_plant_2"
+  ],
+  "gate": null
+ },
+ "tech_power_plant_4": {
+  "prerequisites": [
+   "tech_power_plant_3"
+  ],
+  "gate": null
+ },
+ "tech_power_hub_1": {
+  "prerequisites": [
+   "tech_power_plant_2"
+  ],
+  "gate": null
+ },
+ "tech_power_hub_2": {
+  "prerequisites": [
+   "tech_power_hub_1",
+   "tech_colonial_centralization"
+  ],
+  "gate": null
+ },
+ "tech_hyper_drive_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_hyper_drive_2": {
+  "prerequisites": [
+   "tech_hyper_drive_1"
+  ],
+  "gate": null
+ },
+ "tech_hyper_drive_3": {
+  "prerequisites": [
+   "tech_hyper_drive_2"
+  ],
+  "gate": null
+ },
+ "tech_wormhole_stabilization": {
+  "prerequisites": [
+   "tech_hyper_drive_2"
+  ],
+  "gate": null
+ },
+ "tech_jump_drive_1": {
+  "prerequisites": [
+   "tech_zero_point_power"
+  ],
+  "gate": null
+ },
+ "tech_ftl_inhibitor": {
+  "prerequisites": [
+   "tech_hyper_drive_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_repeatable_improved_tile_energy_output": {
+  "prerequisites": [
+   "tech_power_plant_3"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_improved_shield_output": {
+  "prerequisites": [
+   "tech_shields_4"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_weapon_type_energy_damage": {
+  "prerequisites": [
+   "tech_lasers_4"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_weapon_type_energy_fire_rate": {
+  "prerequisites": [
+   "tech_lasers_2"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_reduced_building_cost": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_lasers_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_lasers_2": {
+  "prerequisites": [
+   "tech_lasers_1"
+  ],
+  "gate": null
+ },
+ "tech_lasers_3": {
+  "prerequisites": [
+   "tech_lasers_2"
+  ],
+  "gate": null
+ },
+ "tech_lasers_4": {
+  "prerequisites": [
+   "tech_lasers_3"
+  ],
+  "gate": null
+ },
+ "tech_lasers_5": {
+  "prerequisites": [
+   "tech_lasers_4"
+  ],
+  "gate": null
+ },
+ "tech_energy_lance_1": {
+  "prerequisites": [
+   "tech_lasers_4",
+   "tech_battleships",
+   "tech_stingers"
+  ],
+  "gate": null
+ },
+ "tech_energy_lance_2": {
+  "prerequisites": [
+   "tech_lasers_5",
+   "tech_energy_lance_1"
+  ],
+  "gate": null
+ },
+ "tech_plasma_1": {
+  "prerequisites": [
+   "tech_lasers_2"
+  ],
+  "gate": null
+ },
+ "tech_plasma_2": {
+  "prerequisites": [
+   "tech_plasma_1"
+  ],
+  "gate": null
+ },
+ "tech_plasma_3": {
+  "prerequisites": [
+   "tech_plasma_2"
+  ],
+  "gate": null
+ },
+ "tech_arc_emitter_1": {
+  "prerequisites": [
+   "tech_disruptors_3",
+   "tech_battleships",
+   "tech_stingers"
+  ],
+  "gate": null
+ },
+ "tech_arc_emitter_2": {
+  "prerequisites": [
+   "tech_arc_emitter_1"
+  ],
+  "gate": null
+ },
+ "tech_disruptors_1": {
+  "prerequisites": [
+   "tech_lasers_2"
+  ],
+  "gate": null
+ },
+ "tech_disruptors_2": {
+  "prerequisites": [
+   "tech_disruptors_1"
+  ],
+  "gate": null
+ },
+ "tech_disruptors_3": {
+  "prerequisites": [
+   "tech_disruptors_2"
+  ],
+  "gate": null
+ },
+ "tech_energy_torpedoes_1": {
+  "prerequisites": [
+   "tech_lasers_4",
+   "tech_torpedoes_1",
+   "tech_harbingers"
+  ],
+  "gate": null
+ },
+ "tech_energy_torpedoes_2": {
+  "prerequisites": [
+   "tech_energy_torpedoes_1"
+  ],
+  "gate": null
+ },
+ "tech_pd_tracking_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_pd_tracking_2": {
+  "prerequisites": [
+   "tech_pd_tracking_1"
+  ],
+  "gate": null
+ },
+ "tech_pd_tracking_3": {
+  "prerequisites": [
+   "tech_pd_tracking_2"
+  ],
+  "gate": null
+ },
+ "tech_extradimensional_weapon_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_mining_drone_weapon_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_space_cloud_weapon_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_starfire_cannon": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_origin",
+     "value": "origin_red_giant",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_country_flag",
+     "value": "starfire_cannon_unlocked",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_critter_feeder": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_origin",
+   "value": "origin_fruitful",
+   "static": true
+  }
+ },
+ "tech_psionic_aura": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_aura_intensification": {
+  "prerequisites": [
+   "tech_psionic_aura"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_psionic_suppression": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_shroud_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_encountered_psionic_auras",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_aura_resonation": {
+  "prerequisites": [
+   "tech_psionic_aura"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_materiality_engine": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_psionic_bombers": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_psionic_lightning": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_psionic_disruptor": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_zro_launcher": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_shroud_dlc",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_planetary_defenses": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_interplanetary_commerce": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_gestalt",
+   "value": false,
+   "static": true
+  }
+ },
+ "tech_space_trading": {
+  "prerequisites": [
+   "tech_interplanetary_commerce"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_regular_empire",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_interstellar_economics": {
+  "prerequisites": [
+   "tech_space_trading"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_gestalt",
+   "value": false,
+   "static": true
+  }
+ },
+ "tech_galactic_markets": {
+  "prerequisites": [
+   "tech_colonial_centralization",
+   "tech_interstellar_economics"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_gestalt",
+   "value": false,
+   "static": true
+  }
+ },
+ "tech_prescient_data_modeling": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_industrial_farming": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_eco_simulation": {
+  "prerequisites": [
+   "tech_industrial_farming"
+  ],
+  "gate": null
+ },
+ "tech_gene_crops": {
+  "prerequisites": [
+   "tech_eco_simulation"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_nano_vitality_crops": {
+  "prerequisites": [
+   "tech_gene_crops"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_nutrient_replication": {
+  "prerequisites": [
+   "tech_nano_vitality_crops"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": false,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_hydroponics": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_food_processing_1": {
+  "prerequisites": [
+   "tech_eco_simulation"
+  ],
+  "gate": null
+ },
+ "tech_food_processing_2": {
+  "prerequisites": [
+   "tech_food_processing_1"
+  ],
+  "gate": null
+ },
+ "tech_society_1": {
+  "prerequisites": [
+   "tech_basic_science_lab_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_society_2": {
+  "prerequisites": [
+   "tech_society_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_society_3": {
+  "prerequisites": [
+   "tech_society_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_alien_life_studies": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_regular_empire",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_colonization_1": {
+  "prerequisites": [
+   "tech_space_exploration"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_colonization_2": {
+  "prerequisites": [
+   "tech_colonization_1"
+  ],
+  "gate": null
+ },
+ "tech_colonization_3": {
+  "prerequisites": [
+   "tech_colonization_2"
+  ],
+  "gate": null
+ },
+ "tech_colonization_4": {
+  "prerequisites": [
+   "tech_colonization_3"
+  ],
+  "gate": null
+ },
+ "tech_colonization_5": {
+  "prerequisites": [
+   "tech_colonization_4"
+  ],
+  "gate": null
+ },
+ "tech_tomb_world_adaption": {
+  "prerequisites": [
+   "tech_colonization_3"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_basic_health": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_regular_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_frontier_health": {
+  "prerequisites": [
+   "tech_basic_health",
+   "tech_genome_mapping"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_regular_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_frontier_hospital": {
+  "prerequisites": [
+   "tech_frontier_health",
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_gestalt",
+     "value": false,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_mountain_range": {
+  "prerequisites": [
+   "tech_colonization_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_volcano": {
+  "prerequisites": [
+   "tech_colonization_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_dangerous_wildlife": {
+  "prerequisites": [
+   "tech_colonization_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_dense_jungle": {
+  "prerequisites": [
+   "tech_colonization_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_quicksand_basin": {
+  "prerequisites": [
+   "tech_colonization_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_noxious_swamp": {
+  "prerequisites": [
+   "tech_colonization_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_massive_glacier": {
+  "prerequisites": [
+   "tech_colonization_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_toxic_kelp": {
+  "prerequisites": [
+   "tech_colonization_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_deep_sinkhole": {
+  "prerequisites": [
+   "tech_colonization_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_terrestrial_sculpting": {
+  "prerequisites": [
+   "tech_colonization_1",
+   "tech_planetary_engineering"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_nomadic",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_ecological_adaptation": {
+  "prerequisites": [
+   "tech_terrestrial_sculpting"
+  ],
+  "gate": null
+ },
+ "tech_climate_restoration": {
+  "prerequisites": [
+   "tech_terrestrial_sculpting"
+  ],
+  "gate": null
+ },
+ "tech_volcanic_forge": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_world_forger_empire",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_volcanic_terraforming": {
+  "prerequisites": [
+   "tech_terrestrial_sculpting",
+   "tech_volcano"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_infernals",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_genome_mapping": {
+  "prerequisites": [],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": false,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_civic",
+     "value": "civic_machine_assimilator",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_civic",
+     "value": "civic_machine_servitor",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_civic",
+     "value": "civic_machine_guided_sapience",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_vitality_boosters": {
+  "prerequisites": [
+   "tech_genome_mapping"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": false,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_civic",
+     "value": "civic_machine_assimilator",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_epigenetic_triggers": {
+  "prerequisites": [
+   "tech_genome_mapping"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "nor",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_valid_civic",
+       "value": "civic_fanatic_purifiers",
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "is_natural_design_empire",
+       "value": true,
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "is_wilderness_empire",
+       "value": true,
+       "static": false
+      }
+     ]
+    },
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "is_machine_empire",
+       "value": false,
+       "static": true
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_civic",
+       "value": "civic_machine_assimilator",
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_civic",
+       "value": "civic_machine_servitor",
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_civic",
+       "value": "civic_machine_guided_sapience",
+       "static": false
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_cloning": {
+  "prerequisites": [
+   "tech_genome_mapping"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "is_machine_empire",
+       "value": false,
+       "static": true
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_civic",
+       "value": "civic_machine_assimilator",
+       "static": false
+      }
+     ]
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": false,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_natural_design_empire",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_gene_banks": {
+  "prerequisites": [
+   "tech_cloning"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "is_machine_empire",
+       "value": false,
+       "static": true
+      },
+      {
+       "op": "leaf",
+       "trigger": "is_wilderness_empire",
+       "value": false,
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_civic",
+       "value": "civic_machine_assimilator",
+       "static": false
+      }
+     ]
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_natural_design_empire",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_gene_seed_purification": {
+  "prerequisites": [
+   "tech_gene_tailoring"
+  ],
+  "gate": {
+   "op": "nor",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_natural_design_empire",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_morphogenetic_field_mastery": {
+  "prerequisites": [
+   "tech_epigenetic_triggers"
+  ],
+  "gate": {
+   "op": "nor",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_natural_design_empire",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_gene_tailoring": {
+  "prerequisites": [
+   "tech_genome_mapping"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "is_machine_empire",
+       "value": false,
+       "static": true
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_civic",
+       "value": "civic_machine_assimilator",
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_civic",
+       "value": "civic_machine_servitor",
+       "static": false
+      }
+     ]
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_natural_design_empire",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_glandular_acclimation": {
+  "prerequisites": [
+   "tech_gene_tailoring"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "is_machine_empire",
+       "value": false,
+       "static": true
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_civic",
+       "value": "civic_machine_assimilator",
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_civic",
+       "value": "civic_machine_servitor",
+       "static": false
+      }
+     ]
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_natural_design_empire",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_gene_expressions": {
+  "prerequisites": [
+   "tech_gene_tailoring"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "nor",
+       "children": [
+        {
+         "op": "leaf",
+         "trigger": "is_machine_empire",
+         "value": true,
+         "static": true
+        },
+        {
+         "op": "leaf",
+         "trigger": "is_individual_machine",
+         "value": true,
+         "static": false
+        }
+       ]
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_civic",
+       "value": "civic_machine_assimilator",
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_civic",
+       "value": "civic_machine_servitor",
+       "static": false
+      }
+     ]
+    },
+    {
+     "op": "nor",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_valid_civic",
+       "value": "civic_natural_design",
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_valid_civic",
+       "value": "civic_hive_natural_design",
+       "static": false
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_selected_lineages": {
+  "prerequisites": [
+   "tech_vitality_boosters"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_machine_empire",
+   "value": false,
+   "static": true
+  }
+ },
+ "tech_capacity_boosters": {
+  "prerequisites": [
+   "tech_selected_lineages"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": false,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_natural_design_empire",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_regenerative_hull_tissue": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_doctrine_fleet_size_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_doctrine_fleet_size_2": {
+  "prerequisites": [
+   "tech_doctrine_fleet_size_1"
+  ],
+  "gate": null
+ },
+ "tech_doctrine_fleet_size_3": {
+  "prerequisites": [
+   "tech_doctrine_fleet_size_2"
+  ],
+  "gate": null
+ },
+ "tech_doctrine_fleet_size_4": {
+  "prerequisites": [
+   "tech_doctrine_fleet_size_3"
+  ],
+  "gate": null
+ },
+ "tech_doctrine_fleet_size_5": {
+  "prerequisites": [
+   "tech_doctrine_fleet_size_4"
+  ],
+  "gate": null
+ },
+ "tech_interstellar_fleet_traditions": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_refit_standards": {
+  "prerequisites": [
+   "tech_interstellar_fleet_traditions"
+  ],
+  "gate": null
+ },
+ "tech_command_matrix": {
+  "prerequisites": [
+   "tech_refit_standards"
+  ],
+  "gate": null
+ },
+ "tech_doctrine_navy_size_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_doctrine_navy_size_2": {
+  "prerequisites": [
+   "tech_doctrine_navy_size_1"
+  ],
+  "gate": null
+ },
+ "tech_doctrine_navy_size_3": {
+  "prerequisites": [
+   "tech_doctrine_navy_size_2"
+  ],
+  "gate": null
+ },
+ "tech_doctrine_navy_size_4": {
+  "prerequisites": [
+   "tech_doctrine_navy_size_3"
+  ],
+  "gate": null
+ },
+ "tech_centralized_command": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_combat_training": {
+  "prerequisites": [
+   "tech_centralized_command"
+  ],
+  "gate": null
+ },
+ "tech_ground_defense_planning": {
+  "prerequisites": [
+   "tech_planetary_defenses"
+  ],
+  "gate": null
+ },
+ "tech_global_defense_grid": {
+  "prerequisites": [
+   "tech_ground_defense_planning"
+  ],
+  "gate": null
+ },
+ "tech_psionic_theory": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "or",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_shroud_dlc",
+       "value": true,
+       "static": true
+      },
+      {
+       "op": "not",
+       "children": [
+        {
+         "op": "leaf",
+         "trigger": "has_ethic",
+         "value": "ethic_gestalt_consciousness",
+         "static": true
+        }
+       ]
+      },
+      {
+       "op": "leaf",
+       "trigger": "is_active_resolution",
+       "value": "resolution_galacticstudies_extradimensional_experimentation",
+       "static": false
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_relic",
+       "value": "r_zro_crystal",
+       "static": false
+      }
+     ]
+    },
+    {
+     "op": "not",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_origin",
+       "value": "origin_mindwardens",
+       "static": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_telepathy": {
+  "prerequisites": [
+   "tech_psionic_theory"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_shroud_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "not",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_ethic",
+       "value": "ethic_gestalt_consciousness",
+       "static": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_precognition_interface": {
+  "prerequisites": [
+   "tech_telepathy"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_shroud_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "not",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_ethic",
+       "value": "ethic_gestalt_consciousness",
+       "static": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_thought_enforcement": {
+  "prerequisites": [
+   "tech_telepathy"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_shroud_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "not",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_ethic",
+       "value": "ethic_gestalt_consciousness",
+       "static": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_psi_jump_drive_1": {
+  "prerequisites": [
+   "tech_precognition_interface"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_shroud_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "not",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "has_ethic",
+       "value": "ethic_gestalt_consciousness",
+       "static": true
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_galactic_ambitions": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_manifest_destiny": {
+  "prerequisites": [
+   "tech_galactic_ambitions"
+  ],
+  "gate": null
+ },
+ "tech_interstellar_campaigns": {
+  "prerequisites": [
+   "tech_galactic_ambitions"
+  ],
+  "gate": null
+ },
+ "tech_galactic_campaigns": {
+  "prerequisites": [
+   "tech_interstellar_campaigns"
+  ],
+  "gate": null
+ },
+ "tech_existential_campaigns": {
+  "prerequisites": [
+   "tech_galactic_campaigns"
+  ],
+  "gate": null
+ },
+ "tech_planetary_government": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_planetary_unification": {
+  "prerequisites": [
+   "tech_planetary_government"
+  ],
+  "gate": null
+ },
+ "tech_colonial_centralization": {
+  "prerequisites": [
+   "tech_planetary_unification"
+  ],
+  "gate": null
+ },
+ "tech_galactic_administration": {
+  "prerequisites": [
+   "tech_colonial_centralization"
+  ],
+  "gate": null
+ },
+ "tech_planetary_infrastructure_1": {
+  "prerequisites": [
+   "tech_colonial_centralization",
+   "tech_ship_armor_2"
+  ],
+  "gate": null
+ },
+ "tech_planetary_infrastructure_2": {
+  "prerequisites": [
+   "tech_galactic_administration",
+   "tech_ship_armor_4",
+   "tech_planetary_infrastructure_1"
+  ],
+  "gate": null
+ },
+ "tech_subdermal_stimulation": {
+  "prerequisites": [
+   "tech_genome_mapping"
+  ],
+  "gate": {
+   "op": "nor",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_civic",
+     "value": "civic_dystopian_society",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_tracking_implants": {
+  "prerequisites": [
+   "tech_subdermal_stimulation",
+   "tech_galactic_bureaucracy"
+  ],
+  "gate": null
+ },
+ "tech_global_production_strategy": {
+  "prerequisites": [
+   "tech_alloys_1",
+   "tech_colonial_centralization"
+  ],
+  "gate": null
+ },
+ "tech_adaptive_bureaucracy": {
+  "prerequisites": [
+   "tech_planetary_unification"
+  ],
+  "gate": null
+ },
+ "tech_effective_bureaucracy": {
+  "prerequisites": [
+   "tech_adaptive_bureaucracy"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_gestalt",
+   "value": false,
+   "static": true
+  }
+ },
+ "tech_colonial_bureaucracy": {
+  "prerequisites": [
+   "tech_adaptive_bureaucracy"
+  ],
+  "gate": null
+ },
+ "tech_galactic_bureaucracy": {
+  "prerequisites": [
+   "tech_colonial_bureaucracy"
+  ],
+  "gate": null
+ },
+ "tech_living_state": {
+  "prerequisites": [
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "not",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    }
+   ]
+  }
+ },
+ "tech_collective_self": {
+  "prerequisites": [
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "not",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    }
+   ]
+  }
+ },
+ "tech_autonomous_agents": {
+  "prerequisites": [
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ethic",
+   "value": "ethic_gestalt_consciousness",
+   "static": true
+  }
+ },
+ "tech_embodied_dynamism": {
+  "prerequisites": [
+   "tech_autonomous_agents"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "has_ethic",
+   "value": "ethic_gestalt_consciousness",
+   "static": true
+  }
+ },
+ "tech_neural_implants": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_regular_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "allows_slavery",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_artificial_moral_codes": {
+  "prerequisites": [],
+  "gate": {
+   "op": "not",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    }
+   ]
+  }
+ },
+ "tech_synthetic_thought_patterns": {
+  "prerequisites": [
+   "tech_artificial_moral_codes"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_gestalt",
+   "value": false,
+   "static": true
+  }
+ },
+ "tech_unity_of_purpose": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_gestalt",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_collective_production_methods": {
+  "prerequisites": [
+   "tech_unity_of_purpose"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_hive_empire",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_resource_processing_algorithms": {
+  "prerequisites": [
+   "tech_unity_of_purpose"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_machine_empire",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_holo_entertainment": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_gestalt",
+   "value": false,
+   "static": true
+  }
+ },
+ "tech_hyper_entertainment_forum": {
+  "prerequisites": [
+   "tech_holo_entertainment"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_gestalt",
+   "value": false,
+   "static": true
+  }
+ },
+ "tech_paradise_dome": {
+  "prerequisites": [
+   "tech_housing_1"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_gestalt",
+     "value": false,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_valid_civic",
+     "value": "civic_machine_servitor",
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_origin",
+     "value": "origin_forever_cruise",
+     "static": true
+    }
+   ]
+  }
+ },
+ "tech_cultural_heritage": {
+  "prerequisites": [
+   "tech_planetary_unification"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_heritage_site": {
+  "prerequisites": [
+   "tech_cultural_heritage"
+  ],
+  "gate": null
+ },
+ "tech_hypercomms_forum": {
+  "prerequisites": [
+   "tech_heritage_site",
+   "tech_colonial_centralization"
+  ],
+  "gate": null
+ },
+ "tech_autocurating_vault": {
+  "prerequisites": [
+   "tech_administrative_ai",
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "nor",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_spiritualist",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_holographic_rituals": {
+  "prerequisites": [
+   "tech_planetary_government"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_spiritualist",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "and",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "is_gestalt",
+       "value": false,
+       "static": true
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_make_spiritualist_perk",
+       "value": true,
+       "static": false
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_consecration_fields": {
+  "prerequisites": [
+   "tech_holographic_rituals",
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_spiritualist",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "and",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "is_gestalt",
+       "value": false,
+       "static": true
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_make_spiritualist_perk",
+       "value": true,
+       "static": false
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_transcendent_faith": {
+  "prerequisites": [
+   "tech_consecration_fields",
+   "tech_galactic_administration"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_spiritualist",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "and",
+     "children": [
+      {
+       "op": "leaf",
+       "trigger": "is_gestalt",
+       "value": false,
+       "static": true
+      },
+      {
+       "op": "leaf",
+       "trigger": "has_make_spiritualist_perk",
+       "value": true,
+       "static": false
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "tech_hive_node": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_hive_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_wilderness_empire",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_hive_cluster": {
+  "prerequisites": [
+   "tech_hive_node"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_hive_confluence": {
+  "prerequisites": [
+   "tech_hive_cluster",
+   "tech_colonial_centralization"
+  ],
+  "gate": null
+ },
+ "tech_wilderness_node": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": true,
+   "static": false
+  }
+ },
+ "tech_wilderness_cluster": {
+  "prerequisites": [
+   "tech_wilderness_node"
+  ],
+  "gate": null
+ },
+ "tech_wilderness_confluence": {
+  "prerequisites": [
+   "tech_wilderness_cluster",
+   "tech_colonial_centralization"
+  ],
+  "gate": null
+ },
+ "tech_ascension_theory": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_psionic_barrier": {
+  "prerequisites": [
+   "tech_psionic_theory"
+  ],
+  "gate": null
+ },
+ "tech_psionic_shield": {
+  "prerequisites": [
+   "tech_psionic_theory"
+  ],
+  "gate": null
+ },
+ "tech_penal_colonies": {
+  "prerequisites": [
+   "tech_artificial_moral_codes"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_gestalt",
+     "value": false,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_resort_colonies": {
+  "prerequisites": [
+   "tech_artificial_moral_codes"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_gestalt",
+     "value": false,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_slave_colonies": {
+  "prerequisites": [
+   "tech_neural_implants"
+  ],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_gestalt",
+     "value": false,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_nomadic",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_housing_agrarian_idyll": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_federation_code": {
+  "prerequisites": [
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "days_passed",
+     "value": 0,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "any_relation",
+     "value": {
+      "can_form_federation_with_empire": true
+     },
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "has_tradition",
+     "value": "tr_diplomacy_adopt",
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_xeno_diplomacy": {
+  "prerequisites": [
+   "tech_federation_code"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_regular_empire",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_xeno_relations": {
+  "prerequisites": [
+   "tech_xeno_diplomacy",
+   "tech_galactic_administration"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_regular_empire",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_capital_productivity_1": {
+  "prerequisites": [
+   "tech_planetary_unification"
+  ],
+  "gate": null
+ },
+ "tech_capital_productivity_2": {
+  "prerequisites": [
+   "tech_colonial_centralization",
+   "tech_capital_productivity_1"
+  ],
+  "gate": null
+ },
+ "tech_capital_productivity_3": {
+  "prerequisites": [
+   "tech_galactic_administration",
+   "tech_capital_productivity_2"
+  ],
+  "gate": null
+ },
+ "tech_covenant_composer": {
+  "prerequisites": [
+   "tech_psionic_theory"
+  ],
+  "gate": null
+ },
+ "tech_covenant_eater": {
+  "prerequisites": [
+   "tech_psionic_theory"
+  ],
+  "gate": null
+ },
+ "tech_covenant_instrument": {
+  "prerequisites": [
+   "tech_psionic_theory"
+  ],
+  "gate": null
+ },
+ "tech_covenant_cradle": {
+  "prerequisites": [
+   "tech_psionic_theory"
+  ],
+  "gate": null
+ },
+ "tech_covenant_whisperers": {
+  "prerequisites": [
+   "tech_psionic_theory"
+  ],
+  "gate": null
+ },
+ "tech_xeno_linguistics": {
+  "prerequisites": [],
+  "gate": {
+   "op": "and",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_paragon_dlc",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_regular_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_gestalt",
+     "value": false,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_homicidal",
+     "value": false,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_node_reformatting_1": {
+  "prerequisites": [
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_machine_empire",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_node_reformatting_2": {
+  "prerequisites": [
+   "tech_node_reformatting_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_machine_empire",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_node_reformatting_3": {
+  "prerequisites": [
+   "tech_node_reformatting_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_machine_empire",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_node_culling_1": {
+  "prerequisites": [
+   "tech_colonial_centralization"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_hive_empire",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_node_culling_2": {
+  "prerequisites": [
+   "tech_node_culling_1"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_hive_empire",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_node_culling_3": {
+  "prerequisites": [
+   "tech_node_culling_2"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_hive_empire",
+   "value": true,
+   "static": true
+  }
+ },
+ "tech_bio_reactor": {
+  "prerequisites": [
+   "tech_industrial_farming"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_bio_reactor_2": {
+  "prerequisites": [
+   "tech_bio_reactor"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_repeatable_improved_tile_food_output": {
+  "prerequisites": [
+   "tech_gene_crops"
+  ],
+  "gate": {
+   "op": "leaf",
+   "trigger": "is_wilderness_empire",
+   "value": false,
+   "static": false
+  }
+ },
+ "tech_repeatable_improved_core_system_cap": {
+  "prerequisites": [
+   "tech_galactic_bureaucracy"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_improved_army_damage": {
+  "prerequisites": [
+   "tech_combat_training"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_improved_army_health": {
+  "prerequisites": [
+   "tech_combat_training"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_improved_leader_life_span": {
+  "prerequisites": [
+   "tech_vitality_boosters"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_naval_cap": {
+  "prerequisites": [
+   "tech_doctrine_navy_size_4"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_command_limit": {
+  "prerequisites": [
+   "tech_doctrine_fleet_size_5"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_improved_starbase_capacity": {
+  "prerequisites": [
+   "tech_galactic_ambitions"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_weapon_type_strike_craft_fire_damage": {
+  "prerequisites": [
+   "tech_strike_craft_3"
+  ],
+  "gate": null
+ },
+ "tech_repeatable_weapon_type_strike_craft_fire_rate": {
+  "prerequisites": [
+   "tech_strike_craft_3"
+  ],
+  "gate": null
+ },
+ "tech_amoeba_strike_craft_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_swarm_strike_craft_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_scourge_missile_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_space_whale_weapon_1": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_enhanced_cryosleep_sedatives": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_universal_marcophage": {
+  "prerequisites": [],
+  "gate": null
+ },
+ "tech_mine_living_metal": {
+  "prerequisites": [
+   "tech_space_construction"
+  ],
+  "gate": null
+ },
+ "tech_mine_betharian": {
+  "prerequisites": [
+   "tech_space_construction"
+  ],
+  "gate": null
+ },
+ "tech_mine_volatile_motes": {
+  "prerequisites": [
+   "tech_space_construction"
+  ],
+  "gate": null
+ },
+ "tech_volatile_motes": {
+  "prerequisites": [
+   "tech_basic_industry"
+  ],
+  "gate": null
+ },
+ "tech_mine_exotic_gases": {
+  "prerequisites": [
+   "tech_space_construction"
+  ],
+  "gate": null
+ },
+ "tech_exotic_gases": {
+  "prerequisites": [
+   "tech_basic_industry"
+  ],
+  "gate": null
+ },
+ "tech_mine_rare_crystals": {
+  "prerequisites": [
+   "tech_space_construction"
+  ],
+  "gate": null
+ },
+ "tech_rare_crystals": {
+  "prerequisites": [
+   "tech_basic_industry"
+  ],
+  "gate": null
+ },
+ "tech_mine_zro": {
+  "prerequisites": [
+   "tech_sensors_3"
+  ],
+  "gate": null
+ },
+ "tech_mine_dark_matter": {
+  "prerequisites": [
+   "tech_sensors_4"
+  ],
+  "gate": null
+ },
+ "tech_nanite_transmutation": {
+  "prerequisites": [],
+  "gate": {
+   "op": "leaf",
+   "trigger": "host_has_dlc",
+   "value": "Distant Stars Story Pack",
+   "static": true
+  }
+ },
+ "tech_robomodding_m": {
+  "prerequisites": [
+   "tech_powered_exoskeletons"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_hive_empire_with_machines",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_robomodding": {
+  "prerequisites": [
+   "tech_robotic_workers"
+  ],
+  "gate": {
+   "op": "nor",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_robomodding_points_1": {
+  "prerequisites": [
+   "tech_robomodding",
+   "tech_droid_workers"
+  ],
+  "gate": {
+   "op": "not",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_robomodding_points_2": {
+  "prerequisites": [
+   "tech_robomodding_points_1",
+   "tech_synthetic_workers"
+  ],
+  "gate": {
+   "op": "not",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "has_ethic",
+     "value": "ethic_gestalt_consciousness",
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_binary_motivators": {
+  "prerequisites": [
+   "tech_colonial_centralization",
+   "tech_robomodding_m"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_hive_empire_with_machines",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_nanite_assemblers": {
+  "prerequisites": [
+   "tech_binary_motivators",
+   "tech_galactic_administration"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_hive_empire_with_machines",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_mega_assembly": {
+  "prerequisites": [
+   "tech_binary_motivators",
+   "tech_galactic_administration"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_hive_empire_with_machines",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_adaptive_combat_algorithms": {
+  "prerequisites": [],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_biomechanics": {
+  "prerequisites": [
+   "tech_adaptive_combat_algorithms"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_micro_replicators": {
+  "prerequisites": [],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_hive_empire_with_machines",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ },
+ "tech_self_assembling_components": {
+  "prerequisites": [
+   "tech_micro_replicators"
+  ],
+  "gate": {
+   "op": "or",
+   "children": [
+    {
+     "op": "leaf",
+     "trigger": "is_machine_empire",
+     "value": true,
+     "static": true
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_individual_machine",
+     "value": true,
+     "static": false
+    },
+    {
+     "op": "leaf",
+     "trigger": "is_hive_empire_with_machines",
+     "value": true,
+     "static": false
+    }
+   ]
+  }
+ }
+}
