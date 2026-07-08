@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { DirectedGraph } from "graphology";
-import { SigmaContainer, useLoadGraph } from "@react-sigma/core";
+import { SigmaContainer, useLoadGraph, useSigma } from "@react-sigma/core";
 import type { Settings } from "sigma/settings";
 import { NodeCompoundProgram } from "../lib/sigma/nodeProgram";
 import { readThemeTokens } from "../lib/sigma/theme";
@@ -28,6 +28,14 @@ function buildSigmaSettings(): Partial<Settings> {
     defaultEdgeColor: edgeColorWithOpacity,
     labelColor: { color: tokens.text },
     labelFont: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
+    // Sigma measures the container synchronously during React's commit, before
+    // the browser performs the flex-layout pass that sizes `.canvas-region` —
+    // so it can read a 0-width container and throw "Sigma: Container has no
+    // width", crashing the whole subtree. Allowing an invalid container lets
+    // Sigma construct anyway and auto-resize once the container gains real
+    // dimensions (Sigma listens for resize). Documented fix for this
+    // construction-timing race in a CSS-flex layout.
+    allowInvalidContainer: true,
     // Sigma's default zoom-based label hiding is accepted as-is (D-10) — no
     // renderLabels/labelRenderedSizeThreshold override needed.
   };
@@ -55,10 +63,24 @@ function hexToRgba(hex: string, alpha: number): string {
 
 function GraphLoader({ graph }: { graph: DirectedGraph }) {
   const loadGraph = useLoadGraph();
+  const sigma = useSigma();
 
   useEffect(() => {
     loadGraph(graph);
-  }, [graph, loadGraph]);
+    // Sigma may have constructed against a 0-sized container
+    // (allowInvalidContainer) and stayed at a 1x1 canvas. This effect runs
+    // post-layout, when `.canvas-region` has its real flex dimensions, so
+    // force Sigma to re-measure and resize its canvases to fill it — then
+    // reframe the camera so the whole tree is visible. A second pass on the
+    // next frame covers the case where flex layout settles a tick later.
+    function fit() {
+      sigma.resize();
+      sigma.getCamera().animatedReset({ duration: 0 });
+    }
+    fit();
+    const raf = requestAnimationFrame(fit);
+    return () => cancelAnimationFrame(raf);
+  }, [graph, loadGraph, sigma]);
 
   return null;
 }
