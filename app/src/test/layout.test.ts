@@ -48,6 +48,12 @@ describe("buildGraph: prerequisite edges (TREE-01 true DAG)", () => {
 });
 
 describe("layoutGraph: ELK tier-partition + area-band Y-remap (TREE-02)", () => {
+  // ELK's layered layout at the real 678-node/613-edge scale takes several
+  // seconds on the main thread (D-08 one-shot cost, benchmarked and recorded
+  // in the plan SUMMARY) — well above vitest's default 5s test timeout, so
+  // each layoutGraph-exercising test here is given explicit headroom.
+  const LAYOUT_TEST_TIMEOUT = 20_000;
+
   it("places tier-0 nodes strictly left of tier-5 nodes (monotonic tier->x)", async () => {
     const snapshot = loadRealSnapshot();
     const graph = buildGraph(snapshot);
@@ -82,7 +88,7 @@ describe("layoutGraph: ELK tier-partition + area-band Y-remap (TREE-02)", () => 
     for (let tier = 0; tier < 5; tier++) {
       expect(maxXByTier.get(tier)!).toBeLessThanOrEqual(minXByTier.get(tier + 1)!);
     }
-  });
+  }, LAYOUT_TEST_TIMEOUT);
 
   it("groups nodes into three disjoint area bands (physics/society/engineering)", async () => {
     const snapshot = loadRealSnapshot();
@@ -112,5 +118,5 @@ describe("layoutGraph: ELK tier-partition + area-band Y-remap (TREE-02)", () => 
       const [, next] = ranges[i + 1];
       expect(current.max).toBeLessThanOrEqual(next.min);
     }
-  });
+  }, LAYOUT_TEST_TIMEOUT);
 });

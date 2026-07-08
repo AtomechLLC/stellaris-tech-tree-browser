@@ -13,6 +13,11 @@ const NodeImageProgram = createNodeImageProgram({
   padding: 0.05,
 });
 
+// No edgeProgramClasses override and no `hideEdgesOnMove`/suppressing
+// setting is configured below, so Sigma's default edge-line program renders
+// all 613 prerequisite edges added by buildGraph.ts as-is (Plan 02-02,
+// TREE-01). Edge color/opacity tokens (UI-SPEC Edge Visual Spec, D-12
+// theming bridge) are Plan 02-03's scope.
 const sigmaSettings: Partial<Settings> = {
   defaultNodeType: "image",
   nodeProgramClasses: { image: NodeImageProgram },

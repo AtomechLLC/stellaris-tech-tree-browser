@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import type { DirectedGraph } from "graphology";
 import { fetchSnapshot } from "./lib/data/fetchSnapshot";
 import { buildGraph } from "./lib/graph/buildGraph";
+import { layoutGraph } from "./lib/graph/layout";
 import { TechTreeCanvas } from "./components/TechTreeCanvas";
 
 type LoadState =
@@ -16,9 +17,16 @@ export function App() {
     let cancelled = false;
 
     fetchSnapshot()
-      .then((snapshot) => {
+      .then(async (snapshot) => {
         if (cancelled) return;
         const graph = buildGraph(snapshot);
+        // D-08: layout is computed once here, inside the loading state,
+        // before the graph is ever handed to Sigma — this is the one-shot
+        // elkjs computation (tier partition + area-band Y-remap); pan/zoom
+        // never re-invokes it. A throw here falls into the catch below and
+        // renders the existing error state, not a blank screen.
+        await layoutGraph(graph);
+        if (cancelled) return;
         setState({ status: "ready", graph });
       })
       .catch((err: unknown) => {
