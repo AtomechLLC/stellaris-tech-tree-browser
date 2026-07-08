@@ -18,6 +18,7 @@ import { BandLayer } from "./BandLayer";
 import { CategoryNav } from "./CategoryNav";
 import { TechTooltip } from "./TechTooltip";
 import { AncestryPanel } from "./AncestryPanel";
+import { FindOverlay, type FindEntry } from "./FindOverlay";
 import { Legend } from "./Legend";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { ErrorOverlay } from "./ErrorOverlay";
@@ -88,6 +89,8 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // (stale-result guard) so a rapid re-toggle+re-pack can't swap in old layout.
   const [repacking, setRepacking] = useState(false);
   const repackSeq = useRef(0);
+  // F-Find overlay open state (quick 260708-4y2).
+  const [findOpen, setFindOpen] = useState(false);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -106,6 +109,22 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     const m = new Map<string, Tech>();
     for (const t of Object.values(snapshot.techs)) m.set(t.key, t);
     return m;
+  }, [snapshot]);
+
+  // Flattened, searchable list of ALL techs (incl. filter-hidden ones) for the
+  // F-Find overlay — so you can find + reveal a tech even if its category is
+  // toggled off. Sorted by name for a stable result order.
+  const findEntries = useMemo<FindEntry[]>(() => {
+    return Object.values(snapshot.techs)
+      .map((t) => ({
+        key: t.key,
+        name: t.name,
+        category: t.category[0] ?? "",
+        tier: t.tier,
+        area: t.area,
+        icon: t.icon,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [snapshot]);
 
   // ── Imperative transform (no React re-render on pan/zoom) ──────────────────
@@ -267,6 +286,56 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  // F opens the find overlay. Ignore it when typing in a form field (so 'f'
+  // inside the find box or any input types a letter, not a re-open) and when
+  // the overlay is already open, and require no modifier keys.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "f" && e.key !== "F") return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (findOpen) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+      e.preventDefault();
+      setFindOpen(true);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [findOpen]);
+
+  // Find → jump: select the tech, reveal its category if filtered out, and
+  // pan/zoom-frame it via the existing fitToNodes (look the node up in the full
+  // layout so a filter-hidden tech is still framable). Then close the overlay.
+  const onPick = useCallback(
+    (key: string) => {
+      const tech = techByKey.get(key);
+      if (tech) {
+        const cat = tech.category[0] ?? "";
+        // Un-hide the tech's category if it's currently filtered out.
+        setActive((prev) => {
+          if (!cat || prev.has(cat)) return prev;
+          const next = new Set(prev);
+          next.add(cat);
+          return next;
+        });
+      }
+      setSelectedKey(key);
+      if (state.status === "ready") {
+        const node = state.layout.nodes.find((n) => n.key === key);
+        if (node) fitToNodes([node]);
+      }
+      setFindOpen(false);
+    },
+    [techByKey, state, fitToNodes],
+  );
 
   // Clicking empty viewport background (not a card) clears the selection. A
   // real drag is also suppressed here via movedRef so panning doesn't deselect.
@@ -519,6 +588,15 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           techByKey={techByKey}
           iconBase={iconBase}
           anchor={hover.rect}
+        />
+      )}
+
+      {findOpen && (
+        <FindOverlay
+          techs={findEntries}
+          iconBase={iconBase}
+          onPick={onPick}
+          onClose={() => setFindOpen(false)}
         />
       )}
     </div>

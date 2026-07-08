@@ -914,3 +914,106 @@
     transform: rotate(360deg);
   }
 }
+
+/* ── F-Find overlay (quick 260708-4y2) ────────────────────────────────────
+   Press F → a centered search box drops over the tree. Type part of a tech
+   name, pick a result (↑/↓ + Enter, or click) → jump to + select it. Sits
+   above every other overlay (tooltip is 30). Token-driven colors. */
+.find-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14vh;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.find-box {
+  width: min(560px, 92vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--tree-panel);
+  border: 1px solid var(--tree-border);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  font-family: var(--font-sans);
+  color: var(--tree-text);
+}
+
+.find-box__input {
+  flex: 0 0 auto;
+  padding: 14px 16px;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  color: var(--tree-text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--tree-border);
+  outline: none;
+}
+.find-box__input::placeholder {
+  color: var(--tree-text);
+  opacity: 0.45;
+}
+
+.find-box__results {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.find-box__empty {
+  padding: 10px 12px;
+  font-size: 13px;
+  opacity: 0.55;
+}
+
+.find-box__result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.find-box__result[data-area="physics"] { border-left-color: var(--area-physics); }
+.find-box__result[data-area="society"] { border-left-color: var(--area-society); }
+.find-box__result[data-area="engineering"] { border-left-color: var(--area-engineering); }
+.find-box__result[data-active] {
+  background: var(--tree-border);
+}
+
+.find-box__icon {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  background: var(--tree-icon-bg);
+  border: 1px solid var(--tree-border);
+  border-radius: 3px;
+}
+.find-box__icon--empty {
+  border-style: dashed;
+}
+
+.find-box__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.find-box__meta {
+  flex: 0 0 auto;
+  font-size: 11px;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
