@@ -35,6 +35,10 @@ import { ErrorOverlay } from "./ErrorOverlay";
 const ZOOM_MIN = 0.15;
 const ZOOM_MAX = 1.5;
 const ZOOM_STEP = 1.15;
+// Below this zoom, cards drop to a cheap icon-only tile (text is unreadable that
+// far out anyway). Toggled as a class on the canvas so panning while zoomed out
+// isn't repainting 678 shadowed/textured/texted cards every frame.
+const LOD_THRESHOLD = 0.55;
 
 type Area = Tech["area"];
 
@@ -75,28 +79,35 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
 
   const iconBase = `/data/${snapshot.meta.gameVersion}/icons`;
 
-  // key → display name, for resolving prerequisite/leadsTo lists in the tooltip.
-  const nameByKey = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const t of Object.values(snapshot.techs)) m.set(t.key, t.name);
+  // key → Tech, for resolving prerequisite/leadsTo names + icons in the tooltip.
+  const techByKey = useMemo(() => {
+    const m = new Map<string, Tech>();
+    for (const t of Object.values(snapshot.techs)) m.set(t.key, t);
     return m;
   }, [snapshot]);
 
   // ── Imperative transform (no React re-render on pan/zoom) ──────────────────
   const applyTransform = useCallback((t: Transform) => {
     transformRef.current = t;
-    if (canvasRef.current) canvasRef.current.style.transform = cssTransform(t);
+    const c = canvasRef.current;
+    if (c) {
+      c.style.transform = cssTransform(t);
+      // LOD: pan (scale unchanged) is a no-op toggle; crossing the zoom
+      // threshold flips the whole tree between full cards and cheap icon tiles.
+      c.classList.toggle("lod-simple", t.scale < LOD_THRESHOLD);
+    }
   }, []);
 
   // Stable ref callback: bind the canvas node and apply the current transform on
   // (re)attach. Stable identity so React only calls it on real mount/unmount.
-  const setCanvas = useCallback(
-    (el: HTMLDivElement | null) => {
-      canvasRef.current = el;
-      if (el) el.style.transform = cssTransform(transformRef.current);
-    },
-    [],
-  );
+  const setCanvas = useCallback((el: HTMLDivElement | null) => {
+    canvasRef.current = el;
+    if (el) {
+      const t = transformRef.current;
+      el.style.transform = cssTransform(t);
+      el.classList.toggle("lod-simple", t.scale < LOD_THRESHOLD);
+    }
+  }, []);
 
   // One-shot ELK layout inside the loading state (never re-run on pan/zoom/filter).
   useEffect(() => {
@@ -372,7 +383,14 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         <Legend />
       </div>
 
-      {hover && <TechTooltip tech={hover.tech} nameByKey={nameByKey} anchor={hover.rect} />}
+      {hover && (
+        <TechTooltip
+          tech={hover.tech}
+          techByKey={techByKey}
+          iconBase={iconBase}
+          anchor={hover.rect}
+        />
+      )}
     </div>
   );
 }

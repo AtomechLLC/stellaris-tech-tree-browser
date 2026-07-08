@@ -427,6 +427,25 @@
   background: color-mix(in srgb, var(--area-engineering) 60%, #0c111a);
 }
 
+/* ── Level-of-detail: zoomed-out cards (canvas gets `.lod-simple`) ──────────
+   When zoomed out, all 678 cards are on-screen at once. Drop the expensive
+   paint (blurred shadow, SVG texture, text) down to a cheap icon tile — text is
+   unreadable that far out anyway — so panning stays smooth. The area-colored
+   border keeps area identity. Toggled imperatively (no React re-render). */
+.tree-canvas.lod-simple .tech-card {
+  box-shadow: none;
+  background-image: none;
+  border-radius: 3px;
+}
+.tree-canvas.lod-simple .tech-card__body,
+.tree-canvas.lod-simple .tech-card__tier {
+  display: none;
+}
+.tree-canvas.lod-simple .tech-card__icon {
+  width: 100%;
+  border-right: none;
+}
+
 /* ── Hover tooltip (reference-style detail popover) ──────────────────────── */
 .tech-tooltip {
   position: fixed;
@@ -475,26 +494,92 @@
 .tech-badge--danger { background: #b3261e; color: #fff; }
 .tech-badge--dlc { background: transparent; border: 1px solid var(--tree-border); }
 
+/* Sectioned body (Description / Required Technologies / Unlocks / Leads To),
+   each with a warm accent header like the reference tool. */
+.tech-tooltip__sec {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--tree-border);
+}
+.tech-tooltip__sec-title {
+  margin-bottom: 3px;
+  font-size: 11px;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: 0.02em;
+  color: var(--area-society); /* reuse the amber token as the section accent */
+}
 .tech-tooltip__desc {
   font-size: 12px;
   line-height: 1.4;
-  margin: 0 0 6px;
-  opacity: 0.9;
+  margin: 0;
+  opacity: 0.92;
 }
-.tech-tooltip__section {
-  font-size: 11px;
+
+/* Required Technologies — icon thumbnail + name per prerequisite. */
+.tech-tooltip__prereqs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tech-tooltip__prereq {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.tech-tooltip__prereq img {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  background: var(--tree-icon-bg);
+  border: 1px solid var(--tree-border);
+  border-radius: 3px;
+}
+.tech-tooltip__prereq[data-area="physics"] img { border-color: var(--area-physics); }
+.tech-tooltip__prereq[data-area="society"] img { border-color: var(--area-society); }
+.tech-tooltip__prereq[data-area="engineering"] img { border-color: var(--area-engineering); }
+.tech-tooltip__prereq-dot {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border: 1px dashed var(--tree-border);
+  border-radius: 3px;
+}
+.tech-tooltip__prereq-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Unlocks — one line per grant. */
+.tech-tooltip__effects {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
   line-height: 1.4;
-  margin-top: 4px;
+  opacity: 0.92;
 }
-.tech-tooltip__label {
-  display: inline-block;
-  min-width: 60px;
-  margin-right: 4px;
-  font-size: 10px;
-  font-weight: var(--font-weight-heading);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  opacity: 0.6;
+.tech-tooltip__effects li {
+  padding-left: 10px;
+  position: relative;
+}
+.tech-tooltip__effects li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  opacity: 0.5;
+}
+
+.tech-tooltip__leads {
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.85;
 }
 
 /* Loading / Error / Empty overlays — UI-SPEC Loading State / Empty-Error States */
