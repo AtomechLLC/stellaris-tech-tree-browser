@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 Phase: 3
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-07-08 - Completed quick task 260708-0mk: replaced Sigma with a reference-styled DOM tech tree (ELK + DOM cards + SVG connectors)
+Last activity: 2026-07-09 - Completed quick task 260708-qt8: exposed tech potential gates in the pipeline (gate field in tech.json) and wired the Saved Empire tab to read them from the snapshot (side-load removed)
 
 Progress: [██████████] 100%
 
@@ -114,6 +114,7 @@ None yet.
 | 260708-4io | Selectable cards + gold prereq/child edge highlight + hidden-ancestry drill-down panel | 2026-07-08 | 955c850..35ba563 | [260708-4io-...](./quick/260708-4io-selectable-cards-highlighted-edges-hidde/) |
 | 260708-4y2 | F-Find (search→jump) + hotkey list replaces legend + weight-modifier "Research Weight" detail | 2026-07-08 | 8ed2748..4b71cd0 | [260708-4y2-...](./quick/260708-4y2-find-hotkey-hotkey-list-replaces-legend-/) |
 | 260708-5di | Explore mode — Map/Explore toggle + collapsible forward tech tree from roots (expand to see unlocks) | 2026-07-08 | 61425c7..31a0ee2 | [260708-5di-...](./quick/260708-5di-explore-mode-collapsible-forward-tech-tr/) |
+| 260708-qt8 | Expose tech `potential` gates in pipeline (`gate` in tech.json); wire Saved Empire tab to snapshot gates, drop side-load | 2026-07-09 | code in working tree (WIP-entangled; see SUMMARY) | [260708-qt8-...](./quick/260708-qt8-expose-tech-potential-gates-in-pipeline-/) |
 
 ## Deferred Items
 
