@@ -1,5 +1,6 @@
 import type { TechSnapshot, Tech } from "../../types/tech-snapshot";
 import { CATEGORY_INDEX } from "../graph/categories";
+import { isPerkKey } from "./perks";
 import type {
   TreeLayout,
   LayoutNode,
@@ -41,22 +42,6 @@ export const BUCKET_KEY_PREFIX = "bucket:";
 export const bucketKey = (id: BucketId): string => `${BUCKET_KEY_PREFIX}${id}`;
 
 /**
- * Ambition (a.k.a. Crisis) techs — the "Become the Crisis" Star Eater and the
- * Cosmogenesis crisis line. Sourced from the game technology files (potential:
- * `ap_become_the_crisis`, plus the `tech_cosmogenesis_crisis_N` chain); revisit
- * on a game-version bump. Most have prerequisites, so they're pulled into the
- * bucket wholesale (see buildExploreGraph), not by root-only bucketing.
- */
-const AMBITION_TECH_KEYS = new Set<string>([
-  "tech_btc_1",
-  "tech_cosmogenesis_crisis_1",
-  "tech_cosmogenesis_crisis_2",
-  "tech_cosmogenesis_crisis_3",
-  "tech_cosmogenesis_crisis_4",
-  "tech_cosmogenesis_crisis_5",
-]);
-
-/**
  * Techs discovered by DELVING THE SHROUD — the contents of the game's
  * `00_shroud_tech.txt` (weight 0, granted by Shroud events). Most require
  * `tech_psionic_aura` or `tech_titans`, so they're pulled into the bucket
@@ -74,7 +59,6 @@ const SHROUD_TECH_KEYS = new Set<string>([
   "tech_zro_launcher",
 ]);
 
-const isAmbitionTech = (t: Tech): boolean => AMBITION_TECH_KEYS.has(t.key);
 const isShroudTech = (t: Tech): boolean => SHROUD_TECH_KEYS.has(t.key);
 
 interface BucketDef {
@@ -141,9 +125,10 @@ export const EXPLORE_BUCKETS: BucketDef[] = [
   {
     id: "ambition",
     label: "Ambition",
-    descriptor: "Crisis techs (also in the tree)",
-    match: (t) => isAmbitionTech(t),
-    overlay: true,
+    descriptor: "Crisis-perk techs, grouped by their ascension perk",
+    // Holds the synthetic ascension-perk parent cards (perks.ts). Each perk card
+    // then expands to the techs gated behind that perk. Real techs never match.
+    match: (t) => isPerkKey(t.key),
   },
   {
     id: "shroud",
@@ -237,11 +222,10 @@ function buildExploreGraph(snapshot: TechSnapshot): ExploreGraph {
   for (const def of EXPLORE_BUCKETS) if (def.overlay) overlayMembers.set(def.id, []);
 
   for (const tech of techs) {
-    // Overlay indexes capture EVERY matching tech (root or not) up front, so the
-    // [Dangerous]/[Ambition] cards stay complete even for techs that are also
-    // pulled (repeatable/shroud) or nested deep in the tree.
+    // Overlay index captures EVERY dangerous tech (root or not) up front, so the
+    // [Dangerous] card stays complete even for techs also pulled (repeatable/
+    // shroud) or nested deep in the tree.
     if (tech.flags.isDangerous) overlayMembers.get("dangerous")!.push(tech);
-    if (isAmbitionTech(tech)) overlayMembers.get("ambition")!.push(tech);
 
     // Repeatable upgrades group under [Repeatable] regardless of prerequisites,
     // and are pulled ENTIRELY out of the browse tree (they're terminal tier-5
