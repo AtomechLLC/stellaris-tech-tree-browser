@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TechSnapshot } from "../types/tech-snapshot";
 import type { SavedEmpire } from "../lib/empire/savLoad";
 import { buildTechLite, classifyEmpire, type Bucket } from "../lib/empire/classifyEmpire";
+import { dataUrl } from "../lib/data/paths";
 
 /**
  * Saved Empire tab (spike 005) — left panel. Loads a `.sav` client-side, lists
@@ -84,7 +85,7 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
     setLoading(true);
     setError(null);
     try {
-      const buf = await fetch(`/data/${version}/sample.sav`).then((r) => {
+      const buf = await fetch(dataUrl(`${version}/sample.sav`)).then((r) => {
         if (!r.ok) throw new Error("no sample save available");
         return r.arrayBuffer();
       });

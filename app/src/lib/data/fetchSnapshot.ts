@@ -1,4 +1,5 @@
 import { TechSnapshotSchema, type TechSnapshot } from "../../types/tech-snapshot";
+import { dataUrl } from "./paths";
 
 /**
  * Fetches and shape-validates the tech.json snapshot (D-03).
@@ -14,7 +15,7 @@ export async function fetchSnapshot(version = "v4.5.0"): Promise<TechSnapshot> {
   // was regenerated). Without this the browser happily serves a stale cached
   // tech.json after `npm run generate-data`, so re-runs of the pipeline (new
   // localisation, flags, etc.) silently don't show up until a hard refresh.
-  const res = await fetch(`/data/${version}/tech.json`, { cache: "no-cache" });
+  const res = await fetch(dataUrl(`${version}/tech.json`), { cache: "no-cache" });
 
   if (!res.ok) {
     throw new Error(`Failed to fetch tech.json: ${res.status} ${res.statusText}`);

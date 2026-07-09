@@ -5,9 +5,11 @@
  * Funsmith Club community sits at the far right.
  */
 
+import { dataUrl } from "../lib/data/paths";
+
 // Fixed version path — the header renders before the snapshot loads, and the
 // icon is a static asset generated into the versioned icon set by the pipeline.
-const XENOPHILE_ICON = "/data/v4.5.0/icons/_ethic_xenophile.webp";
+const XENOPHILE_ICON = dataUrl("v4.5.0/icons/_ethic_xenophile.webp");
 
 export function Header() {
   return (

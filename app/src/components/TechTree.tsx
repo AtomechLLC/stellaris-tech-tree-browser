@@ -12,6 +12,7 @@ import type { TechSnapshot, Tech } from "../types/tech-snapshot";
 import { layoutTree, type TreeLayout, type LayoutNode } from "../lib/tree/layoutTree";
 import { layoutExplore, layoutFocus, BUCKET_KEY_PREFIX } from "../lib/tree/exploreLayout";
 import { augmentSnapshotWithPerks, isPerkKey, PERK_PREFIX } from "../lib/tree/perks";
+import { dataUrl } from "../lib/data/paths";
 import { CATEGORY_ORDER, CATEGORY_AREA } from "../lib/graph/categories";
 import { TechCard, CARD_W, CARD_H } from "./TechCard";
 import { BucketCard } from "./BucketCard";
@@ -289,7 +290,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const framingAppliedRef = useRef(false);
   const fitFocusRef = useRef<string | null>(null);
 
-  const iconBase = `/data/${snapshot.meta.gameVersion}/icons`;
+  const iconBase = dataUrl(`${snapshot.meta.gameVersion}/icons`);
 
   // Explore-only snapshot: perk-gated techs gain their ascension-perk hexagon as a
   // synthetic PARENT node (Ambition / Crisis lines). The Map keeps the real one.
