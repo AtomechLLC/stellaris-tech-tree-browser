@@ -20,8 +20,30 @@
  * once Plan 02/05 populate them with real data.
  */
 import { z } from "zod";
+import type { GateNode } from "../gates.js";
 
 const AreaEnum = z.enum(["physics", "society", "engineering"]);
+
+/**
+ * Recursive `potential` gate tree (see pipeline/src/gates.ts). A leaf is a single
+ * trigger tagged static (immutable → can force a permanent "never"); combinators
+ * are AND/OR/NOR/NOT over children. Consumed by the app's Saved Empire view to
+ * classify each tech as never-reachable for a given empire.
+ */
+const GateNodeSchema: z.ZodType<GateNode> = z.lazy(() =>
+  z.union([
+    z.object({
+      op: z.literal("leaf"),
+      trigger: z.string(),
+      value: z.union([z.string(), z.number(), z.boolean()]),
+      static: z.boolean(),
+    }),
+    z.object({
+      op: z.enum(["and", "or", "nor", "not"]),
+      children: z.array(GateNodeSchema),
+    }),
+  ]),
+);
 
 const UnlocksSchema = z.object({
   grants: z.array(z.string()),
@@ -71,6 +93,12 @@ export const TechSchema = z.object({
   description: z.string().nullable().default(null),
   /** Web-ready icon path/reference; filled by Plan 04. */
   icon: z.string().nullable().default(null),
+  /**
+   * Normalized `potential` gate tree (pipeline/src/gates.ts::normalizePotential),
+   * or null when the tech has no `potential` block. Drives the app's Saved Empire
+   * "never reachable" classification. ~376 of 678 techs are gated.
+   */
+  gate: GateNodeSchema.nullable().default(null),
 });
 
 export const TechSnapshotSchema = z.object({

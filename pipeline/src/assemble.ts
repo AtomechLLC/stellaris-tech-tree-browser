@@ -29,7 +29,7 @@
  * corpus.test.ts) compares tech.json with `meta.generatedAt` normalized/
  * excluded — every OTHER field is byte-stable across runs.
  */
-import { writeFileSync, mkdirSync, copyFileSync, existsSync } from "node:fs";
+import { writeFileSync, mkdirSync, copyFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { resolveConfig } from "./config.js";
@@ -43,6 +43,7 @@ import { scanAllLocalisation, resolveTechText } from "./localisation/loc-scanner
 import { resolveIconSource, type TechSwap } from "./icons/resolve.js";
 import { convertDdsToWebp, PLACEHOLDER_ICON_NAME } from "./icons/convert.js";
 import { buildUnlocks } from "./unlocks.js";
+import { normalizePotential } from "./gates.js";
 import { buildReport, printReport, type ReportWarnings } from "./report.js";
 import { TechSnapshotSchema, type Tech, type TechSnapshot } from "./schema/tech-snapshot.js";
 
@@ -122,6 +123,10 @@ export async function runAssemble(): Promise<string> {
       extracted;
 
     const dlc = classifyDlc({ potentialRaw }, sourceFile, dlcRegistry);
+    // Normalize the raw `potential` block into a machine-evaluable gate tree so
+    // the app's Saved Empire view can classify never-reachable techs (null when
+    // the tech has no potential gate).
+    const gate = normalizePotential(potentialRaw);
 
     const { name, description } = resolveTechText(key, locMap);
     if (!name) {
@@ -184,7 +189,55 @@ export async function runAssemble(): Promise<string> {
       name: name ?? key,
       description,
       icon: iconRef,
+      gate,
     };
+  }
+
+  // Research-currency icons: each tech costs its AREA's research (physics /
+  // society / engineering). Convert the three fixed resource icons once,
+  // alongside the tech icons, so the app can show a cost-type icon next to each
+  // tech's cost. Referenced by the app as `_research_<area>.webp`. Supplementary
+  // (D-13): a conversion failure warns and skips, never fails the build.
+  for (const area of ["physics", "society", "engineering"]) {
+    const ddsPath = join(gameRoot, "gfx", "interface", "icons", "resources", `${area}_research.dds`);
+    const webpOut = join(iconsOutDir, `_research_${area}.webp`);
+    const pngTmp = join(iconsOutDir, `_research_${area}.tmp.png`);
+    try {
+      await convertDdsToWebp(ddsPath, pngTmp, webpOut);
+    } catch (err) {
+      console.warn(`[assemble] research icon conversion failed for "${area}" (${err}) — cost icon will be absent`);
+    }
+  }
+
+  // Tech-category ("subtype") icons — one per research category (biology,
+  // computing, …). Convert every category_<name>.dds → `_category_<name>.webp`
+  // so the app can show a subtype icon on cards and in the category nav.
+  const catIconDir = join(gameRoot, "gfx", "interface", "icons", "technologies", "categories");
+  try {
+    for (const file of readdirSync(catIconDir)) {
+      const m = /^category_(.+)\.dds$/i.exec(file);
+      if (!m) continue;
+      const webpOut = join(iconsOutDir, `_category_${m[1]}.webp`);
+      const pngTmp = join(iconsOutDir, `_category_${m[1]}.tmp.png`);
+      try {
+        await convertDdsToWebp(join(catIconDir, file), pngTmp, webpOut);
+      } catch (err) {
+        console.warn(`[assemble] category icon conversion failed for "${file}" (${err}) — subtype icon will be absent`);
+      }
+    }
+  } catch (err) {
+    console.warn(`[assemble] could not read category icon dir ${catIconDir} (${err})`);
+  }
+
+  // App-header ethic icon (xenophile) — a single fixed decorative icon.
+  try {
+    await convertDdsToWebp(
+      join(gameRoot, "gfx", "interface", "icons", "ethics", "ethic_xenophile.dds"),
+      join(iconsOutDir, "_ethic_xenophile.tmp.png"),
+      join(iconsOutDir, "_ethic_xenophile.webp"),
+    );
+  } catch (err) {
+    console.warn(`[assemble] ethic_xenophile icon conversion failed (${err}) — header icon will be absent`);
   }
 
   // D-16: strict-fail on any tech with an unresolved name.

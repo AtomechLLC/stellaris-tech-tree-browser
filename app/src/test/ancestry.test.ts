@@ -40,6 +40,7 @@ function tech(
     name: key,
     description: null,
     icon: null,
+    gate: null,
   };
 }
 

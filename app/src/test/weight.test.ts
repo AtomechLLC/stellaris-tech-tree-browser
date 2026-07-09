@@ -26,6 +26,7 @@ function tech(key: string, name: string): Tech {
     name,
     description: null,
     icon: null,
+    gate: null,
   };
 }
 

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { Tech } from "../types/tech-snapshot";
 import { categoryLabel } from "../lib/graph/categories";
+import type { Bucket } from "../lib/empire/classify";
 
 /**
  * Reference-style tech card: area-colored, icon on the left with a tier
@@ -19,17 +20,26 @@ import { categoryLabel } from "../lib/graph/categories";
 export const CARD_W = 230;
 export const CARD_H = 92;
 
-const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+// Tier badge, indexed by the tech's (0-based) tier so it MATCHES the "Tier N"
+// meta text — tier 1 → "I", … tier 5 → "V". Tier 0 has no roman numeral, so it
+// shows "0" rather than being shifted up a level.
+const ROMAN = ["0", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
-/** Tier → roman numeral (tier is 0-based in the data; show tier 0 as "I"). */
+/** Tier → its badge label (0-based, matching the tier number). */
 function roman(tier: number): string {
-  return ROMAN[tier] ?? String(tier + 1);
+  return ROMAN[tier] ?? String(tier);
 }
 
 interface TechCardProps {
   tech: Tech;
   /** Icon URL (already resolved from the snapshot version + tech.icon). */
   image?: string;
+  /** Research-currency icon URL for this tech's area (physics/society/eng) —
+   *  shown next to the cost so the research type reads at a glance. */
+  costIcon?: string;
+  /** Category ("subtype") icon URL (biology, computing, …) — shown before the
+   *  category label in the card meta line. */
+  categoryIcon?: string;
   /** Absolute position in the shared canvas coordinate space. */
   x: number;
   y: number;
@@ -54,6 +64,9 @@ interface TechCardProps {
   expanded?: boolean;
   /** Explore-mode only: chevron click → toggle expand in the parent. Stable ref. */
   onToggleExpand?: (key: string) => void;
+  /** Saved Empire tab (spike 005): the tech's bucket for this empire, or
+   *  undefined when the empire coloring is off. Drives `data-bucket` → CSS. */
+  bucket?: Bucket;
 }
 
 // Memoized: pan/zoom re-renders the parent every tick, but a card's props
@@ -63,6 +76,8 @@ interface TechCardProps {
 export const TechCard = memo(function TechCard({
   tech,
   image,
+  costIcon,
+  categoryIcon,
   x,
   y,
   onEnter,
@@ -73,6 +88,7 @@ export const TechCard = memo(function TechCard({
   expandable,
   expanded,
   onToggleExpand,
+  bucket,
 }: TechCardProps) {
   const category = tech.category[0] ?? "";
   return (
@@ -81,6 +97,9 @@ export const TechCard = memo(function TechCard({
       data-area={tech.area}
       data-key={tech.key}
       data-selected={selected ? "" : undefined}
+      data-danger={tech.flags.isDangerous ? "" : undefined}
+      data-rare={tech.flags.isRare ? "" : undefined}
+      data-bucket={bucket}
       style={{
         position: "absolute",
         left: `${x}px`,
@@ -95,16 +114,24 @@ export const TechCard = memo(function TechCard({
     >
       <div className="tech-card__icon">
         {image ? <img src={image} alt="" loading="lazy" /> : null}
-        <span className="tech-card__tier">{roman(tech.tier)}</span>
+        <span className="tech-card__tier" data-tier={tech.tier}>{roman(tech.tier)}</span>
       </div>
       <div className="tech-card__body">
         {/* PLAIN TEXT — React children, never innerHTML (D-05 XSS). */}
         <div className="tech-card__title">{tech.name}</div>
         <div className="tech-card__meta">
-          {categoryLabel(category)} · Tier {tech.tier}
+          {categoryIcon ? (
+            <img className="tech-card__cat-icon" src={categoryIcon} alt="" loading="lazy" />
+          ) : null}
+          {categoryLabel(category)} ·{" "}
+          <span className="tier-num" data-tier={tech.tier}>Tier {tech.tier}</span>
         </div>
         <div className="tech-card__stats">
-          Cost: {tech.cost} · Weight: {tech.weight}
+          Cost:{" "}
+          {costIcon ? (
+            <img className="tech-card__cost-icon" src={costIcon} alt="" loading="lazy" />
+          ) : null}
+          {tech.cost} · Weight: {tech.weight}
         </div>
       </div>
       {/* Explore-mode expand toggle — only when this tech has revealable

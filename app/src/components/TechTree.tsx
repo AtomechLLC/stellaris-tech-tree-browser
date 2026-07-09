@@ -17,6 +17,8 @@ import { BucketCard } from "./BucketCard";
 import { EdgeLayer } from "./EdgeLayer";
 import { BandLayer } from "./BandLayer";
 import { CategoryNav } from "./CategoryNav";
+import { EmpirePanel } from "./EmpirePanel";
+import type { Bucket } from "../lib/empire/classify";
 import { TechTooltip } from "./TechTooltip";
 import { FindOverlay, type FindEntry } from "./FindOverlay";
 import { LoadingOverlay } from "./LoadingOverlay";
@@ -64,6 +66,17 @@ interface Transform {
   scale: number;
 }
 
+/** A snapshot of the navigation state, for the Back (Backspace) history stack. */
+interface ViewSnapshot {
+  viewMode: ViewMode;
+  selectedKey: string | null;
+  focusKey: string | null;
+  focusExpanded: Set<string>;
+  expandedKeys: Set<string>;
+  active: Set<string>;
+  transform: Transform;
+}
+
 const DEFAULT_TRANSFORM: Transform = { x: 40, y: 40, scale: 0.4 };
 const cssTransform = (t: Transform) =>
   `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
@@ -78,14 +91,95 @@ const categoryOf = (n: LayoutNode): string => n.tech?.category[0] ?? "";
 const catsInArea = (area: Area): string[] =>
   CATEGORY_ORDER.filter((c) => CATEGORY_AREA[c] === area);
 
+// ── Shareable URL state ──────────────────────────────────────────────────────
+// The navigation state is mirrored into the URL query string so a shared link
+// reproduces the same view: `v=e` (explore; map is the default), `f`/`s` the
+// focused / selected tech, `c` the active categories (omitted when all are on),
+// `x`/`fx` the browse / focus expansion. Ids are joined with "." (URL-safe —
+// tech and category ids never contain a dot).
+const URL_SEP = ".";
+
+interface UrlNavState {
+  viewMode: ViewMode;
+  active: Set<string>;
+  selectedKey: string | null;
+  focusKey: string | null;
+  focusExpanded: Set<string>;
+  expandedKeys: Set<string>;
+}
+
+/** Parse the current URL into partial nav state, validating ids against the
+ *  snapshot / category list (unknown ids are dropped — never throws). */
+function parseUrlNav(snapshot: TechSnapshot): Partial<UrlNavState> {
+  const p = new URLSearchParams(window.location.search);
+  const isTech = (k: string) => snapshot.techs[k] !== undefined;
+  const validCats = new Set<string>(CATEGORY_ORDER);
+  const techSet = (v: string | null) =>
+    v == null ? undefined : new Set(v.split(URL_SEP).filter((k) => k && isTech(k)));
+
+  const out: Partial<UrlNavState> = {};
+  if (p.get("v") === "e") out.viewMode = "explore";
+  const f = p.get("f");
+  if (f && isTech(f)) out.focusKey = f;
+  const s = p.get("s");
+  if (s && isTech(s)) out.selectedKey = s;
+  const c = p.get("c");
+  if (c != null) out.active = new Set(c.split(URL_SEP).filter((x) => validCats.has(x)));
+  const fx = techSet(p.get("fx"));
+  if (fx) out.focusExpanded = fx;
+  const x = techSet(p.get("x"));
+  if (x) out.expandedKeys = x;
+  // A focused tech is always part of its own forward-expansion set.
+  if (out.focusKey) (out.focusExpanded ??= new Set()).add(out.focusKey);
+  return out;
+}
+
+/** Serialize nav state into a query string ("?…" or "") for replaceState. */
+function serializeUrlNav(s: UrlNavState): string {
+  const p = new URLSearchParams();
+  if (s.viewMode === "explore") {
+    p.set("v", "e");
+    if (s.focusKey) p.set("f", s.focusKey);
+    else if (s.expandedKeys.size > 0) p.set("x", [...s.expandedKeys].join(URL_SEP));
+    if (s.focusKey && s.focusExpanded.size > 1) {
+      p.set("fx", [...s.focusExpanded].join(URL_SEP));
+    }
+  } else if (s.selectedKey) {
+    p.set("s", s.selectedKey);
+  }
+  if (s.active.size !== CATEGORY_ORDER.length) p.set("c", [...s.active].join(URL_SEP));
+  const qs = p.toString();
+  return qs ? `?${qs}` : "";
+}
+
 export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const [state, setState] = useState<LayoutState>({ status: "loading" });
-  const [active, setActive] = useState<Set<string>>(() => new Set<string>(CATEGORY_ORDER));
+  // Parse the shareable URL ONCE (at mount) to seed the initial nav state below.
+  const urlInitRef = useRef<Partial<UrlNavState> | null>(null);
+  if (urlInitRef.current === null) urlInitRef.current = parseUrlNav(snapshot);
+  const urlInit = urlInitRef.current;
+  const [active, setActive] = useState<Set<string>>(
+    () => urlInit.active ?? new Set<string>(CATEGORY_ORDER),
+  );
   const [hover, setHover] = useState<{ tech: Tech; rect: DOMRect } | null>(null);
   // Click-selected ("targeted") tech key, or null. Selection highlights the
   // card, thickens its prereq/child edges, and (when it has filter-hidden
   // ancestors) opens the ancestry drill-down panel.
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(() => urlInit.selectedKey ?? null);
+  // Explore FOCUS target (double-click / find). Separate from `selectedKey`:
+  // a single click just highlights + expands in the browse tree, whereas
+  // focusing swaps the canvas to the tech's full dependency neighborhood.
+  const [focusKey, setFocusKey] = useState<string | null>(() => urlInit.focusKey ?? null);
+  // Which nodes are EXPANDED in the focus view's forward (dependents) direction.
+  // Seeded to just the focus on entry; a single click in the focus view adds a
+  // node so its dependents appear WITHOUT hiding siblings. A double-click
+  // re-focuses and resets this to the new focus.
+  const [focusExpanded, setFocusExpanded] = useState<Set<string>>(
+    () => urlInit.focusExpanded ?? new Set(),
+  );
+  // View-history stack for the Back (Backspace) shortcut — snapshots of the
+  // navigation state pushed before each view change, popped to go back.
+  const historyRef = useRef<ViewSnapshot[]>([]);
   // Re-pack busy state (button label + guard). Bumped each time a re-pack
   // starts; the resolving handler ignores its result if this changed meanwhile
   // (stale-result guard) so a rapid re-toggle+re-pack can't swap in old layout.
@@ -95,10 +189,29 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const [findOpen, setFindOpen] = useState(false);
   // Which view is active (quick 260708-5di). "map" = the banded swimlane ELK
   // layout; "explore" = the pure collapsible forward tree from the roots.
-  const [viewMode, setViewMode] = useState<ViewMode>("map");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => urlInit.viewMode ?? "map");
   // Explore-mode expand state: the set of tech keys currently expanded (open).
   // Collapsed by default → Explore opens at just the entry-point techs.
-  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(() => new Set());
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
+    () => urlInit.expandedKeys ?? new Set(),
+  );
+  // ── Saved Empire tab (spike 005) ───────────────────────────────────────────
+  // When on, the left panel becomes the empire loader/picker and every card is
+  // recolored by its classification bucket for the selected empire. The base
+  // layout stays the Map (coloring is orthogonal to layout).
+  const [empireOn, setEmpireOn] = useState(false);
+  const [bucketMap, setBucketMap] = useState<Map<string, Bucket> | null>(null);
+  // Stable callback so <EmpirePanel>'s classify effect isn't re-triggered every render.
+  const onBuckets = useCallback((buckets: Map<string, Bucket> | null) => {
+    setBucketMap(buckets);
+  }, []);
+
+  // Mirror the nav state into the URL (replaceState → shareable link, no history
+  // spam). Runs on every nav change; parseUrlNav above restores it on load.
+  useEffect(() => {
+    const qs = serializeUrlNav({ viewMode, active, selectedKey, focusKey, focusExpanded, expandedKeys });
+    window.history.replaceState(null, "", window.location.pathname + qs + window.location.hash);
+  }, [viewMode, active, selectedKey, focusKey, focusExpanded, expandedKeys]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -212,10 +325,10 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // right, all as real cards with connecting edges. `null` when browsing (no
   // selection) or when the selection isn't a real tech (e.g. a bucket card).
   const exploreFocus = useMemo<TreeLayout | null>(() => {
-    if (viewMode !== "explore" || !selectedKey) return null;
-    if (!snapshot.techs[selectedKey]) return null; // bucket keys etc.
-    return layoutFocus(snapshot, selectedKey, CARD_W, CARD_H);
-  }, [viewMode, selectedKey, snapshot]);
+    if (viewMode !== "explore" || !focusKey) return null;
+    if (!snapshot.techs[focusKey]) return null; // bucket keys etc.
+    return layoutFocus(snapshot, focusKey, focusExpanded, CARD_W, CARD_H);
+  }, [viewMode, focusKey, focusExpanded, snapshot]);
 
   // Frame a set of nodes to fill the viewport (used when isolating a category).
   const fitToNodes = useCallback(
@@ -245,14 +358,67 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     [applyTransform],
   );
 
-  // Entering / changing the Explore focus view auto-frames its neighborhood so
-  // the focus tech + its prereqs + dependents all fit ("zoom in on this"). Runs
-  // after the focus layout commits; a rAF lets the DOM cards mount first.
+  // Auto-frame the focus neighborhood ONLY when the focus tech CHANGES (entering
+  // focus, or a double-click re-focus) — "zoom in on this". A single-click
+  // expand keeps the same focusKey, so this does NOT re-fit: the tree just grows
+  // in place without the viewport jumping. A rAF lets the DOM cards mount first.
+  const fitFocusRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!exploreFocus || exploreFocus.nodes.length === 0) return;
+    if (!exploreFocus || exploreFocus.nodes.length === 0) {
+      fitFocusRef.current = null;
+      return;
+    }
+    if (focusKey === fitFocusRef.current) return; // same focus (an expand) — don't refit
+    fitFocusRef.current = focusKey;
     const id = requestAnimationFrame(() => fitToNodes(exploreFocus.nodes));
     return () => cancelAnimationFrame(id);
-  }, [exploreFocus, fitToNodes]);
+  }, [exploreFocus, focusKey, fitToNodes]);
+
+  // ── View history (Back / Backspace) ───────────────────────────────────────
+  // A live mirror of the navigation state, so a history push captures the
+  // CURRENT view without stale-closure hazards. Updated every render.
+  const navRef = useRef<ViewSnapshot>({
+    viewMode: "map",
+    selectedKey: null,
+    focusKey: null,
+    focusExpanded: new Set(),
+    expandedKeys: new Set(),
+    active: new Set(CATEGORY_ORDER),
+    transform: DEFAULT_TRANSFORM,
+  });
+  useEffect(() => {
+    navRef.current = {
+      viewMode,
+      selectedKey,
+      focusKey,
+      focusExpanded,
+      expandedKeys,
+      active,
+      transform: transformRef.current,
+    };
+  });
+
+  // Snapshot the current view onto the history stack (called before a nav change).
+  const pushHistory = useCallback(() => {
+    historyRef.current.push({ ...navRef.current });
+    if (historyRef.current.length > 100) historyRef.current.shift();
+  }, []);
+
+  // Back: pop the last view and restore it exactly (layout + selection + frame).
+  // Pre-seed fitFocusRef so the focus auto-fit doesn't override the restored
+  // camera when the restored focusKey differs from the current one.
+  const onBack = useCallback(() => {
+    const prev = historyRef.current.pop();
+    if (!prev) return;
+    fitFocusRef.current = prev.focusKey;
+    setViewMode(prev.viewMode);
+    setSelectedKey(prev.selectedKey);
+    setFocusKey(prev.focusKey);
+    setFocusExpanded(prev.focusExpanded);
+    setExpandedKeys(prev.expandedKeys);
+    setActive(prev.active);
+    applyTransform(prev.transform);
+  }, [applyTransform]);
 
   // ── Filter actions (from CategoryNav) ─────────────────────────────────────
   const onToggleCategory = useCallback((cat: string) => {
@@ -313,33 +479,81 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const onCardLeave = useCallback(() => setHover(null), []);
 
   // ── Selection ─────────────────────────────────────────────────────────────
-  // Click toggles selection; a drag that ends on a card is suppressed via the
-  // movedRef guard. Stable ref so the memoized cards don't re-render on hover/pan.
-  // In Explore this drives the FOCUS view: selecting a real tech swaps the canvas
-  // to that tech's dependency neighborhood (prereqs left, dependents right);
-  // clicking it again (or Escape / empty space) clears back to the browse tree.
-  const onSelect = useCallback((key: string) => {
-    if (movedRef.current) return; // this "click" was actually a drag — ignore
-    setSelectedKey((k) => (k === key ? null : key));
-  }, []);
+  // SINGLE click. A drag that ends on a card is suppressed via the movedRef
+  // guard. Behaviour by mode:
+  //  • Explore FOCUS view → EXPAND the clicked card: reveal its dependents in
+  //    place, WITHOUT hiding siblings or re-centering. (Double-click re-focuses.)
+  //  • Explore browse tree → highlight + expand the card so its children appear
+  //    to the right, without collapsing anything else. Chevron still collapses.
+  //  • Map → just highlight (toggle).
+  const onSelect = useCallback(
+    (key: string) => {
+      if (movedRef.current) return; // this "click" was actually a drag — ignore
+      pushHistory();
+      if (viewMode === "explore" && focusKey) {
+        setFocusExpanded((prev) => {
+          if (prev.has(key)) return prev;
+          const next = new Set(prev);
+          next.add(key);
+          return next;
+        });
+        return;
+      }
+      setSelectedKey((k) => (k === key ? null : key));
+      if (viewMode === "explore") {
+        setExpandedKeys((prev) => {
+          if (prev.has(key)) return prev;
+          const next = new Set(prev);
+          next.add(key);
+          return next;
+        });
+      }
+    },
+    [viewMode, focusKey, pushHistory],
+  );
 
-  // Double-click "activate": jump to the Explore focus view for this tech. From
-  // the map this switches into Explore (with the tech focused); within Explore
-  // it just re-focuses. The focus layout + auto-fit run off `selectedKey`.
-  const onActivate = useCallback((key: string) => {
-    if (movedRef.current) return;
-    setViewMode("explore");
-    setSelectedKey(key);
-  }, []);
+  // DOUBLE click "activate": open (or RE-FOCUS) the Explore FOCUS view on this
+  // tech — its full dependency tree (recursive prereqs left, dependents right),
+  // auto-zoomed. Resets the forward expansion so siblings of the old focus are
+  // hidden. From the map this also switches into Explore.
+  const onActivate = useCallback(
+    (key: string) => {
+      if (movedRef.current) return;
+      pushHistory();
+      setViewMode("explore");
+      setFocusKey(key);
+      setFocusExpanded(new Set([key]));
+    },
+    [pushHistory],
+  );
 
-  // Escape clears the selection (window listener, mounted once).
+  // Deselect: exit any focus view (back to browse) and clear the selection.
+  // Shared by the Escape key and the mobile/touch Deselect button.
+  const onDeselect = useCallback(() => {
+    pushHistory();
+    setFocusKey(null);
+    setFocusExpanded(new Set());
+    setSelectedKey(null);
+  }, [pushHistory]);
+
+  // Escape deselects; Backspace goes BACK to the previous view (history). Both
+  // ignore keystrokes typed into a form field (e.g. the find box) so they don't
+  // hijack editing.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelectedKey(null);
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      if (e.key === "Escape") {
+        onDeselect();
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        onBack();
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [onDeselect, onBack]);
 
   // F opens the find overlay. Ignore it when typing in a form field (so 'f'
   // inside the find box or any input types a letter, not a re-open) and when
@@ -370,6 +584,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // layout so a filter-hidden tech is still framable). Then close the overlay.
   const onPick = useCallback(
     (key: string) => {
+      pushHistory();
       const tech = techByKey.get(key);
       if (tech) {
         // Reveal the tech AND its recursive prerequisites: collect every
@@ -395,26 +610,40 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           return changed ? next : prev;
         });
       }
-      setSelectedKey(key);
-      // In Explore, selecting the tech opens its focus view (full prereq tree +
-      // dependents) and the focus auto-fit effect frames it — nothing more to do
-      // here. In Map, frame the picked node directly from the banded layout.
-      if (viewMode !== "explore" && state.status === "ready") {
-        const node = state.layout.nodes.find((n) => n.key === key);
-        if (node) fitToNodes([node]);
+      // In Explore, finding a tech opens its FOCUS view (full recursive prereq
+      // tree + direct dependents) and the auto-fit effect frames it. In Map,
+      // select + frame the picked node directly from the banded layout.
+      if (viewMode === "explore") {
+        setFocusKey(key);
+        setFocusExpanded(new Set([key]));
+      } else {
+        setSelectedKey(key);
+        if (state.status === "ready") {
+          const node = state.layout.nodes.find((n) => n.key === key);
+          if (node) fitToNodes([node]);
+        }
       }
       setFindOpen(false);
     },
-    [techByKey, state, fitToNodes, viewMode],
+    [techByKey, state, fitToNodes, viewMode, pushHistory],
   );
 
-  // Clicking empty viewport background (not a card) clears the selection. A
-  // real drag is also suppressed here via movedRef so panning doesn't deselect.
-  const onViewportClick = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
-    if (movedRef.current) return;
-    if ((e.target as HTMLElement).closest(".tech-card, .bucket-card")) return;
-    setSelectedKey(null);
-  }, []);
+  // Clicking empty viewport background (not a card) clears the selection. A real
+  // drag is suppressed via movedRef so panning doesn't reset. EXCEPTION: in the
+  // Explore focus view, an empty-space tap is inert — it must NOT act as "back"
+  // out of the focused tech (especially on touch, where stray taps are common).
+  const onViewportClick = useCallback(
+    (e: ReactMouseEvent<HTMLDivElement>) => {
+      if (movedRef.current) return;
+      if ((e.target as HTMLElement).closest(".tech-card, .bucket-card")) return;
+      if (viewMode === "explore" && focusKey) return;
+      pushHistory();
+      setSelectedKey(null);
+      setFocusKey(null);
+      setFocusExpanded(new Set());
+    },
+    [pushHistory, viewMode, focusKey],
+  );
 
   // ── Pan (imperative — no re-render) ───────────────────────────────────────
   const onPointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
@@ -558,25 +787,92 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     [onToggleExpand],
   );
 
+  // "Open all children" (shortcut: C): reveal every tech that directly depends
+  // on the currently selected/focused tech. In Explore this expands the tech AND
+  // each child (so their subtrees are open); in Map — where every card is already
+  // laid out — it un-hides any filtered-out child categories and frames the tech
+  // together with its children. No-op when nothing is selected or it's childless.
+  const onExpandChildren = useCallback(() => {
+    const key = viewMode === "explore" && focusKey ? focusKey : selectedKey;
+    if (!key || !snapshot.techs[key]) return;
+    const kids = childrenByKey.get(key) ?? [];
+    if (kids.length === 0) return;
+    pushHistory();
+    // Un-hide the children's categories so none stay filtered out of view.
+    setActive((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      for (const ck of kids) {
+        const c = techByKey.get(ck)?.category[0];
+        if (c && !next.has(c)) {
+          next.add(c);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    if (viewMode === "explore") {
+      const add = (prev: Set<string>) => {
+        const next = new Set(prev);
+        next.add(key);
+        for (const ck of kids) next.add(ck);
+        return next;
+      };
+      if (focusKey) setFocusExpanded(add);
+      else setExpandedKeys(add);
+    } else if (state.status === "ready") {
+      const keys = new Set<string>([key, ...kids]);
+      const nodes = state.layout.nodes.filter((n) => keys.has(n.key));
+      if (nodes.length > 0) fitToNodes(nodes);
+    }
+  }, [
+    viewMode,
+    focusKey,
+    selectedKey,
+    snapshot,
+    childrenByKey,
+    techByKey,
+    state,
+    fitToNodes,
+    pushHistory,
+  ]);
+
+  // C reveals the selected/focused tech's direct children (see onExpandChildren).
+  // Ignored while typing in a form field or with a modifier held.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "c" && e.key !== "C") return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      e.preventDefault();
+      onExpandChildren();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onExpandChildren]);
+
   // Switch views. Entering Explore fits/resets to the collapsed root column;
   // returning to Map restores its default frame. (Selection/filter persist.)
   const onSelectView = useCallback(
     (mode: ViewMode) => {
-      setViewMode((prev) => {
-        if (prev === mode) return prev;
-        if (mode === "explore") {
-          // Frame the collapsed explore roots after the switch commits.
-          requestAnimationFrame(() => {
-            if (exploreLayout.nodes.length > 0) fitToNodes(exploreLayout.nodes);
-            else resetView();
-          });
-        } else {
-          applyTransform(DEFAULT_TRANSFORM);
-        }
-        return mode;
-      });
+      if (viewMode === mode) return;
+      pushHistory();
+      setViewMode(mode);
+      setFocusKey(null); // a mode toggle always returns to the browse view
+      setFocusExpanded(new Set());
+      if (mode === "explore") {
+        // Frame the collapsed explore roots after the switch commits.
+        requestAnimationFrame(() => {
+          if (exploreLayout.nodes.length > 0) fitToNodes(exploreLayout.nodes);
+          else resetView();
+        });
+      } else {
+        applyTransform(DEFAULT_TRANSFORM);
+      }
     },
-    [exploreLayout, fitToNodes, resetView, applyTransform],
+    [viewMode, exploreLayout, fitToNodes, resetView, applyTransform, pushHistory],
   );
 
   // ── Re-pack: re-lay-out only the visible categories so their bands stack
@@ -615,6 +911,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // In Explore, a focused tech shows its dependency neighborhood (focus view);
   // otherwise the browse spanning tree. `focused` gates chevrons/expansion off.
   const focused = explore && exploreFocus !== null;
+  // The card + edges to highlight gold: the focus tech in the focus view, else
+  // the single-click selection.
+  const highlightKey = focused ? focusKey : selectedKey;
   const content = useMemo(() => {
     if (!layoutReady) return null;
     return {
@@ -628,7 +927,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           nodes={layoutReady.nodes}
           width={layoutReady.width}
           height={layoutReady.height}
-          selectedKey={selectedKey}
+          selectedKey={highlightKey}
         />
       ),
       cards: layoutReady.nodes.map((node) =>
@@ -653,11 +952,17 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
             key={node.key}
             tech={node.tech!}
             image={node.tech!.icon ? `${iconBase}/${node.tech!.icon}` : undefined}
+            costIcon={`${iconBase}/_research_${node.tech!.area}.webp`}
+            categoryIcon={
+              node.tech!.category[0]
+                ? `${iconBase}/_category_${node.tech!.category[0]}.webp`
+                : undefined
+            }
             x={node.x}
             y={node.y}
             onEnter={onCardEnter}
             onLeave={onCardLeave}
-            selected={node.key === selectedKey}
+            selected={node.key === highlightKey}
             onSelect={onSelect}
             onActivate={onActivate}
             // Chevron/expansion belong to the Explore BROWSE tree only. The focus
@@ -665,13 +970,14 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
             expandable={explore && !focused ? node.expandable : undefined}
             expanded={explore && !focused ? node.expanded : undefined}
             onToggleExpand={explore && !focused ? onToggleExpand : undefined}
+            bucket={empireOn ? bucketMap?.get(node.key) : undefined}
           />
         ),
       ),
     };
-    // `selectedKey` in deps means only the 2 changed cards re-render on a
-    // selection change (React.memo bails the rest); hover/pan never touch
-    // selectedKey so they still reuse this memo cheaply.
+    // `highlightKey` in deps means only the 2 changed cards re-render on a
+    // selection/focus change (React.memo bails the rest); hover/pan never touch
+    // it so they still reuse this memo cheaply.
   }, [
     layoutReady,
     explore,
@@ -679,11 +985,13 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     iconBase,
     onCardEnter,
     onCardLeave,
-    selectedKey,
+    highlightKey,
     onSelect,
     onActivate,
     onToggleExpand,
     onBucketToggle,
+    empireOn,
+    bucketMap,
   ]);
 
   if (state.status === "loading") return <LoadingOverlay />;
@@ -695,15 +1003,20 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
 
   return (
     <div className="tech-tree">
-      <CategoryNav
-        active={active}
-        counts={counts}
-        onToggleCategory={onToggleCategory}
-        onIsolateCategory={onIsolateCategory}
-        onToggleArea={onToggleArea}
-        onIsolateArea={onIsolateArea}
-        onShowAll={onShowAll}
-      />
+      {empireOn ? (
+        <EmpirePanel snapshot={snapshot} onBuckets={onBuckets} />
+      ) : (
+        <CategoryNav
+          active={active}
+          counts={counts}
+          iconBase={iconBase}
+          onToggleCategory={onToggleCategory}
+          onIsolateCategory={onIsolateCategory}
+          onToggleArea={onToggleArea}
+          onIsolateArea={onIsolateArea}
+          onShowAll={onShowAll}
+        />
+      )}
 
       <div
         className="tree-viewport"
@@ -736,20 +1049,38 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           <button
             type="button"
             className="view-toggle__btn"
-            data-active={viewMode === "map" ? "" : undefined}
-            aria-pressed={viewMode === "map"}
-            onClick={() => onSelectView("map")}
+            data-active={!empireOn && viewMode === "map" ? "" : undefined}
+            aria-pressed={!empireOn && viewMode === "map"}
+            onClick={() => {
+              setEmpireOn(false);
+              onSelectView("map");
+            }}
           >
             Map
           </button>
           <button
             type="button"
             className="view-toggle__btn"
-            data-active={viewMode === "explore" ? "" : undefined}
-            aria-pressed={viewMode === "explore"}
-            onClick={() => onSelectView("explore")}
+            data-active={!empireOn && viewMode === "explore" ? "" : undefined}
+            aria-pressed={!empireOn && viewMode === "explore"}
+            onClick={() => {
+              setEmpireOn(false);
+              onSelectView("explore");
+            }}
           >
             Explore
+          </button>
+          <button
+            type="button"
+            className="view-toggle__btn"
+            data-active={empireOn ? "" : undefined}
+            aria-pressed={empireOn}
+            onClick={() => {
+              setEmpireOn(true);
+              onSelectView("map");
+            }}
+          >
+            Saved Empire
           </button>
         </div>
 

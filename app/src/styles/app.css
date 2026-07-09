@@ -24,12 +24,46 @@
   padding: 0 var(--space-md);
 }
 
+.app-header__ethic {
+  width: 28px;
+  height: 28px;
+  margin-right: 10px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
 .app-header__title {
   margin: 0;
   font-family: var(--font-sans);
   font-size: var(--font-size-heading);
   font-weight: var(--font-weight-heading);
   line-height: var(--line-height-heading);
+  color: var(--tree-text);
+}
+
+/* Discord / Funsmith Club link, pinned to the far right of the header. */
+.app-header__discord {
+  margin-left: auto;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  color: var(--discord);
+  text-decoration: none;
+  font-weight: var(--font-weight-heading);
+  font-size: var(--font-size-label);
+}
+.app-header__discord:hover {
+  background: color-mix(in srgb, var(--discord) 18%, transparent);
+}
+.app-header__discord-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+.app-header__discord-text {
   color: var(--tree-text);
 }
 
@@ -179,7 +213,7 @@
 .category-nav__cat-name {
   flex: 1 1 auto;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 2px 4px;
@@ -190,6 +224,19 @@
   border-radius: 3px;
   cursor: pointer;
   text-align: left;
+}
+/* Group the subtype icon + label so they sit together on the left, count right. */
+.category-nav__cat-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.category-nav__cat-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  object-fit: contain;
 }
 .category-nav__cat-name:hover {
   background: var(--tree-border);
@@ -274,14 +321,18 @@
 
 .band__label {
   position: absolute;
-  left: 10px;
-  top: 6px;
+  left: 14px;
+  top: 8px;
   font-family: var(--font-sans);
-  font-size: 13px;
+  /* Large so the swimlane header stays legible when the whole canvas is zoomed
+     out to fit (the label lives inside the scaled canvas, so a 13px label became
+     ~5px at the default map zoom). */
+  font-size: 42px;
+  line-height: 1;
   font-weight: var(--font-weight-heading);
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 .band[data-area="physics"] .band__label {
   color: var(--area-physics);
@@ -320,6 +371,12 @@
   stroke-width: 3;
   stroke-dasharray: none;
   opacity: 1;
+}
+
+/* Arrowhead marker on the selected tech's incoming dependency edges — same gold
+   as the highlight so it reads as one connector pointing INTO the selected tech. */
+.edge-layer__arrowhead {
+  fill: var(--color-select);
 }
 
 /* View toggle (quick 260708-5di) — segmented Map ↔ Explore control, top-left of
@@ -423,9 +480,13 @@
   content-visibility: auto;
   contain-intrinsic-size: 230px 92px;
   background: var(--tree-card-bg);
-  /* Subtle hex-mesh texture: a low-opacity inline SVG data-URI (no external
-     request, CSP-safe). Layered UNDER the flat card background above. */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='24' viewBox='0 0 28 24'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-opacity='0.04' stroke-width='1' d='M14 0l7 4v8l-7 4-7-4V4z'/%3E%3C/svg%3E");
+  /* Subtle honeycomb texture: a staggered hex tessellation (pointy-top; tile
+     13.856×24 = one full interior hexagon + the four corner hexagons that
+     reassemble across tiles into the offset row). Each hexagon is INSET to
+     circumradius 7 (vs the 8 cell) so a ~1.7px gap sits between neighbours, and
+     the stroke uses a gentle white→soft-blue vertical gradient instead of a flat
+     line. Low-opacity inline SVG data-URI (no external request, CSP-safe). */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13.856' height='24' viewBox='0 0 13.856 24'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='0' y1='0' x2='0' y2='24' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='0.11'/%3E%3Cstop offset='1' stop-color='%2379a9ff' stop-opacity='0.05'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='none' stroke='url(%23h)' stroke-width='1' d='M6.928 5L12.99 8.5L12.99 15.5L6.928 19L0.866 15.5L0.866 8.5Z M0 -7L6.062 -3.5L6.062 3.5L0 7L-6.062 3.5L-6.062 -3.5Z M13.856 -7L19.918 -3.5L19.918 3.5L13.856 7L7.794 3.5L7.794 -3.5Z M0 17L6.062 20.5L6.062 27.5L0 31L-6.062 27.5L-6.062 20.5Z M13.856 17L19.918 20.5L19.918 27.5L13.856 31L7.794 27.5L7.794 20.5Z'/%3E%3C/svg%3E");
   border: 2px solid var(--color-border);
   border-radius: 6px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
@@ -468,6 +529,25 @@
   background: rgba(0, 0, 0, 0.6);
   border-radius: 3px;
 }
+
+/* Per-tier colour/bold sequence (rarity-style) on the roman-numeral badge AND
+   the "Tier N" labels in card meta + tooltip. Tokens from tokens.css. */
+.tier-num {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.tech-card__tier[data-tier="0"],
+.tier-num[data-tier="0"] { color: var(--tier-0); }
+.tech-card__tier[data-tier="1"],
+.tier-num[data-tier="1"] { color: var(--tier-1); }
+.tech-card__tier[data-tier="2"],
+.tier-num[data-tier="2"] { color: var(--tier-2); }
+.tech-card__tier[data-tier="3"],
+.tier-num[data-tier="3"] { color: var(--tier-3); }
+.tech-card__tier[data-tier="4"],
+.tier-num[data-tier="4"] { color: var(--tier-4); }
+.tech-card__tier[data-tier="5"],
+.tier-num[data-tier="5"] { color: var(--tier-5); }
 
 .tech-card__body {
   flex: 1 1 auto;
@@ -513,6 +593,22 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* Research-currency icon next to a tech's cost (physics/society/engineering). */
+.tech-card__cost-icon {
+  width: 12px;
+  height: 12px;
+  vertical-align: -0.15em;
+  margin-right: 2px;
+  object-fit: contain;
+}
+/* Category ("subtype") icon before the category label in the card meta line. */
+.tech-card__cat-icon {
+  width: 13px;
+  height: 13px;
+  vertical-align: -0.2em;
+  margin-right: 3px;
+  object-fit: contain;
 }
 
 /* Cards are clickable to "target" them — signal that affordance. */
@@ -665,6 +761,9 @@
 .bucket-card[data-bucket="archaeology"] {
   border-left-color: var(--area-engineering);
 }
+.bucket-card[data-bucket="standard"] {
+  border-left-color: var(--color-edge);
+}
 .bucket-card[data-bucket="event"] {
   border-left-color: var(--color-select);
 }
@@ -673,12 +772,14 @@
    same --area-* tokens as the Sigma tiles (never hardcoded hex). */
 .tech-card[data-area="physics"] {
   border-color: var(--area-physics);
+  --tech-color: var(--area-physics);
 }
 .tech-card[data-area="physics"] .tech-card__title {
   background-color: color-mix(in srgb, var(--area-physics) 60%, #0c111a);
 }
 .tech-card[data-area="society"] {
   border-color: var(--area-society);
+  --tech-color: var(--area-society);
 }
 .tech-card[data-area="society"] .tech-card__title {
   /* orange is light — mix a touch more dark in so off-white text stays legible. */
@@ -686,9 +787,30 @@
 }
 .tech-card[data-area="engineering"] {
   border-color: var(--area-engineering);
+  --tech-color: var(--area-engineering);
 }
 .tech-card[data-area="engineering"] .tech-card__title {
   background-color: color-mix(in srgb, var(--area-engineering) 60%, #0c111a);
+}
+
+/* Dangerous / rare techs: blend the HEADER BAR (the top area carrying the tech
+   name) from the tech's own area colour into danger red (dangerous) or violet
+   (rare). Both ends are mixed with the dark header base so the off-white title
+   stays legible; dangerous wins when a tech is both. Only when the empire-bucket
+   colouring is off. */
+.tech-card[data-danger]:not([data-bucket]) .tech-card__title {
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--tech-color, var(--tree-border)) 60%, #0c111a),
+    color-mix(in srgb, var(--color-danger) 65%, #0c111a)
+  );
+}
+.tech-card[data-rare]:not([data-danger]):not([data-bucket]) .tech-card__title {
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--tech-color, var(--tree-border)) 60%, #0c111a),
+    color-mix(in srgb, var(--rare) 60%, #0c111a)
+  );
 }
 
 /* ── Level-of-detail: zoomed-out cards (canvas gets `.lod-simple`) ──────────
@@ -714,7 +836,10 @@
 .tech-tooltip {
   position: fixed;
   z-index: 30;
-  max-height: 320px;
+  /* Grow to fit the content instead of cramming into a fixed box; the JS sets a
+     precise `maxHeight` so it fills from its top to the viewport bottom, and only
+     scrolls in the rare case the content is taller than the whole screen. */
+  max-height: calc(100vh - 16px);
   overflow-y: auto;
   padding: 8px 10px;
   background: var(--tree-panel);
@@ -740,6 +865,13 @@
   font-size: 11px;
   opacity: 0.75;
   margin-bottom: 6px;
+}
+.tech-tooltip__cost-icon {
+  width: 1.05em;
+  height: 1.05em;
+  vertical-align: -0.2em;
+  margin: 0 1px;
+  object-fit: contain;
 }
 .tech-tooltip__badges {
   display: flex;
@@ -1188,4 +1320,185 @@
   font-size: 11px;
   opacity: 0.6;
   font-variant-numeric: tabular-nums;
+}
+
+/* ══ Saved Empire tab (spike 005) ══════════════════════════════════════════ */
+
+/* Per-empire bucket coloring on tech cards. Appended last so these win over the
+   per-area border rules on equal specificity. Treatments (user-chosen):
+     researched → thick border · available → lit up · reachable → faded ·
+     never → greyscale. The tech icon + area identity stay readable. */
+.tech-card[data-bucket="researched"] {
+  border-width: 3px;
+  border-color: var(--empire-researched);
+  box-shadow: 0 0 0 1px var(--empire-researched);
+}
+.tech-card[data-bucket="available"] {
+  border-color: var(--empire-available);
+  filter: brightness(1.12) saturate(1.08);
+  /* outline (not box-shadow) so the "lit up" ring survives the zoomed-out LOD
+     rule `.tree-canvas.lod-simple .tech-card { box-shadow: none }`. */
+  outline: 2px solid var(--empire-available);
+  outline-offset: 1px;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--empire-available) 45%, transparent);
+  z-index: 6;
+}
+.tech-card[data-bucket="reachable"] {
+  opacity: 0.42;
+}
+.tech-card[data-bucket="never"] {
+  filter: grayscale(1) brightness(0.72);
+  opacity: 0.5;
+}
+/* Selection outline still wins visually when a colored card is targeted. */
+.tech-card[data-bucket][data-selected] {
+  filter: none;
+  opacity: 1;
+}
+
+/* Bucket color tokens (reuse the colorblind-safe palette where possible). */
+.empire-panel {
+  --empire-researched: #57c96a;
+  --empire-available: var(--color-select, #ffcf6b);
+  --empire-reachable: #6b8cff;
+  --empire-never: #8794ad;
+}
+/* Also expose the tokens on cards (which live outside .empire-panel). */
+.tech-card {
+  --empire-researched: #57c96a;
+  --empire-available: var(--color-select, #ffcf6b);
+}
+
+/* Left panel */
+.empire-panel {
+  width: var(--nav-width, 260px);
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--space-md, 12px);
+  background: var(--tree-panel);
+  border-right: 1px solid var(--tree-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--tree-text);
+}
+.empire-panel__title {
+  font-size: 14px;
+  font-weight: var(--font-weight-heading, 600);
+  letter-spacing: 0.3px;
+}
+.empire-panel__muted,
+.empire-panel__validation {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.empire-panel__validation[data-warn] {
+  color: #ff6b7a;
+  opacity: 1;
+}
+.empire-panel__error {
+  font-size: 12px;
+  color: #ff6b7a;
+}
+.empire-drop {
+  border: 1.5px dashed var(--tree-border);
+  border-radius: 8px;
+  padding: 14px 10px;
+  text-align: center;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--tree-text) 70%, transparent);
+  cursor: pointer;
+}
+.empire-drop:hover {
+  border-color: var(--color-select, #ffcf6b);
+}
+.empire-drop code {
+  color: var(--color-select, #ffcf6b);
+}
+.empire-panel__sample {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--tree-border);
+  background: var(--tree-panel);
+  color: var(--tree-text);
+  font: inherit;
+  cursor: pointer;
+}
+.empire-panel__sample:hover:not(:disabled) {
+  background: var(--tree-border);
+}
+.empire-panel__pick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.empire-panel__pick select {
+  background: var(--tree-panel);
+  color: var(--tree-text);
+  border: 1px solid var(--tree-border);
+  border-radius: 6px;
+  padding: 7px 8px;
+  font: inherit;
+}
+.empire-identity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.empire-chip {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--tree-border);
+  color: color-mix(in srgb, var(--tree-text) 75%, transparent);
+  white-space: nowrap;
+}
+.empire-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.empire-legend__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.empire-legend__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex: 0 0 12px;
+}
+.empire-legend__row[data-bucket="researched"] .empire-legend__swatch {
+  background: transparent;
+  border: 3px solid var(--empire-researched);
+}
+.empire-legend__row[data-bucket="available"] .empire-legend__swatch {
+  background: var(--empire-available);
+  box-shadow: 0 0 8px var(--empire-available);
+}
+.empire-legend__row[data-bucket="reachable"] .empire-legend__swatch {
+  background: var(--empire-reachable);
+  opacity: 0.45;
+}
+.empire-legend__row[data-bucket="never"] .empire-legend__swatch {
+  background: var(--empire-never);
+  filter: grayscale(1);
+}
+.empire-legend__label {
+  flex: 1;
+}
+.empire-legend__hint {
+  font-size: 10px;
+  opacity: 0.5;
+}
+.empire-legend__count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
