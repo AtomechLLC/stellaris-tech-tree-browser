@@ -1,4 +1,7 @@
 node_modules/
 dist/
-data/
+# Ignore transient pipeline scratch, but KEEP versioned data snapshots (v4.5.0, …)
+# committed so the app is buildable on a server with no Stellaris install (deploy).
+data/*
+!data/v*/
 *.log
