@@ -1179,7 +1179,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // No-op when nothing is selected or the tech has no dependents.
   const onExpandChildren = useCallback(() => {
     const key = viewMode === "explore" && focusKey ? focusKey : selectedKey;
-    if (!key || !snapshot.techs[key]) return;
+    // Use the AUGMENTED snapshot so synthetic parents (perk: / src:) also expand
+    // — C on an event/dig-site "fake" card opens the tech(s) it grants.
+    if (!key || !exploreSnapshot.techs[key]) return;
     // BFS the reverse-prereq map to collect ALL recursive dependents (cycle-safe
     // via the visited set), so a single press opens the full subtree, not one tier.
     const subtree = new Set<string>();
@@ -1226,7 +1228,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     viewMode,
     focusKey,
     selectedKey,
-    snapshot,
+    exploreSnapshot,
     childrenByKey,
     techByKey,
     state,

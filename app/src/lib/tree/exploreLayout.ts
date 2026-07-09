@@ -1,6 +1,7 @@
 import type { TechSnapshot, Tech } from "../../types/tech-snapshot";
 import { CATEGORY_INDEX } from "../graph/categories";
 import { isPerkKey } from "./perks";
+import { isSourceKey } from "./eventSources";
 import type {
   TreeLayout,
   LayoutNode,
@@ -227,6 +228,20 @@ function buildExploreGraph(snapshot: TechSnapshot): ExploreGraph {
     // shroud) or nested deep in the tree.
     if (tech.flags.isDangerous) overlayMembers.get("dangerous")!.push(tech);
 
+    // A tech pulled ENTIRELY into its own bucket below (repeatable / shroud) is
+    // otherwise never wired as anyone's child — but it must still appear next to
+    // its event/dig-site SOURCE parent (as a duplicate; it also lives in its
+    // bucket). Wire that one source edge before the pull so the source parent is
+    // never left childless.
+    if (tech.flags.isRepeatable || isShroudTech(tech)) {
+      const srcPrereq = tech.prerequisites.find(isSourceKey);
+      if (srcPrereq && snapshot.techs[srcPrereq]) {
+        const arr = childrenByKey.get(srcPrereq);
+        if (arr) arr.push(tech);
+        else childrenByKey.set(srcPrereq, [tech]);
+      }
+    }
+
     // Repeatable upgrades group under [Repeatable] regardless of prerequisites,
     // and are pulled ENTIRELY out of the browse tree (they're terminal tier-5
     // leaves — grouping them beats scattering them as deep children).
@@ -327,7 +342,14 @@ export function layoutExplore(
 
     const children = shownChildren(tech);
     const expandable = children.length > 0;
-    const expanded = expandedKeys.has(tech.key);
+    // Event / dig-site source parents auto-expand (their granted tech always
+    // shows, no chevron) and PAIR with that tech on the same row instead of
+    // pushing it a row down — the source reads as a label on the tech's row.
+    const isSource = isSourceKey(tech.key);
+    const expanded = isSource ? expandable : expandedKeys.has(tech.key);
+    // A source pairs its FIRST granted tech on its own row (doesn't consume a
+    // separate row); the first child, walked next, lands on this same row.
+    const pairFirst = isSource && expanded && children.length > 0;
 
     nodes.push({
       key: tech.key,
@@ -336,12 +358,41 @@ export function layoutExplore(
       w: cardW,
       h: cardH,
       tech,
-      expandable,
-      expanded: expandable ? expanded : undefined,
+      expandable: isSource ? false : expandable,
+      expanded: isSource ? undefined : expandable ? expanded : undefined,
     });
-    rowIndex += 1;
+    if (!pairFirst) rowIndex += 1;
 
     if (!expanded) return;
+
+    if (isSource) {
+      // Show EVERY granted tech next to the source — even one that already
+      // appears in another tree. A tech not yet visited renders as its real,
+      // walkable node; one already shown elsewhere renders as a DUPLICATE leaf
+      // (bucket-scoped key kept OUT of `visited`) so the event↔tech pairing is
+      // never suppressed by the spanning-tree dedupe.
+      for (const child of children) {
+        if (visited.has(child.key)) {
+          const dupKey = `${tech.key}#${child.key}`;
+          edges.push({ from: tech.key, to: dupKey, sections: [] });
+          nodes.push({
+            key: dupKey,
+            x: (depth + 1) * COL_W,
+            y: rowIndex * ROW_H,
+            w: cardW,
+            h: cardH,
+            tech: child,
+            expandable: false,
+          });
+          rowIndex += 1;
+        } else {
+          edges.push({ from: tech.key, to: child.key, sections: [] });
+          walk(child, depth + 1);
+        }
+      }
+      return;
+    }
+
     for (const child of children) {
       if (visited.has(child.key)) continue;
       // Edge parent → child in the visible spanning tree. `sections: []` so the
