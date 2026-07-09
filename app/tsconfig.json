@@ -12,15 +12,7 @@
     "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "zod": ["./node_modules/zod"]
-    }
+    "forceConsistentCasingInFileNames": true
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "../pipeline/src/schema/tech-snapshot.ts"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }
