@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { TechSnapshot, Tech } from "../types/tech-snapshot";
-import { layoutTree } from "../lib/tree/layoutTree";
+import { layoutTree, CARD_LEFT_PAD } from "../lib/tree/layoutTree";
 import { CATEGORY_ORDER, CATEGORY_AREA } from "../lib/graph/categories";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -51,16 +51,16 @@ describe("layoutTree: category swimlane bands + tier-aligned columns", () => {
     expect(layout.height).toBeGreaterThan(0);
   }, LAYOUT_TEST_TIMEOUT);
 
-  it("aligns x to tier columns (x === tier * COL_W)", async () => {
+  it("aligns x to tier columns (x === CARD_LEFT_PAD + tier * COL_W)", async () => {
     const snapshot = loadRealSnapshot();
 
     const layout = await layoutTree(snapshot, CARD_W, CARD_H);
 
     for (const node of layout.nodes) {
-      expect(node.x).toBe(node.tech!.tier * COL_W);
+      expect(node.x).toBe(CARD_LEFT_PAD + node.tech!.tier * COL_W);
     }
-    // Width spans all six tier columns.
-    expect(layout.width).toBe(6 * COL_W);
+    // Width spans the left gutter + all six tier columns.
+    expect(layout.width).toBe(CARD_LEFT_PAD + 6 * COL_W);
   }, LAYOUT_TEST_TIMEOUT);
 
   it("groups each category into a contiguous, non-overlapping y-band", async () => {

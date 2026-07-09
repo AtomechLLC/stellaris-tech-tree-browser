@@ -55,6 +55,14 @@ const G: Record<string, GateNode> = {
       { op: "not", children: [{ op: "leaf", trigger: "has_origin", value: "origin_mindwardens", static: true }] },
     ],
   },
+  // Cosmogenesis crisis tech: AND(Machine Age DLC, has_ascension_perk ap_cosmogenesis).
+  cosmogenesis: {
+    op: "and",
+    children: [
+      { op: "leaf", trigger: "has_machine_age_dlc", value: true, static: true },
+      { op: "leaf", trigger: "has_ascension_perk", value: "ap_cosmogenesis", static: false },
+    ],
+  },
 };
 
 describe("buildEmpireState", () => {
@@ -102,6 +110,26 @@ describe("classifyGate — 'never' via satisfiability (spike 002)", () => {
   it("no gate → open for everyone", () => {
     expect(classifyGate(null, machine).never).toBe(false);
     expect(classifyGate(null, regular).never).toBe(false);
+  });
+});
+
+describe("classifyGate — has_ascension_perk (parsed from the save)", () => {
+  it("perk-gated tech WITHOUT the perk → reachable-later (not available, not never)", () => {
+    const v = classifyGate(G.cosmogenesis, regular); // regular has no perks
+    expect(v.never).toBe(false); // you could still take ap_cosmogenesis
+    expect(v.passesNow).toBe(false); // …but you haven't → not available now
+  });
+
+  it("perk-gated tech WITH the perk taken → passes now", () => {
+    const ascended = buildEmpireState({
+      authority: "auth_democratic",
+      ethics: [],
+      civics: [],
+      origin: "o",
+      researched: [],
+      perks: ["ap_cosmogenesis"],
+    });
+    expect(classifyGate(G.cosmogenesis, ascended).passesNow).toBe(true);
   });
 });
 

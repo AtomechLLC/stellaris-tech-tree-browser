@@ -40,12 +40,57 @@ import type {
 export const BUCKET_KEY_PREFIX = "bucket:";
 export const bucketKey = (id: BucketId): string => `${BUCKET_KEY_PREFIX}${id}`;
 
+/**
+ * Ambition (a.k.a. Crisis) techs — the "Become the Crisis" Star Eater and the
+ * Cosmogenesis crisis line. Sourced from the game technology files (potential:
+ * `ap_become_the_crisis`, plus the `tech_cosmogenesis_crisis_N` chain); revisit
+ * on a game-version bump. Most have prerequisites, so they're pulled into the
+ * bucket wholesale (see buildExploreGraph), not by root-only bucketing.
+ */
+const AMBITION_TECH_KEYS = new Set<string>([
+  "tech_btc_1",
+  "tech_cosmogenesis_crisis_1",
+  "tech_cosmogenesis_crisis_2",
+  "tech_cosmogenesis_crisis_3",
+  "tech_cosmogenesis_crisis_4",
+  "tech_cosmogenesis_crisis_5",
+]);
+
+/**
+ * Techs discovered by DELVING THE SHROUD — the contents of the game's
+ * `00_shroud_tech.txt` (weight 0, granted by Shroud events). Most require
+ * `tech_psionic_aura` or `tech_titans`, so they're pulled into the bucket
+ * wholesale rather than by root-only bucketing.
+ */
+const SHROUD_TECH_KEYS = new Set<string>([
+  "tech_psionic_aura",
+  "tech_aura_intensification",
+  "tech_psionic_suppression",
+  "tech_aura_resonation",
+  "tech_materiality_engine",
+  "tech_psionic_bombers",
+  "tech_psionic_lightning",
+  "tech_psionic_disruptor",
+  "tech_zro_launcher",
+]);
+
+const isAmbitionTech = (t: Tech): boolean => AMBITION_TECH_KEYS.has(t.key);
+const isShroudTech = (t: Tech): boolean => SHROUD_TECH_KEYS.has(t.key);
+
 interface BucketDef {
   id: BucketId;
   label: string;
   descriptor: string;
   /** Predicate matched against a root (no-prerequisite) tech. */
   match: (tech: Tech) => boolean;
+  /**
+   * OVERLAY bucket: a complete flat index of every matching tech (root or not),
+   * rendered as DUPLICATE cards. Its techs are NOT removed from the tree — they
+   * keep their natural forward-dependency position — so they're reachable both
+   * via this bucket and via the tree. `bucketOf` skips overlay buckets so a
+   * matching root still lands in its normal ([Standard]/[Event]/…) bucket.
+   */
+  overlay?: boolean;
 }
 
 /**
@@ -77,8 +122,9 @@ export const EXPLORE_BUCKETS: BucketDef[] = [
   {
     id: "dangerous",
     label: "Dangerous",
-    descriptor: "Dangerous techs",
+    descriptor: "Dangerous techs (also in the tree)",
     match: (t) => t.flags.isDangerous,
+    overlay: true,
   },
   {
     id: "insight",
@@ -91,6 +137,19 @@ export const EXPLORE_BUCKETS: BucketDef[] = [
     label: "Archaeology",
     descriptor: "Archaeostudies techs",
     match: (t) => (t.category[0] ?? "") === "archaeostudies",
+  },
+  {
+    id: "ambition",
+    label: "Ambition",
+    descriptor: "Crisis techs (also in the tree)",
+    match: (t) => isAmbitionTech(t),
+    overlay: true,
+  },
+  {
+    id: "shroud",
+    label: "Shroud",
+    descriptor: "Techs delved from the Shroud",
+    match: (t) => isShroudTech(t),
   },
   {
     id: "standard",
@@ -106,9 +165,13 @@ export const EXPLORE_BUCKETS: BucketDef[] = [
   },
 ];
 
-/** First-match bucket id for a root (no-prerequisite) tech (never null). */
+/**
+ * First-match TREE bucket id for a root (no-prerequisite) tech (never null).
+ * Overlay buckets are skipped so a matching root still gets a real tree home
+ * (e.g. a dangerous root falls through to [Standard]/[Event]).
+ */
 function bucketOf(tech: Tech): BucketId {
-  for (const def of EXPLORE_BUCKETS) if (def.match(tech)) return def.id;
+  for (const def of EXPLORE_BUCKETS) if (!def.overlay && def.match(tech)) return def.id;
   return "event"; // unreachable — the last def matches everything
 }
 
@@ -130,7 +193,9 @@ function categoryOf(tech: Tech): string {
  */
 function isShown(tech: Tech, active: Set<string> | undefined): boolean {
   if (!active || active.size === 0) return true;
-  return active.has(categoryOf(tech));
+  const cat = categoryOf(tech);
+  if (cat === "") return true; // category-less synthetic nodes (perk parents) always show
+  return active.has(cat);
 }
 
 /**
@@ -144,6 +209,9 @@ interface ExploreGraph {
   childrenByKey: Map<string, Tech[]>;
   /** Every root (no-prereq) tech grouped by bucket id, sorted (tier, cat, name). */
   bucketRoots: Map<BucketId, Tech[]>;
+  /** Overlay buckets → ALL matching techs (root or not), sorted. Rendered as a
+   *  flat duplicate index; these techs also appear in the tree. */
+  overlayMembers: Map<BucketId, Tech[]>;
 }
 
 const graphCache = new WeakMap<TechSnapshot, ExploreGraph>();
@@ -165,13 +233,28 @@ function buildExploreGraph(snapshot: TechSnapshot): ExploreGraph {
   const childrenByKey = new Map<string, Tech[]>();
   const bucketRoots = new Map<BucketId, Tech[]>();
   for (const def of EXPLORE_BUCKETS) bucketRoots.set(def.id, []);
+  const overlayMembers = new Map<BucketId, Tech[]>();
+  for (const def of EXPLORE_BUCKETS) if (def.overlay) overlayMembers.set(def.id, []);
 
   for (const tech of techs) {
+    // Overlay indexes capture EVERY matching tech (root or not) up front, so the
+    // [Dangerous]/[Ambition] cards stay complete even for techs that are also
+    // pulled (repeatable/shroud) or nested deep in the tree.
+    if (tech.flags.isDangerous) overlayMembers.get("dangerous")!.push(tech);
+    if (isAmbitionTech(tech)) overlayMembers.get("ambition")!.push(tech);
+
     // Repeatable upgrades group under [Repeatable] regardless of prerequisites,
     // and are pulled ENTIRELY out of the browse tree (they're terminal tier-5
     // leaves — grouping them beats scattering them as deep children).
     if (tech.flags.isRepeatable) {
       bucketRoots.get("repeatable")!.push(tech);
+      continue;
+    }
+    // Shroud-delve techs group ENTIRELY into their bucket regardless of
+    // prerequisites (most have some) — like repeatables. (Ambition is an OVERLAY,
+    // so its techs stay in the tree; they're indexed above, not pulled here.)
+    if (isShroudTech(tech)) {
+      bucketRoots.get("shroud")!.push(tech);
       continue;
     }
     // EVERY starting tech goes in [Empire Starting Techs] — including ones with
@@ -197,6 +280,10 @@ function buildExploreGraph(snapshot: TechSnapshot): ExploreGraph {
       // into one, so expanding the bucket shows them as flat leaves (and nothing
       // is revealed "under" a repeatable in the browse tree).
       if (prereq.flags.isRepeatable) continue;
+      // Same for the pulled-out Shroud set: keep them flat leaves inside their
+      // bucket (never reveal dependents under one). Ambition is an overlay, so it
+      // is NOT skipped here — its techs keep their normal tree children.
+      if (isShroudTech(prereq)) continue;
       const bucket = childrenByKey.get(prereqKey);
       if (bucket) bucket.push(tech);
       else childrenByKey.set(prereqKey, [tech]);
@@ -204,11 +291,12 @@ function buildExploreGraph(snapshot: TechSnapshot): ExploreGraph {
   }
 
   for (const arr of bucketRoots.values()) arr.sort(compareTechs);
+  for (const arr of overlayMembers.values()) arr.sort(compareTechs);
   // Sort each child bucket too so a node's revealed unlocks appear in the same
   // stable (tier, category, name) order every time.
   for (const bucket of childrenByKey.values()) bucket.sort(compareTechs);
 
-  const graph: ExploreGraph = { childrenByKey, bucketRoots };
+  const graph: ExploreGraph = { childrenByKey, bucketRoots, overlayMembers };
   graphCache.set(snapshot, graph);
   return graph;
 }
@@ -232,7 +320,7 @@ export function layoutExplore(
   const COL_W = cardW + COL_EXTRA;
   const ROW_H = cardH + ROW_EXTRA;
 
-  const { childrenByKey, bucketRoots } = buildExploreGraph(snapshot);
+  const { childrenByKey, bucketRoots, overlayMembers } = buildExploreGraph(snapshot);
 
   const nodes: LayoutNode[] = [];
   const edges: LayoutEdge[] = [];
@@ -285,9 +373,8 @@ export function layoutExplore(
   // BucketCard. When expanded, its grouped roots are revealed one column to the
   // right (depth 1) and walk normally into their own unlocks.
   for (const def of EXPLORE_BUCKETS) {
-    const assigned = (bucketRoots.get(def.id) ?? []).filter((t) =>
-      isShown(t, active),
-    );
+    const source = def.overlay ? overlayMembers.get(def.id) : bucketRoots.get(def.id);
+    const assigned = (source ?? []).filter((t) => isShown(t, active));
     const key = bucketKey(def.id);
     const expandable = assigned.length > 0;
     const expanded = expandedKeys.has(key);
@@ -310,6 +397,25 @@ export function layoutExplore(
     rowIndex += 1;
 
     if (!expandable || !expanded) continue;
+    if (def.overlay) {
+      // Overlay bucket → a flat DUPLICATE index. Each tech also lives in the tree
+      // (its natural position), so give the duplicate a bucket-scoped node key and
+      // do NOT touch `visited` — that keeps the tree copy intact.
+      for (const tech of assigned) {
+        edges.push({ from: key, to: `${key}#${tech.key}`, sections: [] });
+        nodes.push({
+          key: `${key}#${tech.key}`,
+          x: COL_W,
+          y: rowIndex * ROW_H,
+          w: cardW,
+          h: cardH,
+          tech,
+          expandable: false,
+        });
+        rowIndex += 1;
+      }
+      continue;
+    }
     for (const root of assigned) {
       if (visited.has(root.key)) continue;
       edges.push({ from: key, to: root.key, sections: [] });

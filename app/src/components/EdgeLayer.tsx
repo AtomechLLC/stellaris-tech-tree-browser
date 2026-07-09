@@ -94,17 +94,19 @@ export const EdgeLayer = memo(function EdgeLayer({
   // Memoized on [edges, nodes] only, so a selection change never rebuilds it.
   const d = useMemo(() => buildPath(edges, nodeByKey), [edges, nodeByKey]);
 
-  // Highlight path: only the selected tech's incident edges (its prerequisites,
-  // where `to === selectedKey`, AND its children/leadsTo, where `from ===
-  // selectedKey`). Drawn on top of the base path as a solid thick gold line.
-  // Rebuilt only when the selection (or layout) changes — pan/zoom don't.
-  const highlightD = useMemo(() => {
-    if (!selectedKey) return "";
-    const incident = edges.filter(
-      (e) => e.from === selectedKey || e.to === selectedKey,
-    );
-    if (incident.length === 0) return "";
-    return buildPath(incident, nodeByKey);
+  // Highlight paths for the selected tech's incident edges, split by direction so
+  // only the INCOMING ones (a dependency → the selected tech, `to === selectedKey`)
+  // carry an arrowhead pointing at the selected tech. Outgoing edges (selected →
+  // its dependents) are highlighted the same gold but without a head. Both drawn
+  // on top of the dim base path. Rebuilt only when selection/layout changes.
+  const { incomingD, outgoingD } = useMemo(() => {
+    if (!selectedKey) return { incomingD: "", outgoingD: "" };
+    const incoming = edges.filter((e) => e.to === selectedKey);
+    const outgoing = edges.filter((e) => e.from === selectedKey);
+    return {
+      incomingD: incoming.length ? buildPath(incoming, nodeByKey) : "",
+      outgoingD: outgoing.length ? buildPath(outgoing, nodeByKey) : "",
+    };
   }, [edges, nodeByKey, selectedKey]);
 
   return (
@@ -115,8 +117,51 @@ export const EdgeLayer = memo(function EdgeLayer({
       viewBox={`0 0 ${width} ${height}`}
       role="presentation"
     >
-      <path className="edge-layer__path" d={d} />
-      {highlightD && <path className="edge-layer__path--highlight" d={highlightD} />}
+      <defs>
+        {/* Arrowhead for the selected tech's incoming dependency edges. Sized in
+            stroke-width units (default markerUnits) so it scales with the line. */}
+        <marker
+          id="edge-arrow"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="4"
+          markerHeight="4"
+          orient="auto"
+        >
+          <path className="edge-layer__arrowhead" d="M0 0 L10 5 L0 10 Z" />
+        </marker>
+        {/* Dimmer arrowhead for every (unselected) dependency line — a small
+            triangle right where the line meets the target card. */}
+        <marker
+          id="edge-arrow-base"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="6"
+          markerHeight="6"
+          orient="auto"
+        >
+          <path className="edge-layer__arrowhead--base" d="M0 0 L10 5 L0 10 Z" />
+        </marker>
+      </defs>
+      <path className="edge-layer__path" d={d} markerEnd="url(#edge-arrow-base)" />
+      {/* Both directions get an arrowhead at the TARGET end, so every selected
+          line shows dependency flow: prereq → selected, and selected → dependent. */}
+      {outgoingD && (
+        <path
+          className="edge-layer__path--highlight"
+          d={outgoingD}
+          markerEnd="url(#edge-arrow)"
+        />
+      )}
+      {incomingD && (
+        <path
+          className="edge-layer__path--highlight"
+          d={incomingD}
+          markerEnd="url(#edge-arrow)"
+        />
+      )}
     </svg>
   );
 });
