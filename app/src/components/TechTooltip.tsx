@@ -153,10 +153,23 @@ export function TechTooltip({
       {leadsTo.length > 0 && (
         <section className="tech-tooltip__sec">
           <div className="tech-tooltip__sec-title">Leads To</div>
-          <div className="tech-tooltip__leads">
-            {leadsTo.slice(0, LEADS_TO_MAX).map((r) => r.name).join(", ")}
-            {leadsTo.length > LEADS_TO_MAX ? ` +${leadsTo.length - LEADS_TO_MAX} more` : ""}
-          </div>
+          <ul className="tech-tooltip__prereqs">
+            {leadsTo.slice(0, LEADS_TO_MAX).map((r) => (
+              <li className="tech-tooltip__prereq" data-area={r.area} key={r.key}>
+                {r.icon ? (
+                  <img src={r.icon} alt="" loading="lazy" />
+                ) : (
+                  <span className="tech-tooltip__prereq-dot" />
+                )}
+                <span className="tech-tooltip__prereq-name">{r.name}</span>
+              </li>
+            ))}
+            {leadsTo.length > LEADS_TO_MAX && (
+              <li className="tech-tooltip__prereq tech-tooltip__prereq--more">
+                +{leadsTo.length - LEADS_TO_MAX} more
+              </li>
+            )}
+          </ul>
         </section>
       )}
     </div>

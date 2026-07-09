@@ -1110,10 +1110,11 @@
   opacity: 0.5;
 }
 
-.tech-tooltip__leads {
-  font-size: 12px;
-  line-height: 1.4;
-  opacity: 0.85;
+/* "Leads To" reuses the prereq icon+name list; the trailing "+N more" row has no
+   icon, so indent it to line up with the named rows (26px icon + 8px gap). */
+.tech-tooltip__prereq--more {
+  padding-left: 34px;
+  opacity: 0.7;
 }
 
 /* ── Hidden-ancestry drill-down panel (quick 260708-4io) ──────────────────
