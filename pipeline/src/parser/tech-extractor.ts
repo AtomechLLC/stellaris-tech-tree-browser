@@ -262,7 +262,10 @@ export function extractTech(
   let costRaw: unknown;
   if (isPlainObject(rawCost)) {
     costRaw = rawCost;
-    const factor = (rawCost as Record<string, unknown>).factor;
+    // Block form `cost = { factor = @tierNcostM  inline_script = … }` (e.g. the
+    // Cosmic Storms techs). The base cost is `factor`, which is usually an
+    // @scripted_variable — resolve it (mirrors the weight block below), else 0.
+    const factor = resolveVarsDeep((rawCost as Record<string, unknown>).factor, varMap);
     cost = typeof factor === "number" ? factor : 0;
   } else if (rawCost !== undefined) {
     cost = resolveValue(rawCost, varMap);

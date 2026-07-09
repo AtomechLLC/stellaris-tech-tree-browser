@@ -33,7 +33,8 @@ import { writeFileSync, mkdirSync, copyFileSync, existsSync, readdirSync } from 
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { resolveConfig } from "./config.js";
-import { detectGameVersion } from "./version/detect.js";
+import { detectGameVersion, detectVersionLabel } from "./version/detect.js";
+import { extractTechSources } from "./parser/event-grants.js";
 import { loadScriptedVariables } from "./parser/scripted-variables.js";
 import { extractAllTechsWithStats, listTechFiles } from "./parser/tech-extractor.js";
 import { loadDlcRegistry } from "./dlc/dlc-registry.js";
@@ -59,6 +60,24 @@ const PLACEHOLDER_ICON_PATH = join(process.cwd(), "assets", PLACEHOLDER_ICON_NAM
 const SAFE_NAME = /^[a-zA-Z0-9_\-@.]+$/;
 
 /**
+ * Whether a tech is "event/archaeology-obtained" enough to warrant a synthetic
+ * source parent: an archaeostudies tech, or one that can't be drawn normally
+ * (no weight / no prerequisites). Excludes starting and repeatable techs, and
+ * tier-0 basics, so a source card never decorates an ordinary research node.
+ */
+function isSourceEligible(t: {
+  category: string[];
+  weight: number;
+  prerequisites: string[];
+  tier: number;
+  flags: { isStarting: boolean; isRepeatable: boolean };
+}): boolean {
+  if (t.flags.isStarting || t.flags.isRepeatable) return false;
+  if (t.category.includes("archaeostudies")) return true;
+  return t.tier >= 1 && (t.weight === 0 || t.prerequisites.length === 0);
+}
+
+/**
  * Runs the full pipeline and returns the path to the written tech.json
  * snapshot.
  */
@@ -69,9 +88,15 @@ export async function runAssemble(): Promise<string> {
   // argv interference; the entrypoint must NOT.)
   const { gameRoot } = resolveConfig();
   const gameVersion = detectGameVersion(gameRoot);
+  const versionLabel = detectVersionLabel(gameRoot);
   const varMap = await loadScriptedVariables(gameRoot);
   const dlcRegistry = await loadDlcRegistry(gameRoot);
   const locMap = scanAllLocalisation(join(gameRoot, LOCALISATION_SUBDIR));
+
+  // Event / dig-site tech grants → synthetic "source" parent cards (reliable
+  // subset; see parser/event-grants.ts). Attached below to eligible techs only.
+  const { sources: techSources, skippedBundles, parseFailures: eventParseFailures } =
+    await extractTechSources(gameRoot, locMap);
 
   const sourceFiles = listTechFiles(gameRoot);
   // D-17: totalTechKeysFound is measured BEFORE the extraction filter (inside
@@ -190,6 +215,9 @@ export async function runAssemble(): Promise<string> {
       description,
       icon: iconRef,
       gate,
+      // Attach the event/dig-site source only to eligible (event/archaeology)
+      // techs — never decorate a normally-researched node.
+      source: isSourceEligible(techFields) ? techSources.get(key) ?? null : null,
     };
   }
 
@@ -254,6 +282,24 @@ export async function runAssemble(): Promise<string> {
     }
   }
 
+  // Event/archaeology "source" icons — synthetic PARENT nodes of techs that a
+  // specific event or dig site grants (`_source_site.webp` / `_source_event.webp`).
+  const sourceIcons: Array<[file: string, out: string]> = [
+    ["situation_log_archaeology", "_source_site"],
+    ["situation_log_main_quest", "_source_event"],
+  ];
+  for (const [file, out] of sourceIcons) {
+    try {
+      await convertDdsToWebp(
+        join(gameRoot, "gfx", "interface", "icons", "situation_log", `${file}.dds`),
+        join(iconsOutDir, `${out}.tmp.png`),
+        join(iconsOutDir, `${out}.webp`),
+      );
+    } catch (err) {
+      console.warn(`[assemble] source icon ${out} conversion failed (${err}) — source node will be iconless`);
+    }
+  }
+
   // D-16: strict-fail on any tech with an unresolved name.
   if (missingNames.length > 0) {
     throw new Error(
@@ -277,6 +323,8 @@ export async function runAssemble(): Promise<string> {
   const snapshot: TechSnapshot = {
     meta: {
       gameVersion,
+      versionLabel: versionLabel.label,
+      checksum: versionLabel.checksum ?? undefined,
       generatedAt: new Date().toISOString(),
       techCount: sortedKeys.length,
       areaCounts,
@@ -294,6 +342,15 @@ export async function runAssemble(): Promise<string> {
 
   console.log(`[assemble] wrote ${outPath}`);
   console.log(`[assemble] techCount=${validated.meta.techCount}`);
+
+  // Event/dig-site source coverage (synthetic source parents).
+  const withSource = Object.values(validated.techs).filter((t) => t.source);
+  const bySite = withSource.filter((t) => t.source?.type === "site").length;
+  console.log(
+    `[assemble] tech sources: ${withSource.length} techs attributed ` +
+      `(${bySite} site, ${withSource.length - bySite} event); ` +
+      `${skippedBundles} bundle-events skipped; ${eventParseFailures} event files unparsed`,
+  );
 
   // D-17: validation report — every metric below is MEASURED from the actual
   // artifact/accumulators, never asserted as a constant.

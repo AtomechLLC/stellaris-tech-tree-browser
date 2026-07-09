@@ -99,11 +99,30 @@ export const TechSchema = z.object({
    * "never reachable" classification. ~376 of 678 techs are gated.
    */
   gate: GateNodeSchema.nullable().default(null),
+  /**
+   * Event / dig-site that grants this tech (when it's obtained from a specific
+   * event rather than researched), or null. Drives the synthetic "source"
+   * PARENT card in Explore. Populated by parser/event-grants.ts.
+   */
+  source: z
+    .object({
+      type: z.enum(["event", "site"]),
+      id: z.string(),
+      name: z.string(),
+      mechanism: z.enum(["give", "option", "progress"]),
+    })
+    .nullable()
+    .default(null),
 });
 
 export const TechSnapshotSchema = z.object({
   meta: z.object({
     gameVersion: z.string(),
+    /** Full launcher version string, e.g. "Cygnus v4.5.0 (bfcc)". Optional for
+     *  backward-compat with snapshots generated before it was captured. */
+    versionLabel: z.string().optional(),
+    /** Game data checksum (the parenthesized token above), e.g. "bfcc". */
+    checksum: z.string().optional(),
     generatedAt: z.string(),
     techCount: z.number(),
     areaCounts: z.record(z.string(), z.number()),
