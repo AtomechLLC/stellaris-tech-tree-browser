@@ -34,6 +34,13 @@ Design decisions locked in from the user during spiking. Non-negotiable for the 
   individual-machine cases that naive evaluation gets wrong.
 - **Real-build pipeline change is small:** add a `gate` field to `TechSchema` and call
   `normalizePotential(potentialRaw)` in `assemble.ts` — `potentialRaw` is already extracted.
+- **Delivery target: a "Saved Empire" view in the app** (`app/`). A new tab (extending the existing
+  `viewMode: "map" | "explore"` toggle) where the user drops a `.sav`, picks an empire, and every
+  tech card is recolored by bucket. Coloring is a per-card `data-bucket` attribute (mirroring the
+  existing `data-area`/`data-selected` → CSS-token pattern in `TechCard`), driven by a
+  `bucketMap: key→bucket` the classifier produces. Coloring is orthogonal to layout, so it overlays
+  both Map and Explore. The browser save-pipeline is spike 004's bundle (fflate + jomini) folded into
+  the app.
 
 ## Spikes
 
@@ -43,3 +50,4 @@ Design decisions locked in from the user during spiking. Non-negotiable for the 
 | 002 | potential-gates | standard | Given the game's tech files, when the pipeline is extended, then each tech's `potential` block is surfaced as a machine-evaluable gate summary in `tech.json`; validated on hive/machine/gestalt cases | ✅ VALIDATED | pipeline, gating, potential |
 | 003 | classify-demo | standard | Given empire identity (001) + gate-annotated `tech.json` (002), when classified, then every tech lands in researched / available-now / reachable-later / never, shown in a pick-an-empire demo | ✅ VALIDATED | classification, ui, demo |
 | 004 | browser-port | standard | Given the `.sav` in a browser file input, when unzipped + scanned client-side, then it finishes fast + low-memory without a server (targeted scan vs. full WASM parse) | ✅ VALIDATED | browser, performance, unzip |
+| 005 | empire-coloring | standard | Given the browser save-pipeline + classifier, when wired into the real app as a "Saved Empire" tab, then dropping a `.sav` recolors every tech card by bucket on the real 678-node tree | ✅ VALIDATED | app, ui, integration, coloring |
