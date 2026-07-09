@@ -1277,22 +1277,39 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     if (!layoutReady) return null;
     // Cull: render only cards intersecting the committed viewport-plus-margin rect
     // once the layout is large. Small layouts (Explore) render whole — cheap, and
-    // avoids any margin pop-in. Bands + the single edge <path> are never culled.
+    // avoids any margin pop-in. Cull CARDS, EDGES and BANDS all to the same rect
+    // so the composited canvas layer only has to paint content near the viewport
+    // (otherwise the full-extent edge <path> + band backgrounds force the browser
+    // to rasterize the whole — very tall — map every pan).
     const cr = cullRectRef.current;
-    const visibleNodes =
-      cr && layoutReady.nodes.length > CULL_MIN_NODES
-        ? layoutReady.nodes.filter(
-            (n) => n.x < cr.x1 && n.x + n.w > cr.x0 && n.y < cr.y1 && n.y + n.h > cr.y0,
-          )
-        : layoutReady.nodes;
+    const cullActive = !!cr && layoutReady.nodes.length > CULL_MIN_NODES;
+    let visibleNodes = layoutReady.nodes;
+    let visibleEdges = layoutReady.edges;
+    let visibleBands = layoutReady.bands;
+    if (cr && cullActive) {
+      const inRect = (n: LayoutNode) =>
+        n.x < cr.x1 && n.x + n.w > cr.x0 && n.y < cr.y1 && n.y + n.h > cr.y0;
+      visibleNodes = layoutReady.nodes.filter(inRect);
+      // An edge draws if either endpoint is in the rect (the margin covers edges
+      // from just-off-screen cards into visible ones).
+      const byKey = new Map(layoutReady.nodes.map((n) => [n.key, n]));
+      visibleEdges = layoutReady.edges.filter((e) => {
+        const a = byKey.get(e.from);
+        const b = byKey.get(e.to);
+        return (!!a && inRect(a)) || (!!b && inRect(b));
+      });
+      visibleBands = layoutReady.bands.filter(
+        (band) => band.top < cr.y1 && band.top + band.height > cr.y0,
+      );
+    }
     return {
       // Bands are MAP-ONLY — Explore renders no band/watermark backgrounds.
       bands: explore ? null : (
-        <BandLayer bands={layoutReady.bands} width={layoutReady.width} />
+        <BandLayer bands={visibleBands} width={layoutReady.width} />
       ),
       edge: (
         <EdgeLayer
-          edges={layoutReady.edges}
+          edges={visibleEdges}
           nodes={layoutReady.nodes}
           width={layoutReady.width}
           height={layoutReady.height}
