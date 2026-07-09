@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "app", "run", "preview"],
       "port": 4174
+    },
+    {
+      "name": "spike003",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "-l", "5055", ".planning/spikes/003-classify-demo"],
+      "port": 5055
     }
   ]
 }
