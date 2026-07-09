@@ -1263,15 +1263,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-bg);
+  /* Dark-themed to match the tech-tree viewport (not the light app-shell). */
+  background: var(--tree-bg);
   z-index: 20;
 }
 
 .overlay__card {
-  background: var(--color-surface);
+  background: var(--tree-panel);
   padding: var(--space-lg);
+  border: 1px solid var(--tree-border);
   border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
   max-width: 420px;
   text-align: center;
 }
@@ -1287,7 +1289,7 @@
   font-size: var(--font-size-heading);
   font-weight: var(--font-weight-heading);
   line-height: var(--line-height-heading);
-  color: var(--color-text);
+  color: var(--tree-text);
 }
 
 .overlay__heading--danger {
@@ -1300,7 +1302,7 @@
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-body);
   line-height: var(--line-height-body);
-  color: var(--color-text);
+  color: color-mix(in srgb, var(--tree-text) 78%, transparent);
 }
 
 .overlay__retry-button {
@@ -1320,8 +1322,8 @@
   width: 32px;
   height: 32px;
   margin: 0 auto var(--space-md);
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-accent);
+  border: 3px solid var(--tree-border);
+  border-top-color: var(--color-select);
   border-radius: 50%;
   animation: overlay-spin 0.8s linear infinite;
 }
