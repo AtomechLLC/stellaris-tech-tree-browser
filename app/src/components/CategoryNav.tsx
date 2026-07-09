@@ -27,6 +27,7 @@ type Area = Tech["area"];
 const SHORTCUTS: { key: string; action: string }[] = [
   { key: "F", action: "Find" },
   { key: "C", action: "Open child techs" },
+  { key: "Shift+C", action: "Collapse child techs" },
   { key: "Backspace", action: "Back (previous view)" },
   { key: "Esc", action: "Deselect / close" },
   { key: "Click", action: "Select / expand" },

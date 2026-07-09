@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { BandGeometry } from "../lib/tree/layoutTree";
+import { BAND_LEFT_PAD, type BandGeometry } from "../lib/tree/layoutTree";
 
 /**
  * Faint category-swimlane backgrounds, rendered as the FIRST child of
@@ -31,10 +31,10 @@ const HEX_BAND_WATERMARK =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34.64' height='60' viewBox='0 0 34.64 60'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-opacity='0.035' stroke-width='1.5' d='M17.32 0L34.64 10V30L17.32 40L0 30V10Z M17.32 40V60'/%3E%3C/svg%3E\")";
 
 /**
- * A tiling SVG data-URI: the section name in a whisper of white (6.25% opacity —
- * halved again from 12.5%), rotated 30°, used as a repeating watermark behind the
- * band. Inline data-URI (CSP-safe, no external request); the text is plain (no
- * user HTML). Tiled via `background-repeat: repeat` on the band.
+ * A tiling SVG data-URI: the section name in a barely-there whisper of white
+ * (~3.1% opacity — halved again from 6.25%), rotated 30°, used as a repeating
+ * watermark behind the band. Inline data-URI (CSP-safe, no external request);
+ * the text is plain (no user HTML). Tiled via `background-repeat: repeat`.
  */
 function watermarkBg(label: string): string {
   const text = label.toUpperCase();
@@ -58,7 +58,7 @@ function watermarkBg(label: string): string {
     `transform='rotate(-30 ${cx} ${cy})' ` +
     `font-family='-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif' ` +
     `font-size='${F}' font-weight='700' letter-spacing='${L}' ` +
-    `fill='rgba(255,255,255,0.0625)'>${text}</text></svg>`;
+    `fill='rgba(255,255,255,0.03125)'>${text}</text></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
@@ -75,8 +75,10 @@ export const BandLayer = memo(function BandLayer({ bands, width }: BandLayerProp
           data-alt={index % 2}
           style={{
             top: `${band.top}px`,
+            left: `${BAND_LEFT_PAD}px`,
             height: `${band.height}px`,
-            width: `${width}px`,
+            // Inset from the left gutter; the cards sit a little further in again.
+            width: `${Math.max(0, width - BAND_LEFT_PAD)}px`,
             // Text watermark on top, faint honeycomb texture behind it.
             backgroundImage: `${watermarkBg(band.label)}, ${HEX_BAND_WATERMARK}`,
           }}

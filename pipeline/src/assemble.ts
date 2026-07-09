@@ -240,6 +240,20 @@ export async function runAssemble(): Promise<string> {
     console.warn(`[assemble] ethic_xenophile icon conversion failed (${err}) — header icon will be absent`);
   }
 
+  // Ascension-perk hexagon icons — rendered as synthetic PARENT nodes of the
+  // perk-gated (Ambition / Crisis) techs in Explore (`_perk_<id>.webp`).
+  for (const perk of ["ap_cosmogenesis", "ap_become_the_crisis"]) {
+    try {
+      await convertDdsToWebp(
+        join(gameRoot, "gfx", "interface", "icons", "ascension_perks", `${perk}.dds`),
+        join(iconsOutDir, `_perk_${perk}.tmp.png`),
+        join(iconsOutDir, `_perk_${perk}.webp`),
+      );
+    } catch (err) {
+      console.warn(`[assemble] perk icon ${perk} conversion failed (${err}) — perk node will be iconless`);
+    }
+  }
+
   // D-16: strict-fail on any tech with an unresolved name.
   if (missingNames.length > 0) {
     throw new Error(

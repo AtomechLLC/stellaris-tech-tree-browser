@@ -43,6 +43,9 @@
      (dangerous techs blend to --color-danger instead). */
   --rare: #a855f7;
 
+  /* Crisis / Ambition accent (menacing crimson) — the [Ambition] explore bucket. */
+  --crisis: #ff4d5e;
+
   /* Selection highlight (quick 260708-4io): the gold "targeted" color for a
      click-selected card's outline/glow and its highlighted prereq/child edges.
      A single token so the card outline, edge stroke, and ancestry-panel

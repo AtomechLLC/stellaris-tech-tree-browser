@@ -10,7 +10,8 @@ import {
 } from "react";
 import type { TechSnapshot, Tech } from "../types/tech-snapshot";
 import { layoutTree, type TreeLayout, type LayoutNode } from "../lib/tree/layoutTree";
-import { layoutExplore, layoutFocus } from "../lib/tree/exploreLayout";
+import { layoutExplore, layoutFocus, BUCKET_KEY_PREFIX } from "../lib/tree/exploreLayout";
+import { augmentSnapshotWithPerks, isPerkKey, PERK_PREFIX } from "../lib/tree/perks";
 import { CATEGORY_ORDER, CATEGORY_AREA } from "../lib/graph/categories";
 import { TechCard, CARD_W, CARD_H } from "./TechCard";
 import { BucketCard } from "./BucketCard";
@@ -48,6 +49,8 @@ const LOD_THRESHOLD = 0.55;
 // Pointer travel (px, from the pointerdown origin) beyond which a gesture is a
 // drag, not a click — so a pan that ends on a card doesn't select it.
 const DRAG_THRESHOLD = 4;
+// How many prior views the Back (Backspace) stack retains.
+const HISTORY_DEPTH = 40;
 
 type Area = Tech["area"];
 
@@ -99,6 +102,16 @@ const catsInArea = (area: Area): string[] =>
 // tech and category ids never contain a dot).
 const URL_SEP = ".";
 
+/** A shareable framing rect in canvas coords: the visible region's top-left
+ *  (x0,y0) and bottom-right (x1,y1). Resolution-independent — the recipient's
+ *  viewport fits this rect, reproducing the same focal point + ~zoom. */
+interface Framing {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
 interface UrlNavState {
   viewMode: ViewMode;
   active: Set<string>;
@@ -106,6 +119,7 @@ interface UrlNavState {
   focusKey: string | null;
   focusExpanded: Set<string>;
   expandedKeys: Set<string>;
+  framing?: Framing | null;
 }
 
 /** Parse the current URL into partial nav state, validating ids against the
@@ -116,6 +130,20 @@ function parseUrlNav(snapshot: TechSnapshot): Partial<UrlNavState> {
   const validCats = new Set<string>(CATEGORY_ORDER);
   const techSet = (v: string | null) =>
     v == null ? undefined : new Set(v.split(URL_SEP).filter((k) => k && isTech(k)));
+  // The Explore expand set (`x`) also contains synthetic bucket keys
+  // ("bucket:dangerous", …), which are NOT real techs — keep those too, else a
+  // shared Explore link loses every expanded bucket on paste.
+  const expandSet = (v: string | null) =>
+    v == null
+      ? undefined
+      : new Set(
+          v
+            .split(URL_SEP)
+            .filter(
+              (k) =>
+                k && (isTech(k) || k.startsWith(BUCKET_KEY_PREFIX) || k.startsWith(PERK_PREFIX)),
+            ),
+        );
 
   const out: Partial<UrlNavState> = {};
   if (p.get("v") === "e") out.viewMode = "explore";
@@ -127,8 +155,17 @@ function parseUrlNav(snapshot: TechSnapshot): Partial<UrlNavState> {
   if (c != null) out.active = new Set(c.split(URL_SEP).filter((x) => validCats.has(x)));
   const fx = techSet(p.get("fx"));
   if (fx) out.focusExpanded = fx;
-  const x = techSet(p.get("x"));
+  const x = expandSet(p.get("x"));
   if (x) out.expandedKeys = x;
+  // Framing rect `fr=x0.y0.x1.y1` (canvas coords). Only accept a well-formed,
+  // positively-sized rect of finite numbers.
+  const fr = p.get("fr");
+  if (fr) {
+    const n = fr.split(URL_SEP).map(Number);
+    if (n.length === 4 && n.every(Number.isFinite) && n[2] > n[0] && n[3] > n[1]) {
+      out.framing = { x0: n[0], y0: n[1], x1: n[2], y1: n[3] };
+    }
+  }
   // A focused tech is always part of its own forward-expansion set.
   if (out.focusKey) (out.focusExpanded ??= new Set()).add(out.focusKey);
   return out;
@@ -148,6 +185,10 @@ function serializeUrlNav(s: UrlNavState): string {
     p.set("s", s.selectedKey);
   }
   if (s.active.size !== CATEGORY_ORDER.length) p.set("c", [...s.active].join(URL_SEP));
+  if (s.framing) {
+    const { x0, y0, x1, y1 } = s.framing;
+    p.set("fr", [x0, y0, x1, y1].map(Math.round).join(URL_SEP));
+  }
   const qs = p.toString();
   return qs ? `?${qs}` : "";
 }
@@ -206,12 +247,23 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     setBucketMap(buckets);
   }, []);
 
-  // Mirror the nav state into the URL (replaceState → shareable link, no history
-  // spam). Runs on every nav change; parseUrlNav above restores it on load.
+  // Mobile/touch detection: a coarse pointer OR a narrow viewport. Tracked as
+  // state (updated on media-query change) so orientation/resize flips it live.
+  // Drives the "auto-expand a focused tech's subtree" default further below.
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
-    const qs = serializeUrlNav({ viewMode, active, selectedKey, focusKey, focusExpanded, expandedKeys });
-    window.history.replaceState(null, "", window.location.pathname + qs + window.location.hash);
-  }, [viewMode, active, selectedKey, focusKey, focusExpanded, expandedKeys]);
+    const mq = window.matchMedia("(pointer: coarse), (max-width: 767px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  // Left sidebar (filters / empire panel) visibility. Open on desktop, collapsed
+  // by default on mobile where it would otherwise eat the whole screen.
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => !window.matchMedia("(pointer: coarse), (max-width: 767px)").matches,
+  );
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -222,15 +274,34 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // True once a pointer drag has moved past the click threshold — read by the
   // card's onSelect so a pan that ends over a card doesn't count as a click.
   const movedRef = useRef(false);
+  // Active pointers (touch/mouse) by id, for multi-touch pinch-zoom. Two down →
+  // pinch; `pinchRef` holds the last finger distance + midpoint to diff against.
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchRef = useRef<{ dist: number; midX: number; midY: number } | null>(null);
+  // URL sync: `syncUrlRef` always points at the latest serializer (which closes
+  // over current nav state); `urlTimerRef` debounces framing writes on pan/zoom.
+  const syncUrlRef = useRef<() => void>(() => {});
+  const urlTimerRef = useRef<number | undefined>(undefined);
+  // One-shot guard: apply a shared framing rect from the URL when the canvas
+  // first mounts. `fitFocusRef` tracks which focus the auto-fit last framed (so a
+  // single-click expand doesn't re-fit) — declared here so setCanvas can pre-seed
+  // it to skip the focus auto-fit when a shared frame wins on load.
+  const framingAppliedRef = useRef(false);
+  const fitFocusRef = useRef<string | null>(null);
 
   const iconBase = `/data/${snapshot.meta.gameVersion}/icons`;
 
+  // Explore-only snapshot: perk-gated techs gain their ascension-perk hexagon as a
+  // synthetic PARENT node (Ambition / Crisis lines). The Map keeps the real one.
+  const exploreSnapshot = useMemo(() => augmentSnapshotWithPerks(snapshot), [snapshot]);
+
   // key → Tech, for resolving prerequisite/leadsTo names + icons in the tooltip.
+  // Built from the perk-augmented snapshot so perk nodes resolve too.
   const techByKey = useMemo(() => {
     const m = new Map<string, Tech>();
-    for (const t of Object.values(snapshot.techs)) m.set(t.key, t);
+    for (const t of Object.values(exploreSnapshot.techs)) m.set(t.key, t);
     return m;
-  }, [snapshot]);
+  }, [exploreSnapshot]);
 
   // Flattened, searchable list of ALL techs (incl. filter-hidden ones) for the
   // F-Find overlay — so you can find + reveal a tech even if its category is
@@ -258,17 +329,45 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       // threshold flips the whole tree between full cards and cheap icon tiles.
       c.classList.toggle("lod-simple", t.scale < LOD_THRESHOLD);
     }
+    // Debounced: mirror the new framing into the URL so a shared link reproduces
+    // the current zoom + focal point. Pan/zoom is imperative (no re-render), so
+    // this is the only hook that captures it.
+    clearTimeout(urlTimerRef.current);
+    urlTimerRef.current = window.setTimeout(() => syncUrlRef.current(), 300);
   }, []);
 
   // Stable ref callback: bind the canvas node and apply the current transform on
   // (re)attach. Stable identity so React only calls it on real mount/unmount.
   const setCanvas = useCallback((el: HTMLDivElement | null) => {
     canvasRef.current = el;
-    if (el) {
-      const t = transformRef.current;
-      el.style.transform = cssTransform(t);
-      el.classList.toggle("lod-simple", t.scale < LOD_THRESHOLD);
+    if (!el) return;
+    // Honor a shared framing rect from the URL exactly once, synchronously on the
+    // first mount — computed here (not in an effect) so it wins the race with the
+    // canvas's own transform apply and any auto-fit.
+    const fr = urlInitRef.current?.framing;
+    if (fr && !framingAppliedRef.current) {
+      framingAppliedRef.current = true;
+      fitFocusRef.current = urlInitRef.current?.focusKey ?? null; // skip focus auto-fit
+      // Read the viewport from the canvas's PARENT — during commit, child refs
+      // (this one) attach before `viewportRef` is assigned, so it may still be null.
+      const rect = (el.parentElement ?? viewportRef.current)?.getBoundingClientRect();
+      if (rect) {
+        const bw = Math.max(1, fr.x1 - fr.x0);
+        const bh = Math.max(1, fr.y1 - fr.y0);
+        const scale = clampZoom(Math.min(rect.width / bw, rect.height / bh));
+        transformRef.current = {
+          scale,
+          x: (rect.width - bw * scale) / 2 - fr.x0 * scale,
+          y: (rect.height - bh * scale) / 2 - fr.y0 * scale,
+        };
+      }
+      // Re-write the URL from the applied framing once syncUrl is wired up.
+      clearTimeout(urlTimerRef.current);
+      urlTimerRef.current = window.setTimeout(() => syncUrlRef.current(), 350);
     }
+    const t = transformRef.current;
+    el.style.transform = cssTransform(t);
+    el.classList.toggle("lod-simple", t.scale < LOD_THRESHOLD);
   }, []);
 
   // One-shot ELK layout inside the loading state (never re-run on pan/zoom/filter).
@@ -314,8 +413,8 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // filter internally. Only consumed when viewMode === "explore" (still cheap
   // to memo unconditionally — it's a plain DFS over the reverse-prereq map).
   const exploreLayout = useMemo(
-    () => layoutExplore(snapshot, expandedKeys, active, CARD_W, CARD_H),
-    [snapshot, expandedKeys, active],
+    () => layoutExplore(exploreSnapshot, expandedKeys, active, CARD_W, CARD_H),
+    [exploreSnapshot, expandedKeys, active],
   );
 
   // Explore FOCUS view (quick 260708-7fx): when a real tech is selected in
@@ -326,9 +425,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // selection) or when the selection isn't a real tech (e.g. a bucket card).
   const exploreFocus = useMemo<TreeLayout | null>(() => {
     if (viewMode !== "explore" || !focusKey) return null;
-    if (!snapshot.techs[focusKey]) return null; // bucket keys etc.
-    return layoutFocus(snapshot, focusKey, focusExpanded, CARD_W, CARD_H);
-  }, [viewMode, focusKey, focusExpanded, snapshot]);
+    if (!exploreSnapshot.techs[focusKey]) return null; // bucket keys etc.
+    return layoutFocus(exploreSnapshot, focusKey, focusExpanded, CARD_W, CARD_H);
+  }, [viewMode, focusKey, focusExpanded, exploreSnapshot]);
 
   // Frame a set of nodes to fill the viewport (used when isolating a category).
   const fitToNodes = useCallback(
@@ -358,11 +457,52 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     [applyTransform],
   );
 
+  // ── Shareable framing ──────────────────────────────────────────────────────
+  // The visible canvas rect (top-left / bottom-right in canvas coords) for the
+  // current transform + viewport size — resolution-independent, so it round-trips
+  // through the URL to the same focal point + zoom regardless of window size.
+  const currentFraming = useCallback((): Framing | null => {
+    const rect = viewportRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    const t = transformRef.current;
+    return {
+      x0: -t.x / t.scale,
+      y0: -t.y / t.scale,
+      x1: (rect.width - t.x) / t.scale,
+      y1: (rect.height - t.y) / t.scale,
+    };
+  }, []);
+
+  // Write the full nav state + current framing to the URL (replaceState — no
+  // history spam). Kept in a ref so the imperative pan/zoom debounce always calls
+  // the latest closure without re-subscribing.
+  const syncUrl = useCallback(() => {
+    // Before the canvas mounts (loading) currentFraming is null — keep the URL's
+    // incoming framing so a shared link isn't wiped before setCanvas applies it.
+    const framing =
+      currentFraming() ??
+      (framingAppliedRef.current ? null : urlInitRef.current?.framing ?? null);
+    const qs = serializeUrlNav({
+      viewMode,
+      active,
+      selectedKey,
+      focusKey,
+      focusExpanded,
+      expandedKeys,
+      framing,
+    });
+    window.history.replaceState(null, "", window.location.pathname + qs + window.location.hash);
+  }, [viewMode, active, selectedKey, focusKey, focusExpanded, expandedKeys, currentFraming]);
+  useEffect(() => {
+    syncUrlRef.current = syncUrl;
+    syncUrl(); // also fire immediately on any nav-state change
+  }, [syncUrl]);
+
   // Auto-frame the focus neighborhood ONLY when the focus tech CHANGES (entering
   // focus, or a double-click re-focus) — "zoom in on this". A single-click
   // expand keeps the same focusKey, so this does NOT re-fit: the tree just grows
   // in place without the viewport jumping. A rAF lets the DOM cards mount first.
-  const fitFocusRef = useRef<string | null>(null);
+  // (fitFocusRef is declared up with the other transform refs.)
   useEffect(() => {
     if (!exploreFocus || exploreFocus.nodes.length === 0) {
       fitFocusRef.current = null;
@@ -401,7 +541,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // Snapshot the current view onto the history stack (called before a nav change).
   const pushHistory = useCallback(() => {
     historyRef.current.push({ ...navRef.current });
-    if (historyRef.current.length > 100) historyRef.current.shift();
+    if (historyRef.current.length > HISTORY_DEPTH) historyRef.current.shift();
   }, []);
 
   // Back: pop the last view and restore it exactly (layout + selection + frame).
@@ -648,6 +788,21 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // ── Pan (imperative — no re-render) ───────────────────────────────────────
   const onPointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
     setHover(null); // hide tooltip while dragging
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointersRef.current.size >= 2) {
+      // Second finger down → begin a pinch. Cancel any in-flight pan and mark
+      // the gesture "moved" so the trailing click doesn't select a card.
+      dragRef.current = null;
+      movedRef.current = true;
+      const pts = [...pointersRef.current.values()];
+      const rect = viewportRef.current?.getBoundingClientRect();
+      pinchRef.current = {
+        dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+        midX: (pts[0].x + pts[1].x) / 2 - (rect?.left ?? 0),
+        midY: (pts[0].y + pts[1].y) / 2 - (rect?.top ?? 0),
+      };
+      return;
+    }
     movedRef.current = false; // reset drag/click discrimination for this gesture
     dragRef.current = {
       startX: e.clientX,
@@ -664,6 +819,36 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
 
   const onPointerMove = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
+      const p = pointersRef.current.get(e.pointerId);
+      if (p) {
+        p.x = e.clientX;
+        p.y = e.clientY;
+      }
+      // Two-finger pinch: zoom by the change in finger distance, panning with the
+      // finger midpoint. Incremental (diff vs the last frame) so it composes
+      // smoothly and survives fingers being added/lifted.
+      if (pointersRef.current.size >= 2 && pinchRef.current) {
+        const pts = [...pointersRef.current.values()];
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        const rect = viewportRef.current?.getBoundingClientRect();
+        if (!rect || dist === 0) return;
+        const midX = (pts[0].x + pts[1].x) / 2 - rect.left;
+        const midY = (pts[0].y + pts[1].y) / 2 - rect.top;
+        const prev = pinchRef.current;
+        const t = transformRef.current;
+        const nextScale = clampZoom(t.scale * (dist / prev.dist));
+        const ratio = nextScale / t.scale;
+        // Pan by the midpoint delta, then scale toward the current midpoint.
+        const panX = t.x + (midX - prev.midX);
+        const panY = t.y + (midY - prev.midY);
+        applyTransform({
+          scale: nextScale,
+          x: midX - (midX - panX) * ratio,
+          y: midY - (midY - panY) * ratio,
+        });
+        pinchRef.current = { dist, midX, midY };
+        return;
+      }
       const drag = dragRef.current;
       if (!drag) return;
       // Once moved past the threshold, mark this gesture a drag so the trailing
@@ -689,10 +874,35 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     [applyTransform],
   );
 
-  const endDrag = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
-    dragRef.current = null;
+  const onPointerUp = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    pointersRef.current.delete(e.pointerId);
     const el = e.currentTarget as HTMLElement;
     if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    if (pointersRef.current.size >= 2) {
+      // Still ≥2 fingers — refresh the pinch baseline so the next move doesn't jump.
+      const pts = [...pointersRef.current.values()];
+      const rect = viewportRef.current?.getBoundingClientRect();
+      pinchRef.current = {
+        dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+        midX: (pts[0].x + pts[1].x) / 2 - (rect?.left ?? 0),
+        midY: (pts[0].y + pts[1].y) / 2 - (rect?.top ?? 0),
+      };
+    } else {
+      pinchRef.current = null;
+      if (pointersRef.current.size === 1) {
+        // Dropped from pinch to one finger → hand the gesture off to panning.
+        const [rem] = [...pointersRef.current.values()];
+        dragRef.current = {
+          startX: rem.x,
+          startY: rem.y,
+          originX: transformRef.current.x,
+          originY: transformRef.current.y,
+        };
+        movedRef.current = true; // continuation of a gesture, not a click
+      } else {
+        dragRef.current = null;
+      }
+    }
   }, []);
 
   // ── Zoom toward the cursor (wheel — imperative) ───────────────────────────
@@ -740,16 +950,16 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // collapsed node's now-hidden descendants from expandedKeys.
   const childrenByKey = useMemo(() => {
     const m = new Map<string, string[]>();
-    for (const t of Object.values(snapshot.techs)) {
+    for (const t of Object.values(exploreSnapshot.techs)) {
       for (const prereq of t.prerequisites) {
-        if (!snapshot.techs[prereq]) continue;
+        if (!exploreSnapshot.techs[prereq]) continue;
         const bucket = m.get(prereq);
         if (bucket) bucket.push(t.key);
         else m.set(prereq, [t.key]);
       }
     }
     return m;
-  }, [snapshot]);
+  }, [exploreSnapshot]);
 
   // Toggle a node's expansion. Expanding just adds the key. Collapsing removes
   // the key AND every descendant reachable through still-expanded nodes — so
@@ -787,22 +997,34 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     [onToggleExpand],
   );
 
-  // "Open all children" (shortcut: C): reveal every tech that directly depends
-  // on the currently selected/focused tech. In Explore this expands the tech AND
-  // each child (so their subtrees are open); in Map — where every card is already
-  // laid out — it un-hides any filtered-out child categories and frames the tech
-  // together with its children. No-op when nothing is selected or it's childless.
+  // "Open all children" (shortcut: C): reveal the ENTIRE forward subtree that
+  // depends on the currently selected/focused tech — every recursive dependent,
+  // not just the next tier. In Explore this expands the tech and every descendant
+  // so the whole subtree opens; in Map — where every card is already laid out —
+  // it un-hides any filtered-out descendant categories and frames the subtree.
+  // No-op when nothing is selected or the tech has no dependents.
   const onExpandChildren = useCallback(() => {
     const key = viewMode === "explore" && focusKey ? focusKey : selectedKey;
     if (!key || !snapshot.techs[key]) return;
-    const kids = childrenByKey.get(key) ?? [];
-    if (kids.length === 0) return;
+    // BFS the reverse-prereq map to collect ALL recursive dependents (cycle-safe
+    // via the visited set), so a single press opens the full subtree, not one tier.
+    const subtree = new Set<string>();
+    const queue = [...(childrenByKey.get(key) ?? [])];
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      if (subtree.has(cur)) continue;
+      subtree.add(cur);
+      for (const child of childrenByKey.get(cur) ?? []) {
+        if (!subtree.has(child)) queue.push(child);
+      }
+    }
+    if (subtree.size === 0) return;
     pushHistory();
-    // Un-hide the children's categories so none stay filtered out of view.
+    // Un-hide every descendant's category so none stay filtered out of view.
     setActive((prev) => {
       let changed = false;
       const next = new Set(prev);
-      for (const ck of kids) {
+      for (const ck of subtree) {
         const c = techByKey.get(ck)?.category[0];
         if (c && !next.has(c)) {
           next.add(c);
@@ -812,16 +1034,17 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       return changed ? next : prev;
     });
     if (viewMode === "explore") {
+      // Expand the tech AND every descendant so the whole forward subtree is open.
       const add = (prev: Set<string>) => {
         const next = new Set(prev);
         next.add(key);
-        for (const ck of kids) next.add(ck);
+        for (const ck of subtree) next.add(ck);
         return next;
       };
       if (focusKey) setFocusExpanded(add);
       else setExpandedKeys(add);
     } else if (state.status === "ready") {
-      const keys = new Set<string>([key, ...kids]);
+      const keys = new Set<string>([key, ...subtree]);
       const nodes = state.layout.nodes.filter((n) => keys.has(n.key));
       if (nodes.length > 0) fitToNodes(nodes);
     }
@@ -837,8 +1060,48 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     pushHistory,
   ]);
 
-  // C reveals the selected/focused tech's direct children (see onExpandChildren).
-  // Ignored while typing in a form field or with a modifier held.
+  // "Collapse all children" (shortcut: Shift+C): the inverse of onExpandChildren.
+  // Collapses the selected/focused tech's forward subtree so its dependents hide.
+  // Explore-only — Map always renders every card, so there's nothing to collapse.
+  const onCollapseChildren = useCallback(() => {
+    if (viewMode !== "explore") return;
+    const key = focusKey ?? selectedKey;
+    if (!key) return;
+    // All recursive dependents of the tech (cycle-safe BFS).
+    const subtree = new Set<string>();
+    const queue = [...(childrenByKey.get(key) ?? [])];
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      if (subtree.has(cur)) continue;
+      subtree.add(cur);
+      for (const child of childrenByKey.get(cur) ?? []) {
+        if (!subtree.has(child)) queue.push(child);
+      }
+    }
+    if (subtree.size === 0) return;
+    pushHistory();
+    if (focusKey) {
+      // Keep the focus itself expanded (its direct dependents ARE the focus
+      // neighborhood); just drop the deeper expansions below it.
+      setFocusExpanded((prev) => {
+        const next = new Set(prev);
+        for (const ck of subtree) next.delete(ck);
+        next.add(focusKey);
+        return next;
+      });
+    } else {
+      // Browse tree: collapse the tech AND its descendants so the subtree closes.
+      setExpandedKeys((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        for (const ck of subtree) next.delete(ck);
+        return next;
+      });
+    }
+  }, [viewMode, focusKey, selectedKey, childrenByKey, pushHistory]);
+
+  // C opens / Shift+C collapses the selected/focused tech's forward subtree.
+  // Ignored while typing in a form field or with Ctrl/Meta/Alt held.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "c" && e.key !== "C") return;
@@ -847,11 +1110,56 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       const tag = target?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
       e.preventDefault();
-      onExpandChildren();
+      if (e.shiftKey) onCollapseChildren();
+      else onExpandChildren();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onExpandChildren]);
+  }, [onExpandChildren, onCollapseChildren]);
+
+  // Mobile only: entering a tech's focus view defaults to expanding its whole
+  // forward subtree, so touch users see the full dependency tree without hunting
+  // for the expand control. Skipped for big fan-outs (>8 direct children, or >30
+  // total descendants) so a hub tech doesn't explode into an unreadable wall —
+  // there the user opts in via the C shortcut. Runs once per newly focused tech.
+  const autoExpandedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isMobile || viewMode !== "explore" || !focusKey || !snapshot.techs[focusKey]) {
+      if (!focusKey) autoExpandedRef.current = null;
+      return;
+    }
+    if (autoExpandedRef.current === focusKey) return; // already handled this focus
+    autoExpandedRef.current = focusKey;
+    const direct = childrenByKey.get(focusKey) ?? [];
+    if (direct.length === 0) return; // childless — nothing to expand
+    const subtree = new Set<string>();
+    const queue = [...direct];
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      if (subtree.has(cur)) continue;
+      subtree.add(cur);
+      for (const child of childrenByKey.get(cur) ?? []) {
+        if (!subtree.has(child)) queue.push(child);
+      }
+    }
+    // Count LEAVES (subtree techs with no further dependents), not total nodes —
+    // a deep-but-narrow chain stays readable, a bushy one doesn't.
+    let leaves = 0;
+    for (const k of subtree) {
+      if ((childrenByKey.get(k)?.length ?? 0) === 0) leaves++;
+    }
+    // Small subtree → open the whole thing. Otherwise (too wide/bushy) open just
+    // ONE tier — the direct children — so Explore never expands less than a full
+    // tier of children even when it holds back the deeper subtree.
+    const full = direct.length <= 8 && leaves <= 30;
+    fitFocusRef.current = null; // let the auto-fit reframe the now-larger tree
+    setFocusExpanded((prev) => {
+      const next = new Set(prev);
+      next.add(focusKey);
+      for (const ck of full ? subtree : direct) next.add(ck);
+      return next;
+    });
+  }, [isMobile, viewMode, focusKey, snapshot, childrenByKey]);
 
   // Switch views. Entering Explore fits/resets to the collapsed root column;
   // returning to Map restores its default frame. (Selection/filter persist.)
@@ -951,8 +1259,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           <TechCard
             key={node.key}
             tech={node.tech!}
+            perk={isPerkKey(node.tech!.key)}
             image={node.tech!.icon ? `${iconBase}/${node.tech!.icon}` : undefined}
-            costIcon={`${iconBase}/_research_${node.tech!.area}.webp`}
+            costIcon={isPerkKey(node.tech!.key) ? undefined : `${iconBase}/_research_${node.tech!.area}.webp`}
             categoryIcon={
               node.tech!.category[0]
                 ? `${iconBase}/_category_${node.tech!.category[0]}.webp`
@@ -962,7 +1271,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
             y={node.y}
             onEnter={onCardEnter}
             onLeave={onCardLeave}
-            selected={node.key === highlightKey}
+            // Overlay duplicate cards carry a bucket-scoped node.key but the real
+            // tech in node.tech — match on the tech key so they highlight too.
+            selected={(node.tech?.key ?? node.key) === highlightKey}
             onSelect={onSelect}
             onActivate={onActivate}
             // Chevron/expansion belong to the Explore BROWSE tree only. The focus
@@ -1003,28 +1314,29 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
 
   return (
     <div className="tech-tree">
-      {empireOn ? (
-        <EmpirePanel snapshot={snapshot} onBuckets={onBuckets} />
-      ) : (
-        <CategoryNav
-          active={active}
-          counts={counts}
-          iconBase={iconBase}
-          onToggleCategory={onToggleCategory}
-          onIsolateCategory={onIsolateCategory}
-          onToggleArea={onToggleArea}
-          onIsolateArea={onIsolateArea}
-          onShowAll={onShowAll}
-        />
-      )}
+      {sidebarOpen &&
+        (empireOn ? (
+          <EmpirePanel snapshot={snapshot} onBuckets={onBuckets} />
+        ) : (
+          <CategoryNav
+            active={active}
+            counts={counts}
+            iconBase={iconBase}
+            onToggleCategory={onToggleCategory}
+            onIsolateCategory={onIsolateCategory}
+            onToggleArea={onToggleArea}
+            onIsolateArea={onIsolateArea}
+            onShowAll={onShowAll}
+          />
+        ))}
 
       <div
         className="tree-viewport"
         ref={viewportRef}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
         onWheel={onWheel}
         onClick={onViewportClick}
       >
@@ -1042,6 +1354,20 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           {content?.edge}
           {content?.cards}
         </div>
+
+        {/* Sidebar collapse tab — pinned to the viewport's left edge (which sits
+            right after the sidebar when open, at the screen edge when hidden), so
+            it stays correctly placed in both states without measuring widths. */}
+        <button
+          type="button"
+          className="sidebar-toggle"
+          data-open={sidebarOpen ? "" : undefined}
+          onClick={() => setSidebarOpen((o) => !o)}
+          aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+          aria-pressed={sidebarOpen}
+        >
+          {sidebarOpen ? "‹" : "›"}
+        </button>
 
         {/* View toggle (quick 260708-5di): Map (banded swimlanes) ↔ Explore
             (collapsible forward tree). Top-left of the viewport. */}
@@ -1106,6 +1432,20 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           </button>
           <button type="button" onClick={resetView} aria-label="Reset view">
             ⟲
+          </button>
+        </div>
+
+        {/* Touch/mobile navigation — the keyboard shortcuts (F / Esc / Backspace)
+            as always-visible tappable buttons, bottom-left of the viewport. */}
+        <div className="touch-controls" role="group" aria-label="Navigation">
+          <button type="button" onClick={() => setFindOpen(true)} aria-label="Find" title="Find (F)">
+            🔍
+          </button>
+          <button type="button" onClick={onDeselect} aria-label="Deselect" title="Deselect (Esc)">
+            ✕
+          </button>
+          <button type="button" onClick={onBack} aria-label="Back" title="Back (Backspace)">
+            ←
           </button>
         </div>
       </div>

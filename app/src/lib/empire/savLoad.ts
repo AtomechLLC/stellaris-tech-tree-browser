@@ -77,6 +77,9 @@ export async function loadEmpiresFromSav(savBytes: Uint8Array): Promise<SavLoadR
       const gov = isObj(c.government) ? (c.government as Record<string, any>) : {};
       const ethics: string[] = [];
       if (isObj(c.ethos)) for (const e of toArr(c.ethos.ethics)) if (typeof e === "string") ethics.push(e);
+      // Ascension perks — a flat list of `ap_*` ids on the country. Drives the
+      // gate check `has_ascension_perk` (e.g. Cosmogenesis crisis techs).
+      const perks = toArr(c.ascension_perks).filter((x): x is string => typeof x === "string");
 
       const idNum = Number(key);
       const literal = isObj(c.name) && (c.name.literal === "yes" || c.name.literal === true);
@@ -91,6 +94,7 @@ export async function loadEmpiresFromSav(savBytes: Uint8Array): Promise<SavLoadR
         ethics,
         civics: toArr(gov.civics).filter((x): x is string => typeof x === "string"),
         origin: typeof gov.origin === "string" ? gov.origin : null,
+        perks,
         researched,
         researchedCount: researched.length,
       });

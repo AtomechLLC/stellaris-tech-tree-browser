@@ -67,6 +67,9 @@ interface TechCardProps {
   /** Saved Empire tab (spike 005): the tech's bucket for this empire, or
    *  undefined when the empire coloring is off. Drives `data-bucket` → CSS. */
   bucket?: Bucket;
+  /** Synthetic ascension-perk parent node (Explore): render the hexagon + name
+   *  and "Ascension Perk" label instead of the tier/cost/weight chrome. */
+  perk?: boolean;
 }
 
 // Memoized: pan/zoom re-renders the parent every tick, but a card's props
@@ -89,6 +92,7 @@ export const TechCard = memo(function TechCard({
   expanded,
   onToggleExpand,
   bucket,
+  perk,
 }: TechCardProps) {
   const category = tech.category[0] ?? "";
   return (
@@ -100,6 +104,7 @@ export const TechCard = memo(function TechCard({
       data-danger={tech.flags.isDangerous ? "" : undefined}
       data-rare={tech.flags.isRare ? "" : undefined}
       data-bucket={bucket}
+      data-perk={perk ? "" : undefined}
       style={{
         position: "absolute",
         left: `${x}px`,
@@ -114,25 +119,34 @@ export const TechCard = memo(function TechCard({
     >
       <div className="tech-card__icon">
         {image ? <img src={image} alt="" loading="lazy" /> : null}
-        <span className="tech-card__tier" data-tier={tech.tier}>{roman(tech.tier)}</span>
+        {!perk && (
+          <span className="tech-card__tier" data-tier={tech.tier}>{roman(tech.tier)}</span>
+        )}
       </div>
       <div className="tech-card__body">
         {/* PLAIN TEXT — React children, never innerHTML (D-05 XSS). */}
         <div className="tech-card__title">{tech.name}</div>
-        <div className="tech-card__meta">
-          {categoryIcon ? (
-            <img className="tech-card__cat-icon" src={categoryIcon} alt="" loading="lazy" />
-          ) : null}
-          {categoryLabel(category)} ·{" "}
-          <span className="tier-num" data-tier={tech.tier}>Tier {tech.tier}</span>
-        </div>
-        <div className="tech-card__stats">
-          Cost:{" "}
-          {costIcon ? (
-            <img className="tech-card__cost-icon" src={costIcon} alt="" loading="lazy" />
-          ) : null}
-          {tech.cost} · Weight: {tech.weight}
-        </div>
+        {perk ? (
+          // Perk parent node: no tier/cost/weight — just what it is.
+          <div className="tech-card__meta">Ascension Perk</div>
+        ) : (
+          <>
+            <div className="tech-card__meta">
+              {categoryIcon ? (
+                <img className="tech-card__cat-icon" src={categoryIcon} alt="" loading="lazy" />
+              ) : null}
+              {categoryLabel(category)} ·{" "}
+              <span className="tier-num" data-tier={tech.tier}>Tier {tech.tier}</span>
+            </div>
+            <div className="tech-card__stats">
+              Cost:{" "}
+              {costIcon ? (
+                <img className="tech-card__cost-icon" src={costIcon} alt="" loading="lazy" />
+              ) : null}
+              {tech.cost} · Weight: {tech.weight}
+            </div>
+          </>
+        )}
       </div>
       {/* Explore-mode expand toggle — only when this tech has revealable
           children. stopPropagation so expanding never selects the card. */}

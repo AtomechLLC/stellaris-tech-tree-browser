@@ -136,6 +136,8 @@ export interface EmpireState {
   civics: Set<string>;
   origin: string | null;
   researched: Set<string>;
+  /** Ascension perks taken (country `ascension_perks`), e.g. `ap_cosmogenesis`. */
+  perks: Set<string>;
   ownsAllDlc: boolean; // this save owns ~every DLC; per-DLC mapping is a build task
 }
 
@@ -145,6 +147,8 @@ export interface RawEmpire {
   civics: string[];
   origin: string | null;
   researched: string[];
+  /** Ascension perks (country `ascension_perks`); optional — omitted = none. */
+  perks?: string[];
 }
 
 export function buildEmpireState(e: RawEmpire): EmpireState {
@@ -165,6 +169,7 @@ export function buildEmpireState(e: RawEmpire): EmpireState {
     civics,
     origin: e.origin,
     researched: new Set(e.researched),
+    perks: new Set(e.perks ?? []),
     ownsAllDlc: true,
   };
 }
@@ -201,6 +206,19 @@ function evalLeaf(node: Extract<GateNode, { op: "leaf" }>, s: EmpireState): Tri 
       return s.origin === value;
     case "has_technology":
       return s.researched.has(String(value));
+    case "has_ascension_perk":
+      // Parsed from the save (country `ascension_perks`). If the empire hasn't
+      // taken this perk, its gated techs (e.g. the Cosmogenesis crisis line →
+      // `has_ascension_perk = ap_cosmogenesis`) read as reachable-later, not
+      // available-now. `sat` still treats an un-taken perk as a free variable so
+      // the tech stays reachable (you COULD take it), never "never".
+      return s.perks.has(String(value));
+    case "has_psionic_ascension":
+    case "has_make_spiritualist_perk":
+    case "has_crisis_level":
+      // Derived ascension states / crisis level aren't parsed out of the save →
+      // default to NOT reached (false) rather than the optimistic unknown.
+      return false;
     default:
       if (isDlcTrigger(trigger)) return s.ownsAllDlc ? true : null;
       return null; // dynamic / unsupported → unknown

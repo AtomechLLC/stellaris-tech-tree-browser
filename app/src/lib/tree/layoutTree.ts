@@ -33,6 +33,8 @@ export type BucketId =
   | "dangerous"
   | "repeatable"
   | "archaeology"
+  | "ambition"
+  | "shroud"
   | "standard"
   | "event";
 
@@ -130,9 +132,13 @@ export interface TreeLayout {
 // so tier columns and stacked rows always clear the real DOM cards.
 const COL_EXTRA = 110; // horizontal gutter between tier columns
 const ROW_EXTRA = 20; // vertical gutter between stacked rows within a band
-const BAND_LABEL_H = 30; // top strip of each band reserved for its label
-const BAND_GAP = 44; // vertical gap between adjacent bands
+const BAND_LABEL_H = 62; // top strip of each band reserved for its (42px) label
+const BAND_GAP = 52; // vertical gap between adjacent bands
 const BAND_PAD_BOTTOM = 12; // padding below the last row inside a band
+// Left gutters (px): the swimlane background starts a hair in from the canvas
+// edge, and the tech cards sit a little further in again, so nothing is flush.
+export const BAND_LEFT_PAD = 6; // where each band background begins
+export const CARD_LEFT_PAD = 18; // where tier-0 cards begin (inset within the band)
 const TIER_COUNT = 6; // tiers 0..5
 
 /**
@@ -309,7 +315,7 @@ export async function layoutTree(
       tierTechs.forEach((tech, rowIndex) => {
         nodes.push({
           key: tech.key,
-          x: tier * COL_W,
+          x: CARD_LEFT_PAD + tier * COL_W,
           y: contentTop + rowIndex * ROW_H,
           w: cardW,
           h: cardH,
@@ -348,7 +354,7 @@ export async function layoutTree(
     nodes,
     edges,
     bands,
-    width: TIER_COUNT * COL_W,
+    width: CARD_LEFT_PAD + TIER_COUNT * COL_W,
     height: cursorY,
   };
 }

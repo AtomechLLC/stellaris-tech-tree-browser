@@ -12,7 +12,11 @@
     "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "zod": ["./node_modules/zod"]
+    }
   },
   "include": [
     "src/**/*.ts",
