@@ -11,11 +11,16 @@ import { dataUrl } from "../lib/data/paths";
 // icon is a static asset generated into the versioned icon set by the pipeline.
 const XENOPHILE_ICON = dataUrl("v4.5.0/icons/_ethic_xenophile.webp");
 
-export function Header() {
+export function Header({ version }: { version?: string }) {
   return (
     <header className="app-header">
       <img className="app-header__ethic" src={XENOPHILE_ICON} alt="" aria-hidden />
       <h1 className="app-header__title">Xelnath's Stellaris Tech Finder</h1>
+      {version && (
+        <span className="app-header__version" title="Game version and data checksum">
+          {version}
+        </span>
+      )}
       <a
         className="app-header__discord"
         href="http://discord.gg/funsmithclub"

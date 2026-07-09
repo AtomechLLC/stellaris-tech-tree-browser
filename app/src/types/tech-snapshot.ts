@@ -70,11 +70,27 @@ export const TechSchema = z.object({
   description: z.string().nullable().default(null),
   icon: z.string().nullable().default(null),
   gate: GateNodeSchema.nullable().default(null),
+  /** Event / dig-site that grants this tech (feature: synthetic source parents),
+   *  or null. KEEP IN SYNC with the pipeline schema. */
+  source: z
+    .object({
+      type: z.enum(["event", "site"]),
+      id: z.string(),
+      name: z.string(),
+      mechanism: z.enum(["give", "option", "progress"]),
+    })
+    .nullable()
+    .default(null),
 });
 
 export const TechSnapshotSchema = z.object({
   meta: z.object({
     gameVersion: z.string(),
+    /** Full launcher version string, e.g. "Cygnus v4.5.0 (bfcc)". Optional for
+     *  backward-compat with snapshots generated before it was captured. */
+    versionLabel: z.string().optional(),
+    /** Game data checksum (the parenthesized token above), e.g. "bfcc". */
+    checksum: z.string().optional(),
     generatedAt: z.string(),
     techCount: z.number(),
     areaCounts: z.record(z.string(), z.number()),

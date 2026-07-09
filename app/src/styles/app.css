@@ -42,6 +42,21 @@
 }
 
 /* Discord / Funsmith Club link, pinned to the far right of the header. */
+/* Game version + data checksum chip (e.g. "Cygnus v4.5.0 (bfcc)") — muted,
+   monospace, so it reads as canonical metadata beside the title. */
+.app-header__version {
+  margin-left: 12px;
+  padding: 2px 8px;
+  border: 1px solid var(--tree-border);
+  border-radius: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--tree-text-dim, var(--tree-text));
+  background: var(--tree-bg);
+  white-space: nowrap;
+}
+
 .app-header__discord {
   margin-left: auto;
   flex: 0 0 auto;
@@ -379,12 +394,6 @@
   fill: var(--color-select);
 }
 
-/* Base (unselected) dependency-line arrowhead — the dim edge color; the base
-   path's own opacity dims it to match the dashed line. */
-.edge-layer__arrowhead--base {
-  fill: var(--color-edge);
-}
-
 /* View toggle (quick 260708-5di) — segmented Map ↔ Explore control, top-left of
    the viewport. Mirrors the repack/zoom control chrome (tokens only). */
 .view-toggle {
@@ -444,6 +453,49 @@
 }
 
 /* Zoom +/- / reset control — bottom-right of the viewport. */
+/* Map scrollbars (custom — the canvas pans via CSS transform, not native
+   overflow, so these thin tracks mirror the transform and drive it back). Sit at
+   the viewport's right/bottom edges; the zoom/touch controls are inset far
+   enough to clear them. Neutral so they read as chrome, not content. */
+.map-scrollbar {
+  position: absolute;
+  z-index: 11;
+  background: color-mix(in srgb, var(--tree-panel) 55%, transparent);
+  border-radius: 6px;
+  touch-action: none;
+}
+.map-scrollbar--h {
+  left: 0;
+  right: 12px;
+  bottom: 0;
+  height: 10px;
+}
+.map-scrollbar--v {
+  top: 0;
+  bottom: 12px;
+  right: 0;
+  width: 10px;
+}
+.map-scrollbar__thumb {
+  position: absolute;
+  background: color-mix(in srgb, var(--tree-text) 32%, transparent);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.map-scrollbar__thumb:hover {
+  background: color-mix(in srgb, var(--tree-text) 52%, transparent);
+}
+.map-scrollbar--h .map-scrollbar__thumb {
+  top: 1px;
+  bottom: 1px;
+  left: 0;
+}
+.map-scrollbar--v .map-scrollbar__thumb {
+  left: 1px;
+  right: 1px;
+  top: 0;
+}
+
 .zoom-controls {
   position: absolute;
   right: var(--space-md);
@@ -592,6 +644,17 @@
   background-color: color-mix(in srgb, var(--color-select) 22%, var(--tree-card-bg));
 }
 
+/* Event / dig-site "source" parent node (Explore) — like the perk parent, but a
+   blue accent so an event-granted tech's origin reads distinctly from a perk
+   gate. `data-source` is "event" or "site"; both share the accent. */
+.tech-card[data-source][data-area] {
+  border-color: var(--color-accent);
+}
+.tech-card[data-source][data-area] .tech-card__title {
+  background-image: none;
+  background-color: color-mix(in srgb, var(--color-accent) 24%, var(--tree-card-bg));
+}
+
 /* Icon panel (left) — fills the card height, with a tier roman-numeral badge
    overlaid at the bottom-left. */
 .tech-card__icon {
@@ -691,6 +754,21 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Dangerous-tech caption on the card body — a short red note explaining the
+   red header treatment. Wraps to at most two lines; the card's overflow:hidden
+   clips anything longer. Color is token-driven (--color-danger), never a hex. */
+.tech-card__danger {
+  padding: 0 8px 4px;
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--color-danger);
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* Research-currency icon next to a tech's cost (physics/society/engineering). */
 .tech-card__cost-icon {
   width: 12px;
@@ -962,7 +1040,10 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
   font-family: var(--font-sans);
   color: var(--tree-text);
-  pointer-events: none; /* never steal the hover from the card */
+  /* Interactive: the pointer can move onto it and click the Required / Leads-To
+     rows to jump the view. A hover-intent delay in TechTree bridges the gap from
+     the card so it doesn't vanish before the pointer arrives. */
+  pointer-events: auto;
 }
 .tech-tooltip[data-area="physics"] { border-left-color: var(--area-physics); }
 .tech-tooltip[data-area="society"] { border-left-color: var(--area-society); }
@@ -1088,6 +1169,39 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Clickable Required / Leads-To row → jumps the view to that tech. A <button>
+   reset to look like the plain row, full-width, with a hover highlight and a
+   trailing ↗ affordance. Inherits the icon/name descendant styles above via the
+   shared .tech-tooltip__prereq class. */
+.tech-tooltip__prereq--link {
+  width: 100%;
+  margin: 0;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tech-tooltip__prereq--link:hover,
+.tech-tooltip__prereq--link:focus-visible {
+  background: color-mix(in srgb, var(--color-select) 18%, transparent);
+  outline: none;
+}
+.tech-tooltip__prereq-go {
+  margin-left: auto;
+  flex: 0 0 auto;
+  opacity: 0;
+  color: var(--color-select);
+  font-size: 13px;
+}
+.tech-tooltip__prereq--link:hover .tech-tooltip__prereq-go,
+.tech-tooltip__prereq--link:focus-visible .tech-tooltip__prereq-go {
+  opacity: 0.9;
 }
 
 /* Unlocks — one line per grant. */

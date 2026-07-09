@@ -46,11 +46,31 @@ function fallbackPath(from: LayoutNode, to: LayoutNode): string {
   ]);
 }
 
+/** The SVG `d` for a SINGLE edge — ELK routing if present, else an elbow. */
+function edgePath(edge: LayoutEdge, nodeByKey: Map<string, LayoutNode>): string {
+  if (edge.sections.length > 0) {
+    return edge.sections
+      .map((section) =>
+        pointsToPath([
+          section.startPoint,
+          ...(section.bendPoints ?? []),
+          section.endPoint,
+        ]),
+      )
+      .join(" ");
+  }
+  // No ELK routing — fall back to a straight elbow between the cards.
+  const from = nodeByKey.get(edge.from);
+  const to = nodeByKey.get(edge.to);
+  return from && to ? fallbackPath(from, to) : "";
+}
+
 /**
- * Builds the combined SVG `d` for a set of edges, reusing ELK routing when
- * present and falling back to a straight elbow otherwise. Shared by the dim
- * base path (all edges) and the highlight path (the selected node's edges) so
- * both use identical geometry.
+ * Builds the combined SVG `d` for a set of edges (one <path> for all of them —
+ * used by the dim base layer, where hundreds of edges must stay a single DOM
+ * node for pan/zoom perf). NOTE: SVG `marker-end` only draws on the very last
+ * vertex of a combined path, so this form CANNOT carry a per-edge arrowhead —
+ * see `buildEdgePaths` for the highlighted, arrow-bearing edges.
  */
 function buildPath(
   edges: LayoutEdge[],
@@ -58,23 +78,29 @@ function buildPath(
 ): string {
   const out: string[] = [];
   for (const edge of edges) {
-    if (edge.sections.length > 0) {
-      for (const section of edge.sections) {
-        const points = [
-          section.startPoint,
-          ...(section.bendPoints ?? []),
-          section.endPoint,
-        ];
-        out.push(pointsToPath(points));
-      }
-    } else {
-      // No ELK routing — fall back to a straight elbow between the cards.
-      const from = nodeByKey.get(edge.from);
-      const to = nodeByKey.get(edge.to);
-      if (from && to) out.push(fallbackPath(from, to));
-    }
+    const d = edgePath(edge, nodeByKey);
+    if (d) out.push(d);
   }
   return out.join(" ");
+}
+
+/**
+ * Builds ONE `d` string PER edge (keyed by from→to) so each can be rendered as
+ * its own <path> with its own `marker-end`. This is what makes every
+ * highlighted line show an arrowhead at its target — a single combined path
+ * would only mark its final subpath. The highlight set is small (a node's
+ * direct connections), so per-edge <path> elements cost nothing.
+ */
+function buildEdgePaths(
+  edges: LayoutEdge[],
+  nodeByKey: Map<string, LayoutNode>,
+): { key: string; d: string }[] {
+  const out: { key: string; d: string }[] = [];
+  for (const edge of edges) {
+    const d = edgePath(edge, nodeByKey);
+    if (d) out.push({ key: `${edge.from}->${edge.to}`, d });
+  }
+  return out;
 }
 
 // Memoized: props (edges/nodes/width/height) are stable across pan/zoom, so the
@@ -99,13 +125,17 @@ export const EdgeLayer = memo(function EdgeLayer({
   // carry an arrowhead pointing at the selected tech. Outgoing edges (selected →
   // its dependents) are highlighted the same gold but without a head. Both drawn
   // on top of the dim base path. Rebuilt only when selection/layout changes.
-  const { incomingD, outgoingD } = useMemo(() => {
-    if (!selectedKey) return { incomingD: "", outgoingD: "" };
-    const incoming = edges.filter((e) => e.to === selectedKey);
-    const outgoing = edges.filter((e) => e.from === selectedKey);
+  const { incoming, outgoing } = useMemo(() => {
+    if (!selectedKey) return { incoming: [], outgoing: [] };
     return {
-      incomingD: incoming.length ? buildPath(incoming, nodeByKey) : "",
-      outgoingD: outgoing.length ? buildPath(outgoing, nodeByKey) : "",
+      incoming: buildEdgePaths(
+        edges.filter((e) => e.to === selectedKey),
+        nodeByKey,
+      ),
+      outgoing: buildEdgePaths(
+        edges.filter((e) => e.from === selectedKey),
+        nodeByKey,
+      ),
     };
   }, [edges, nodeByKey, selectedKey]);
 
@@ -131,37 +161,30 @@ export const EdgeLayer = memo(function EdgeLayer({
         >
           <path className="edge-layer__arrowhead" d="M0 0 L10 5 L0 10 Z" />
         </marker>
-        {/* Dimmer arrowhead for every (unselected) dependency line — a small
-            triangle right where the line meets the target card. */}
-        <marker
-          id="edge-arrow-base"
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="6"
-          markerHeight="6"
-          orient="auto"
-        >
-          <path className="edge-layer__arrowhead--base" d="M0 0 L10 5 L0 10 Z" />
-        </marker>
       </defs>
-      <path className="edge-layer__path" d={d} markerEnd="url(#edge-arrow-base)" />
-      {/* Both directions get an arrowhead at the TARGET end, so every selected
-          line shows dependency flow: prereq → selected, and selected → dependent. */}
-      {outgoingD && (
+      {/* Dim base layer — every edge in ONE path for pan/zoom perf. No arrowhead:
+          a combined path can only mark its final subpath, so directional arrows
+          live on the per-edge highlight paths below instead. */}
+      <path className="edge-layer__path" d={d} />
+      {/* Each highlighted edge is its OWN path so every one carries an arrowhead
+          at its TARGET end — dependency flow reads on every line, both prereq →
+          selected and selected → dependent (not just the last). */}
+      {outgoing.map((e) => (
         <path
+          key={`out:${e.key}`}
           className="edge-layer__path--highlight"
-          d={outgoingD}
+          d={e.d}
           markerEnd="url(#edge-arrow)"
         />
-      )}
-      {incomingD && (
+      ))}
+      {incoming.map((e) => (
         <path
+          key={`in:${e.key}`}
           className="edge-layer__path--highlight"
-          d={incomingD}
+          d={e.d}
           markerEnd="url(#edge-arrow)"
         />
-      )}
+      ))}
     </svg>
   );
 });

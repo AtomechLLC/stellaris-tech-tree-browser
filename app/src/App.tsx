@@ -49,9 +49,14 @@ export function App() {
     };
   }, [retryToken]);
 
+  const version =
+    state.status === "ready"
+      ? (state.snapshot.meta.versionLabel ?? state.snapshot.meta.gameVersion)
+      : undefined;
+
   return (
     <div className="app-shell">
-      <Header />
+      <Header version={version} />
       {state.status === "loading" && <LoadingOverlay />}
       {state.status === "error" && <ErrorOverlay onRetry={retry} />}
       {state.status === "ready" && state.techCount === 0 && <EmptyOverlay />}

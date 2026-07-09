@@ -12,11 +12,13 @@ import type { TechSnapshot, Tech } from "../types/tech-snapshot";
 import { layoutTree, type TreeLayout, type LayoutNode } from "../lib/tree/layoutTree";
 import { layoutExplore, layoutFocus, BUCKET_KEY_PREFIX } from "../lib/tree/exploreLayout";
 import { augmentSnapshotWithPerks, isPerkKey, PERK_PREFIX } from "../lib/tree/perks";
+import { augmentSnapshotWithEventSources, isSourceKey, sourceKindOf } from "../lib/tree/eventSources";
 import { dataUrl } from "../lib/data/paths";
 import { CATEGORY_ORDER, CATEGORY_AREA } from "../lib/graph/categories";
 import { TechCard, CARD_W, CARD_H } from "./TechCard";
 import { BucketCard } from "./BucketCard";
 import { EdgeLayer } from "./EdgeLayer";
+import { MapScrollbars, type ScrollbarsHandle } from "./MapScrollbars";
 import { BandLayer } from "./BandLayer";
 import { CategoryNav } from "./CategoryNav";
 import { EmpirePanel } from "./EmpirePanel";
@@ -276,6 +278,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const transformRef = useRef<Transform>(DEFAULT_TRANSFORM);
+  const scrollbarsRef = useRef<ScrollbarsHandle>(null);
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(
     null,
   );
@@ -315,7 +318,10 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
 
   // Explore-only snapshot: perk-gated techs gain their ascension-perk hexagon as a
   // synthetic PARENT node (Ambition / Crisis lines). The Map keeps the real one.
-  const exploreSnapshot = useMemo(() => augmentSnapshotWithPerks(snapshot), [snapshot]);
+  const exploreSnapshot = useMemo(
+    () => augmentSnapshotWithPerks(augmentSnapshotWithEventSources(snapshot)),
+    [snapshot],
+  );
 
   // key → Tech, for resolving prerequisite/leadsTo names + icons in the tooltip.
   // Built from the perk-augmented snapshot so perk nodes resolve too.
@@ -384,6 +390,8 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       }
       // Cull: re-render the card set only if the view left the render margin.
       recomputeCull();
+      // Keep the map scrollbars' thumbs in sync with the new pan/zoom.
+      scrollbarsRef.current?.update();
       // Debounced: mirror the new framing into the URL so a shared link reproduces
       // the current zoom + focal point. Pan/zoom is imperative (no re-render), so
       // this is the only hook that captures it.
@@ -537,6 +545,25 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         scale,
         x: (rect.width - bw * scale) / 2 - minX * scale,
         y: (rect.height - bh * scale) / 2 - minY * scale,
+      });
+    },
+    [applyTransform],
+  );
+
+  // Pan the given node to the viewport CENTER at the CURRENT zoom (no zoom
+  // change) — the "jump to this tech on the map" motion from the tooltip, which
+  // should relocate the view without yanking the zoom level around like a fit.
+  const panToNode = useCallback(
+    (node: LayoutNode) => {
+      const rect = viewportRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const scale = transformRef.current.scale;
+      const cx = node.x + node.w / 2;
+      const cy = node.y + node.h / 2;
+      applyTransform({
+        scale,
+        x: rect.width / 2 - cx * scale,
+        y: rect.height / 2 - cy * scale,
       });
     },
     [applyTransform],
@@ -698,10 +725,37 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   }, [active, applyTransform]);
 
   // ── Hover (tooltip) — stable callbacks so cards stay memoized ──────────────
-  const onCardEnter = useCallback((tech: Tech, rect: DOMRect) => {
-    setHover({ tech, rect });
+  // The tooltip is interactive (its prereq / leads-to rows are clickable jump
+  // targets), so leaving the card must NOT hide it instantly — that would make
+  // it impossible to move the pointer across the gap onto the tooltip. Leaving
+  // schedules a hide; entering the card OR the tooltip cancels it.
+  const hoverHideTimerRef = useRef<number | null>(null);
+  const cancelHoverHide = useCallback(() => {
+    if (hoverHideTimerRef.current !== null) {
+      clearTimeout(hoverHideTimerRef.current);
+      hoverHideTimerRef.current = null;
+    }
   }, []);
-  const onCardLeave = useCallback(() => setHover(null), []);
+  const scheduleHoverHide = useCallback(() => {
+    cancelHoverHide();
+    hoverHideTimerRef.current = window.setTimeout(() => {
+      hoverHideTimerRef.current = null;
+      setHover(null);
+    }, 160);
+  }, [cancelHoverHide]);
+  const onCardEnter = useCallback(
+    (tech: Tech, rect: DOMRect) => {
+      cancelHoverHide();
+      setHover({ tech, rect });
+    },
+    [cancelHoverHide],
+  );
+  const onCardLeave = useCallback(() => scheduleHoverHide(), [scheduleHoverHide]);
+  // Pointer over the tooltip itself keeps it open; leaving it hides (also delayed
+  // so a wobble back onto a card doesn't flicker).
+  const onTooltipEnter = useCallback(() => cancelHoverHide(), [cancelHoverHide]);
+  const onTooltipLeave = useCallback(() => scheduleHoverHide(), [scheduleHoverHide]);
+  useEffect(() => () => cancelHoverHide(), [cancelHoverHide]);
 
   // ── Selection ─────────────────────────────────────────────────────────────
   // SINGLE click. A drag that ends on a card is suppressed via the movedRef
@@ -851,6 +905,34 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       setFindOpen(false);
     },
     [techByKey, state, fitToNodes, viewMode, pushHistory],
+  );
+
+  // Jump from a tooltip's Required / Leads-To row to that tech's card. Map: pan
+  // it to center at the current zoom and select it. Explore: open its focus view.
+  // Reveals its category first if a filter is hiding it. Hides the tooltip.
+  const onJumpToTech = useCallback(
+    (key: string) => {
+      const tech = techByKey.get(key);
+      if (!tech) return; // synthetic (perk:/bucket:) or unknown — not jumpable
+      cancelHoverHide();
+      setHover(null);
+      pushHistory();
+      const cat = tech.category[0] ?? "";
+      if (cat) {
+        setActive((prev) => (prev.has(cat) ? prev : new Set(prev).add(cat)));
+      }
+      if (viewMode === "explore") {
+        setFocusKey(key);
+        setFocusExpanded(new Set([key]));
+      } else {
+        setSelectedKey(key);
+        if (state.status === "ready") {
+          const node = state.layout.nodes.find((n) => n.key === key);
+          if (node) panToNode(node);
+        }
+      }
+    },
+    [techByKey, state, viewMode, pushHistory, panToNode, cancelHoverHide],
   );
 
   // Clicking empty viewport background (not a card) clears the selection. A real
@@ -1327,6 +1409,8 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     const update = () => {
       const r = el.getBoundingClientRect();
       viewportSizeRef.current = { w: r.width, h: r.height };
+      // Track length depends on viewport size — re-sync the scrollbar thumbs.
+      scrollbarsRef.current?.update();
     };
     update();
     const ro = new ResizeObserver(update);
@@ -1406,8 +1490,13 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
             key={node.key}
             tech={node.tech!}
             perk={isPerkKey(node.tech!.key)}
+            sourceKind={isSourceKey(node.tech!.key) ? sourceKindOf(node.tech!.key) ?? undefined : undefined}
             image={node.tech!.icon ? `${iconBase}/${node.tech!.icon}` : undefined}
-            costIcon={isPerkKey(node.tech!.key) ? undefined : `${iconBase}/_research_${node.tech!.area}.webp`}
+            costIcon={
+              isPerkKey(node.tech!.key) || isSourceKey(node.tech!.key)
+                ? undefined
+                : `${iconBase}/_research_${node.tech!.area}.webp`
+            }
             categoryIcon={
               node.tech!.category[0]
                 ? `${iconBase}/_category_${node.tech!.category[0]}.webp`
@@ -1501,6 +1590,18 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           {content?.edge}
           {content?.cards}
         </div>
+
+        {/* Scrollbars mirror the imperative pan/zoom transform; they auto-hide on
+            an axis that isn't overflowing. Rendered over the viewport, outside
+            the transformed canvas. */}
+        <MapScrollbars
+          ref={scrollbarsRef}
+          contentW={layout.width}
+          contentH={layout.height}
+          viewportRef={viewportRef}
+          transformRef={transformRef}
+          applyTransform={applyTransform}
+        />
 
         {/* Sidebar collapse tab — pinned to the viewport's left edge (which sits
             right after the sidebar when open, at the screen edge when hidden), so
@@ -1603,6 +1704,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           techByKey={techByKey}
           iconBase={iconBase}
           anchor={hover.rect}
+          onJump={onJumpToTech}
+          onPointerEnter={onTooltipEnter}
+          onPointerLeave={onTooltipLeave}
         />
       )}
 

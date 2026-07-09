@@ -42,11 +42,18 @@ export function TechTooltip({
   techByKey,
   iconBase,
   anchor,
+  onJump,
+  onPointerEnter,
+  onPointerLeave,
 }: {
   tech: Tech;
   techByKey: Map<string, Tech>;
   iconBase: string;
   anchor: DOMRect;
+  /** Jump the map/explore view to the clicked Required / Leads-To tech. */
+  onJump?: (key: string) => void;
+  onPointerEnter?: () => void;
+  onPointerLeave?: () => void;
 }) {
   const category = tech.category[0] ?? "";
   const resolve = (key: string): Ref => {
@@ -60,6 +67,46 @@ export function TechTooltip({
   };
   const prereqs = tech.prerequisites.map(resolve);
   const leadsTo = tech.unlocks.leadsTo.map(resolve);
+
+  // A Required / Leads-To row. Clickable (jumps the view to that tech) whenever
+  // it resolves to a REAL tech — synthetic parents (perk:/event:) and unknown
+  // keys stay static. Uses a <button> for keyboard access; CSS makes it look
+  // like the row. Icon/name are plain text/children (never innerHTML — D-05).
+  const renderRef = (p: Ref) => {
+    const icon = p.icon ? (
+      <img src={p.icon} alt="" loading="lazy" />
+    ) : (
+      <span className="tech-tooltip__prereq-dot" />
+    );
+    // Real tech keys are `tech_…` (no colon); synthetic parents (perk:/src:…)
+    // aren't map nodes, so they stay non-clickable.
+    const jumpable = !!onJump && !p.key.includes(":") && techByKey.has(p.key);
+    if (jumpable) {
+      return (
+        <li key={p.key}>
+          <button
+            type="button"
+            className="tech-tooltip__prereq tech-tooltip__prereq--link"
+            data-area={p.area}
+            onClick={() => onJump!(p.key)}
+            title={`Jump to ${p.name}`}
+          >
+            {icon}
+            <span className="tech-tooltip__prereq-name">{p.name}</span>
+            <span className="tech-tooltip__prereq-go" aria-hidden>
+              ↗
+            </span>
+          </button>
+        </li>
+      );
+    }
+    return (
+      <li className="tech-tooltip__prereq" data-area={p.area} key={p.key}>
+        {icon}
+        <span className="tech-tooltip__prereq-name">{p.name}</span>
+      </li>
+    );
+  };
   const description = isReadable(tech.description) ? clean(tech.description!) : null;
   const unlocks = tech.unlocks.grants.map(clean).filter(isReadable);
   // "What boosts your chance of drawing this tech" — readable lines from the raw
@@ -84,6 +131,8 @@ export function TechTooltip({
       data-area={tech.area}
       style={{ left: `${left}px`, top: `${top}px`, width: `${TOOLTIP_W}px`, maxHeight: `${maxHeight}px` }}
       role="tooltip"
+      onMouseEnter={onPointerEnter}
+      onMouseLeave={onPointerLeave}
     >
       <div className="tech-tooltip__title">{tech.name}</div>
       <div className="tech-tooltip__meta">
@@ -128,14 +177,7 @@ export function TechTooltip({
       {prereqs.length > 0 && (
         <section className="tech-tooltip__sec">
           <div className="tech-tooltip__sec-title">Required Technologies</div>
-          <ul className="tech-tooltip__prereqs">
-            {prereqs.map((p) => (
-              <li className="tech-tooltip__prereq" data-area={p.area} key={p.key}>
-                {p.icon ? <img src={p.icon} alt="" loading="lazy" /> : <span className="tech-tooltip__prereq-dot" />}
-                <span className="tech-tooltip__prereq-name">{p.name}</span>
-              </li>
-            ))}
-          </ul>
+          <ul className="tech-tooltip__prereqs">{prereqs.map(renderRef)}</ul>
         </section>
       )}
 
@@ -154,16 +196,7 @@ export function TechTooltip({
         <section className="tech-tooltip__sec">
           <div className="tech-tooltip__sec-title">Leads To</div>
           <ul className="tech-tooltip__prereqs">
-            {leadsTo.slice(0, LEADS_TO_MAX).map((r) => (
-              <li className="tech-tooltip__prereq" data-area={r.area} key={r.key}>
-                {r.icon ? (
-                  <img src={r.icon} alt="" loading="lazy" />
-                ) : (
-                  <span className="tech-tooltip__prereq-dot" />
-                )}
-                <span className="tech-tooltip__prereq-name">{r.name}</span>
-              </li>
-            ))}
+            {leadsTo.slice(0, LEADS_TO_MAX).map(renderRef)}
             {leadsTo.length > LEADS_TO_MAX && (
               <li className="tech-tooltip__prereq tech-tooltip__prereq--more">
                 +{leadsTo.length - LEADS_TO_MAX} more

@@ -41,6 +41,7 @@ function tech(
     description: null,
     icon: null,
     gate: null,
+    source: null,
   };
 }
 

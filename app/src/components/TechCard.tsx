@@ -70,6 +70,9 @@ interface TechCardProps {
   /** Synthetic ascension-perk parent node (Explore): render the hexagon + name
    *  and "Ascension Perk" label instead of the tier/cost/weight chrome. */
   perk?: boolean;
+  /** Synthetic event/dig-site parent node (Explore): render the source icon +
+   *  name and an "Event" / "Archaeology Site" label instead of the chrome. */
+  sourceKind?: "event" | "site";
 }
 
 // Memoized: pan/zoom re-renders the parent every tick, but a card's props
@@ -93,8 +96,17 @@ export const TechCard = memo(function TechCard({
   onToggleExpand,
   bucket,
   perk,
+  sourceKind,
 }: TechCardProps) {
   const category = tech.category[0] ?? "";
+  // Perk and event/site source nodes are synthetic PARENT cards — they drop the
+  // tier/cost/weight chrome for a single "what this is" label.
+  const synthetic = perk || !!sourceKind;
+  const syntheticLabel = perk
+    ? "Ascension Perk"
+    : sourceKind === "site"
+      ? "Archaeology Site"
+      : "Event";
   return (
     <div
       className="tech-card"
@@ -105,6 +117,7 @@ export const TechCard = memo(function TechCard({
       data-rare={tech.flags.isRare ? "" : undefined}
       data-bucket={bucket}
       data-perk={perk ? "" : undefined}
+      data-source={sourceKind}
       style={{
         position: "absolute",
         left: `${x}px`,
@@ -119,16 +132,16 @@ export const TechCard = memo(function TechCard({
     >
       <div className="tech-card__icon">
         {image ? <img src={image} alt="" loading="lazy" /> : null}
-        {!perk && (
+        {!synthetic && (
           <span className="tech-card__tier" data-tier={tech.tier}>{roman(tech.tier)}</span>
         )}
       </div>
       <div className="tech-card__body">
         {/* PLAIN TEXT — React children, never innerHTML (D-05 XSS). */}
         <div className="tech-card__title">{tech.name}</div>
-        {perk ? (
-          // Perk parent node: no tier/cost/weight — just what it is.
-          <div className="tech-card__meta">Ascension Perk</div>
+        {synthetic ? (
+          // Perk / event / dig-site parent node: no tier/cost/weight — just what it is.
+          <div className="tech-card__meta">{syntheticLabel}</div>
         ) : (
           <>
             <div className="tech-card__meta">
@@ -145,6 +158,14 @@ export const TechCard = memo(function TechCard({
               ) : null}
               {tech.cost} · Weight: {tech.weight}
             </div>
+            {tech.flags.isDangerous && (
+              // Stellaris flags these `is_dangerous`: AI empires research them
+              // cautiously and they can pull in a hostile event or end-game
+              // crisis (e.g. Jump Drives, Synthetics). PLAIN TEXT (D-05).
+              <div className="tech-card__danger">
+                ⚠ Dangerous — may provoke a hostile event or crisis.
+              </div>
+            )}
           </>
         )}
       </div>

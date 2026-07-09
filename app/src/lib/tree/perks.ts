@@ -69,6 +69,7 @@ function makePerkTech(perkId: string): Tech {
     description: "Ascension perk",
     icon: `_perk_${perkId}.webp`,
     gate: null,
+    source: null,
   };
 }
 
