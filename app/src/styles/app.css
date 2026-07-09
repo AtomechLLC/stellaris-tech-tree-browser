@@ -916,24 +916,31 @@
   );
 }
 
-/* ── Level-of-detail: zoomed-out cards (canvas gets `.lod-simple`) ──────────
-   When zoomed out, all 678 cards are on-screen at once. Drop the expensive
-   paint (blurred shadow, SVG texture, text) down to a cheap icon tile — text is
-   unreadable that far out anyway — so panning stays smooth. The area-colored
-   border keeps area identity. Toggled imperatively (no React re-render). */
-.tree-canvas.lod-simple .tech-card::before {
-  display: none; /* drop the masked honeycomb texture when zoomed out */
+/* ── Level-of-detail: zoomed-out cards (`.lod-simple`) + drag-LOD (`.panning`)
+   When zoomed out, all 678 cards are on-screen at once; and WHILE dragging the
+   heavy map we temporarily apply the same simplification (`.panning`, added on
+   drag-start / removed on pointer-up). Drop the expensive paint — blurred shadow,
+   masked honeycomb ::before, text, gradients — down to a cheap icon tile so the
+   pan/scroll stays smooth. The area-colored border keeps area identity. Both
+   classes are toggled imperatively (no React re-render). */
+.tree-canvas.lod-simple .tech-card::before,
+.tree-canvas.panning .tech-card::before {
+  display: none; /* drop the masked honeycomb texture */
 }
-.tree-canvas.lod-simple .tech-card {
+.tree-canvas.lod-simple .tech-card,
+.tree-canvas.panning .tech-card {
   box-shadow: none;
   background-image: none;
   border-radius: 3px;
 }
 .tree-canvas.lod-simple .tech-card__body,
-.tree-canvas.lod-simple .tech-card__tier {
+.tree-canvas.lod-simple .tech-card__tier,
+.tree-canvas.panning .tech-card__body,
+.tree-canvas.panning .tech-card__tier {
   display: none;
 }
-.tree-canvas.lod-simple .tech-card__icon {
+.tree-canvas.lod-simple .tech-card__icon,
+.tree-canvas.panning .tech-card__icon {
   width: 100%;
   border-right: none;
 }

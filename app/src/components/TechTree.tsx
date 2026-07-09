@@ -56,6 +56,9 @@ const HISTORY_DEPTH = 40;
 // it (e.g. the full ~678-node map), render only the cards within the viewport plus
 // a margin so panning with everything on stays smooth.
 const CULL_MIN_NODES = 200;
+// Render margin as a FRACTION of the viewport on each side. Smaller → fewer nodes
+// rendered (faster) but more frequent re-culls; the drag-LOD keeps those cheap.
+const CULL_MARGIN = 0.5;
 
 type Area = Tech["area"];
 
@@ -298,6 +301,15 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // when the view pans past that margin. Keeps a full-map pan cheap.
   const cullRectRef = useRef<(Framing & { scale: number }) | null>(null);
   const [cullTick, setCullTick] = useState(0);
+  // Cached viewport size (ResizeObserver-updated) so the per-frame cull check
+  // never forces a getBoundingClientRect reflow.
+  const viewportSizeRef = useRef({ w: 0, h: 0 });
+  // Node count of the current layout — gates the drag-LOD to the heavy map only.
+  const nodeCountRef = useRef(0);
+  // rAF-coalesced panning: many pointermove events per frame collapse into ONE
+  // transform apply, keeping high-refresh input from over-working the main thread.
+  const rafRef = useRef<number | null>(null);
+  const pendingTransformRef = useRef<Transform | null>(null);
 
   const iconBase = dataUrl(`${snapshot.meta.gameVersion}/icons`);
 
@@ -334,21 +346,26 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // rect (or `force`), so most pan frames do nothing. The margin is one viewport
   // on every side, so you can pan a full screen before the set is recomputed.
   const recomputeCull = useCallback((force = false) => {
-    const vp = viewportRef.current?.getBoundingClientRect();
-    if (!vp) return;
+    let { w, h } = viewportSizeRef.current;
+    if (!w || !h) {
+      const vp = viewportRef.current?.getBoundingClientRect();
+      if (!vp) return;
+      w = vp.width;
+      h = vp.height;
+    }
     const t = transformRef.current;
     const x0 = -t.x / t.scale;
     const y0 = -t.y / t.scale;
-    const x1 = (vp.width - t.x) / t.scale;
-    const y1 = (vp.height - t.y) / t.scale;
+    const x1 = (w - t.x) / t.scale;
+    const y1 = (h - t.y) / t.scale;
     const cr = cullRectRef.current;
     // Recompute on: forced, first run, panning outside the committed rect, OR a
     // big zoom change (a smaller viewport should render fewer cards, but panning
     // alone never shrinks the rect).
     const zoomChanged = cr ? Math.abs(t.scale - cr.scale) > cr.scale * 0.3 : true;
     if (force || !cr || zoomChanged || x0 < cr.x0 || y0 < cr.y0 || x1 > cr.x1 || y1 > cr.y1) {
-      const mw = x1 - x0;
-      const mh = y1 - y0;
+      const mw = (x1 - x0) * CULL_MARGIN;
+      const mh = (y1 - y0) * CULL_MARGIN;
       cullRectRef.current = { x0: x0 - mw, y0: y0 - mh, x1: x1 + mw, y1: y1 + mh, scale: t.scale };
       setCullTick((n) => n + 1);
     }
@@ -375,6 +392,34 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     },
     [recomputeCull],
   );
+
+  // rAF-coalesced apply for high-frequency PAN moves: store the target and apply
+  // at most once per frame (the pinch/zoom/fit paths call applyTransform directly).
+  const scheduleTransform = useCallback(
+    (t: Transform) => {
+      pendingTransformRef.current = t;
+      if (rafRef.current === null) {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null;
+          const p = pendingTransformRef.current;
+          pendingTransformRef.current = null;
+          if (p) applyTransform(p);
+        });
+      }
+    },
+    [applyTransform],
+  );
+  // Apply any queued transform immediately (on pointer-up) so the final position
+  // isn't left a frame behind.
+  const flushTransform = useCallback(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    const p = pendingTransformRef.current;
+    pendingTransformRef.current = null;
+    if (p) applyTransform(p);
+  }, [applyTransform]);
 
   // Stable ref callback: bind the canvas node and apply the current transform on
   // (re)attach. Stable identity so React only calls it on real mount/unmount.
@@ -903,19 +948,26 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         // here (not pointerdown) is what keeps a pure click landing on the card
         // — see the note in onPointerDown.
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        // Drag-LOD: on the heavy map, drop cards to the cheap icon tile WHILE
+        // dragging (restored on pointer-up) so the drag itself is nearly free.
+        if (nodeCountRef.current > CULL_MIN_NODES) canvasRef.current?.classList.add("panning");
       }
       const t = transformRef.current;
-      applyTransform({
+      // Coalesce to one apply per frame (see scheduleTransform).
+      scheduleTransform({
         scale: t.scale,
         x: drag.originX + (e.clientX - drag.startX),
         y: drag.originY + (e.clientY - drag.startY),
       });
     },
-    [applyTransform],
+    [scheduleTransform, applyTransform],
   );
 
   const onPointerUp = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
     pointersRef.current.delete(e.pointerId);
+    // End drag-LOD + apply any queued pan frame so we settle on the exact position.
+    canvasRef.current?.classList.remove("panning");
+    flushTransform();
     const el = e.currentTarget as HTMLElement;
     if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
     if (pointersRef.current.size >= 2) {
@@ -943,7 +995,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         dragRef.current = null;
       }
     }
-  }, []);
+  }, [flushTransform]);
 
   // ── Zoom toward the cursor (wheel — imperative) ───────────────────────────
   const onWheel = useCallback(
@@ -1262,9 +1314,25 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // handled imperatively in applyTransform.
   useEffect(() => {
     if (!layoutReady) return;
+    nodeCountRef.current = layoutReady.nodes.length;
     const id = requestAnimationFrame(() => recomputeCull(true));
     return () => cancelAnimationFrame(id);
   }, [layoutReady, recomputeCull]);
+
+  // Cache the viewport size (updated on resize/sidebar-toggle) so the per-frame
+  // cull check reads a ref instead of forcing a layout with getBoundingClientRect.
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const update = () => {
+      const r = el.getBoundingClientRect();
+      viewportSizeRef.current = { w: r.width, h: r.height };
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const explore = viewMode === "explore";
   // In Explore, a focused tech shows its dependency neighborhood (focus view);
