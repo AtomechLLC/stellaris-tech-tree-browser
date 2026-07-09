@@ -46,6 +46,29 @@ function perkOfGate(gate: Tech["gate"]): string | null {
   return null;
 }
 
+/**
+ * Crisis ascension-perk paths keyed by tech-key prefix. The Cosmogenesis /
+ * Become-the-Crisis SHIP variants (e.g. the bio-ship `tech_cosmogenesis_mauler`
+ * / `_stinger` / `_harbinger` / `_weaver`, plus battlecruiser / escort / titan)
+ * are `technology_swap` alternates gated by DLC + `country_uses_bio_ships`
+ * rather than `has_ascension_perk` — but they unmistakably belong under that
+ * perk's crisis path, so map them by key when the gate check comes up empty.
+ */
+const PERK_KEY_PREFIXES: ReadonlyArray<readonly [prefix: string, perk: string]> = [
+  ["tech_cosmogenesis_", "ap_cosmogenesis"],
+  ["tech_become_the_crisis", "ap_become_the_crisis"],
+];
+
+/** The ascension perk this tech belongs under — from its gate, else its key. */
+function perkOfTech(tech: Tech): string | null {
+  const fromGate = perkOfGate(tech.gate);
+  if (fromGate) return fromGate;
+  for (const [prefix, perk] of PERK_KEY_PREFIXES) {
+    if (tech.key.startsWith(prefix)) return perk;
+  }
+  return null;
+}
+
 /** A perk pseudo-tech — carries the hexagon icon + name; everything else neutral. */
 function makePerkTech(perkId: string): Tech {
   return {
@@ -82,7 +105,7 @@ export function augmentSnapshotWithPerks(snapshot: TechSnapshot): TechSnapshot {
   const techs: Record<string, Tech> = {};
   const perksUsed = new Set<string>();
   for (const [key, tech] of Object.entries(snapshot.techs)) {
-    const perk = perkOfGate(tech.gate);
+    const perk = perkOfTech(tech);
     if (perk) {
       perksUsed.add(perk);
       techs[key] = { ...tech, prerequisites: [`${PERK_PREFIX}${perk}`, ...tech.prerequisites] };
