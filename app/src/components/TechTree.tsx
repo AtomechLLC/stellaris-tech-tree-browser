@@ -52,6 +52,10 @@ const LOD_THRESHOLD = 0.55;
 const DRAG_THRESHOLD = 4;
 // How many prior views the Back (Backspace) stack retains.
 const HISTORY_DEPTH = 40;
+// Viewport culling: at or below this node count, render every card (cheap). Above
+// it (e.g. the full ~678-node map), render only the cards within the viewport plus
+// a margin so panning with everything on stays smooth.
+const CULL_MIN_NODES = 200;
 
 type Area = Tech["area"];
 
@@ -289,6 +293,11 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // it to skip the focus auto-fit when a shared frame wins on load.
   const framingAppliedRef = useRef(false);
   const fitFocusRef = useRef<string | null>(null);
+  // Viewport culling: `cullRectRef` is the committed canvas rect (viewport +
+  // margin) whose cards are rendered; bumping `cullTick` re-renders the card list
+  // when the view pans past that margin. Keeps a full-map pan cheap.
+  const cullRectRef = useRef<(Framing & { scale: number }) | null>(null);
+  const [cullTick, setCullTick] = useState(0);
 
   const iconBase = dataUrl(`${snapshot.meta.gameVersion}/icons`);
 
@@ -320,22 +329,52 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [snapshot]);
 
-  // ── Imperative transform (no React re-render on pan/zoom) ──────────────────
-  const applyTransform = useCallback((t: Transform) => {
-    transformRef.current = t;
-    const c = canvasRef.current;
-    if (c) {
-      c.style.transform = cssTransform(t);
-      // LOD: pan (scale unchanged) is a no-op toggle; crossing the zoom
-      // threshold flips the whole tree between full cards and cheap icon tiles.
-      c.classList.toggle("lod-simple", t.scale < LOD_THRESHOLD);
+  // Recompute the culling rect from the current transform + viewport. Only bumps
+  // `cullTick` (→ re-render) when the visible area has moved OUTSIDE the committed
+  // rect (or `force`), so most pan frames do nothing. The margin is one viewport
+  // on every side, so you can pan a full screen before the set is recomputed.
+  const recomputeCull = useCallback((force = false) => {
+    const vp = viewportRef.current?.getBoundingClientRect();
+    if (!vp) return;
+    const t = transformRef.current;
+    const x0 = -t.x / t.scale;
+    const y0 = -t.y / t.scale;
+    const x1 = (vp.width - t.x) / t.scale;
+    const y1 = (vp.height - t.y) / t.scale;
+    const cr = cullRectRef.current;
+    // Recompute on: forced, first run, panning outside the committed rect, OR a
+    // big zoom change (a smaller viewport should render fewer cards, but panning
+    // alone never shrinks the rect).
+    const zoomChanged = cr ? Math.abs(t.scale - cr.scale) > cr.scale * 0.3 : true;
+    if (force || !cr || zoomChanged || x0 < cr.x0 || y0 < cr.y0 || x1 > cr.x1 || y1 > cr.y1) {
+      const mw = x1 - x0;
+      const mh = y1 - y0;
+      cullRectRef.current = { x0: x0 - mw, y0: y0 - mh, x1: x1 + mw, y1: y1 + mh, scale: t.scale };
+      setCullTick((n) => n + 1);
     }
-    // Debounced: mirror the new framing into the URL so a shared link reproduces
-    // the current zoom + focal point. Pan/zoom is imperative (no re-render), so
-    // this is the only hook that captures it.
-    clearTimeout(urlTimerRef.current);
-    urlTimerRef.current = window.setTimeout(() => syncUrlRef.current(), 300);
   }, []);
+
+  // ── Imperative transform (no React re-render on pan/zoom) ──────────────────
+  const applyTransform = useCallback(
+    (t: Transform) => {
+      transformRef.current = t;
+      const c = canvasRef.current;
+      if (c) {
+        c.style.transform = cssTransform(t);
+        // LOD: pan (scale unchanged) is a no-op toggle; crossing the zoom
+        // threshold flips the whole tree between full cards and cheap icon tiles.
+        c.classList.toggle("lod-simple", t.scale < LOD_THRESHOLD);
+      }
+      // Cull: re-render the card set only if the view left the render margin.
+      recomputeCull();
+      // Debounced: mirror the new framing into the URL so a shared link reproduces
+      // the current zoom + focal point. Pan/zoom is imperative (no re-render), so
+      // this is the only hook that captures it.
+      clearTimeout(urlTimerRef.current);
+      urlTimerRef.current = window.setTimeout(() => syncUrlRef.current(), 300);
+    },
+    [recomputeCull],
+  );
 
   // Stable ref callback: bind the canvas node and apply the current transform on
   // (re)attach. Stable identity so React only calls it on real mount/unmount.
@@ -1216,6 +1255,17 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       : viewMode === "explore"
         ? exploreFocus ?? exploreLayout
         : filtered ?? state.layout;
+
+  // Re-cull whenever the LAYOUT changes (view switch, filter, re-pack, focus,
+  // expand) — the node positions/set differ, so the committed rect may be stale.
+  // A rAF lets the transform (auto-fit) settle first. Pan/zoom re-culling is
+  // handled imperatively in applyTransform.
+  useEffect(() => {
+    if (!layoutReady) return;
+    const id = requestAnimationFrame(() => recomputeCull(true));
+    return () => cancelAnimationFrame(id);
+  }, [layoutReady, recomputeCull]);
+
   const explore = viewMode === "explore";
   // In Explore, a focused tech shows its dependency neighborhood (focus view);
   // otherwise the browse spanning tree. `focused` gates chevrons/expansion off.
@@ -1225,6 +1275,16 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const highlightKey = focused ? focusKey : selectedKey;
   const content = useMemo(() => {
     if (!layoutReady) return null;
+    // Cull: render only cards intersecting the committed viewport-plus-margin rect
+    // once the layout is large. Small layouts (Explore) render whole — cheap, and
+    // avoids any margin pop-in. Bands + the single edge <path> are never culled.
+    const cr = cullRectRef.current;
+    const visibleNodes =
+      cr && layoutReady.nodes.length > CULL_MIN_NODES
+        ? layoutReady.nodes.filter(
+            (n) => n.x < cr.x1 && n.x + n.w > cr.x0 && n.y < cr.y1 && n.y + n.h > cr.y0,
+          )
+        : layoutReady.nodes;
     return {
       // Bands are MAP-ONLY — Explore renders no band/watermark backgrounds.
       bands: explore ? null : (
@@ -1239,7 +1299,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           selectedKey={highlightKey}
         />
       ),
-      cards: layoutReady.nodes.map((node) =>
+      cards: visibleNodes.map((node) =>
         // Synthetic Explore bucket root → a BucketCard (no tech/tooltip/select;
         // click just toggles its expansion). Real tech → the normal TechCard.
         node.bucket ? (
@@ -1304,6 +1364,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     onBucketToggle,
     empireOn,
     bucketMap,
+    cullTick,
   ]);
 
   if (state.status === "loading") return <LoadingOverlay />;
