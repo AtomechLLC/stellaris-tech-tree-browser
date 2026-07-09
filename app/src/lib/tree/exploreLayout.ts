@@ -49,14 +49,17 @@ interface BucketDef {
 }
 
 /**
- * The six explore buckets, in DISPLAY order (Empire Starting Techs, Repeatable,
- * Dangerous, Insight, Archaeology, Event). ASSIGNMENT is by first-match in the
+ * The explore buckets, in DISPLAY order. ASSIGNMENT is by first-match in the
  * order listed here, so a tech matching several (e.g. a starting tech that's
  * also rare) lands in the first — [Empire Starting Techs] wins for any start
- * tech, then the more specific signals, and [Event] stays the catch-all.
- * Verified against v4.5.0: the 178 no-prerequisite roots partition cleanly into
- * Starting 28 / Repeatable 3 / Dangerous 23 / Insight 13 / Archaeology 11 /
- * Event 100.
+ * tech, then the more specific signals, then [Standard] catches everything that
+ * still appears in the normal research pool (weight > 0), and [Event] is the
+ * final catch-all (weight 0 — only handed out by events / special conditions).
+ *
+ * [Repeatable] is special: it collects EVERY repeatable-upgrade tech (weapon /
+ * armor / shield / economy), root or not — handled directly in
+ * buildExploreGraph, not via first-match here — so all of them group together
+ * instead of hiding as tier-5 leaves deep in the tree.
  */
 export const EXPLORE_BUCKETS: BucketDef[] = [
   {
@@ -68,7 +71,7 @@ export const EXPLORE_BUCKETS: BucketDef[] = [
   {
     id: "repeatable",
     label: "Repeatable",
-    descriptor: "Repeatable techs",
+    descriptor: "Repeatable upgrade techs",
     match: (t) => t.flags.isRepeatable,
   },
   {
@@ -90,9 +93,15 @@ export const EXPLORE_BUCKETS: BucketDef[] = [
     match: (t) => (t.category[0] ?? "") === "archaeostudies",
   },
   {
+    id: "standard",
+    label: "Standard",
+    descriptor: "In the normal research pool",
+    match: (t) => t.weight > 0, // drawn randomly once its tier unlocks
+  },
+  {
     id: "event",
     label: "Event",
-    descriptor: "Event & special techs",
+    descriptor: "Event & special techs (not randomly drawn)",
     match: () => true, // catch-all — must be last
   },
 ];
@@ -158,10 +167,23 @@ function buildExploreGraph(snapshot: TechSnapshot): ExploreGraph {
   for (const def of EXPLORE_BUCKETS) bucketRoots.set(def.id, []);
 
   for (const tech of techs) {
-    if (tech.prerequisites.length === 0) {
-      // Every root is bucketed (incl. starting techs → [Empire Starting Techs])
-      // so the initial Explore column is just the handful of bucket cards, not
-      // ~178 rows of individual roots.
+    // Repeatable upgrades group under [Repeatable] regardless of prerequisites,
+    // and are pulled ENTIRELY out of the browse tree (they're terminal tier-5
+    // leaves — grouping them beats scattering them as deep children).
+    if (tech.flags.isRepeatable) {
+      bucketRoots.get("repeatable")!.push(tech);
+      continue;
+    }
+    // EVERY starting tech goes in [Empire Starting Techs] — including ones with
+    // prerequisites (e.g. Starbase Construction, New Worlds Protocol), since the
+    // empire begins with them researched. Unlike repeatables they are NOT pulled
+    // out of the tree: they fall through to the wiring below so their own
+    // dependents stay reachable, and the spanning-tree `visited` set dedups.
+    if (tech.flags.isStarting) {
+      bucketRoots.get("starting")!.push(tech);
+    } else if (tech.prerequisites.length === 0) {
+      // Every other root is bucketed (the rest by weight into [Standard]/[Event])
+      // so the initial Explore column is just the handful of bucket cards.
       bucketRoots.get(bucketOf(tech))!.push(tech);
       continue;
     }
@@ -169,7 +191,12 @@ function buildExploreGraph(snapshot: TechSnapshot): ExploreGraph {
       // Only wire an edge to a prereq that actually exists (dangling refs are a
       // contract violation the map layout already logs — here we skip silently
       // so an orphaned edge never references a missing node).
-      if (!snapshot.techs[prereqKey]) continue;
+      const prereq = snapshot.techs[prereqKey];
+      if (!prereq) continue;
+      // Repeatables live ONLY in the [Repeatable] bucket — never wire a tree edge
+      // into one, so expanding the bucket shows them as flat leaves (and nothing
+      // is revealed "under" a repeatable in the browse tree).
+      if (prereq.flags.isRepeatable) continue;
       const bucket = childrenByKey.get(prereqKey);
       if (bucket) bucket.push(tech);
       else childrenByKey.set(prereqKey, [tech]);
@@ -315,14 +342,17 @@ export function layoutExplore(
  *   • its ENTIRE recursive prerequisite tree fanned out to the LEFT, layered by
  *     longest-path distance so every prerequisite sits in a column left of
  *     everything that needs it;
- *   • the techs that DIRECTLY depend on it (its immediate unlocks) one column to
- *     the RIGHT.
+ *   • the techs that depend on it, fanned out to the RIGHT — the focus's direct
+ *     dependents always, plus the dependents of any node the user has EXPANDED
+ *     (single-click) via `expandedForward`, so the forward tree grows in place
+ *     without hiding anything. Double-click instead RE-FOCUSES (new center).
  * Pure + synchronous (no ELK); same TreeLayout shape as the other layouts, so
  * the renderer reuses the exact same cards + EdgeLayer + viewport transform.
  */
 export function layoutFocus(
   snapshot: TechSnapshot,
   focusKey: string,
+  expandedForward: Set<string>,
   cardW: number,
   cardH: number,
 ): TreeLayout {
@@ -360,12 +390,28 @@ export function layoutFocus(
   relax(focusKey, new Set());
 
   const focusCol = Math.max(...dist.values()); // deepest ancestor → column 0
-  const dependents = (childrenByKey.get(focusKey) ?? []).map((t) => t.key);
 
-  // Column per node: ancestors + focus from `dist`; dependents one column right.
+  // Column per node: ancestors + focus from `dist` (left of / at focusCol).
   const colOf = new Map<string, number>();
   for (const [key, d] of dist) colOf.set(key, focusCol - d);
-  for (const d of dependents) colOf.set(d, focusCol + 1);
+
+  // Forward reveal: place the direct dependents of the focus AND of every node
+  // the user has expanded, each one column to the right of its parent. BFS so
+  // columns strictly increase along the forward (dependency) direction. The
+  // focus is always treated as expanded so its dependents show immediately.
+  const forwardQueue: string[] = [];
+  for (const key of colOf.keys()) {
+    if (key === focusKey || expandedForward.has(key)) forwardQueue.push(key);
+  }
+  while (forwardQueue.length > 0) {
+    const parent = forwardQueue.shift()!;
+    const parentCol = colOf.get(parent)!;
+    for (const child of childrenByKey.get(parent) ?? []) {
+      if (colOf.has(child.key)) continue; // already placed (ancestor/focus/other)
+      colOf.set(child.key, parentCol + 1);
+      if (expandedForward.has(child.key)) forwardQueue.push(child.key);
+    }
+  }
 
   // Group keys by column, stable-sort each, then stack it centered on y = 0.
   const byCol = new Map<number, string[]>();
@@ -396,19 +442,19 @@ export function layoutFocus(
   const shift = Number.isFinite(minY) ? -minY : 0;
   for (const node of nodes) node.y += shift;
 
-  // Edges: the whole prereq tree (prereq → tech for every shown ancestor + the
-  // focus) plus focus → each direct dependent. `sections: []` → EdgeLayer draws
-  // its own elbow, same as the other layouts.
-  const shown = new Set(colOf.keys());
+  // Edges: for every placed node, an edge from each of its prerequisites that is
+  // ALSO placed. This single rule draws both the ancestry tree (left) and the
+  // forward dependent tree (right), since a dependent lists its parent as a
+  // prereq. `sections: []` → EdgeLayer draws its own elbow.
+  const placed = new Set(colOf.keys());
   const edges: LayoutEdge[] = [];
-  for (const key of dist.keys()) {
+  for (const key of placed) {
     const tech = snapshot.techs[key];
     if (!tech) continue;
     for (const p of tech.prerequisites) {
-      if (shown.has(p)) edges.push({ from: p, to: key, sections: [] });
+      if (placed.has(p)) edges.push({ from: p, to: key, sections: [] });
     }
   }
-  for (const d of dependents) edges.push({ from: focusKey, to: d, sections: [] });
 
   let width = 0;
   let height = 0;

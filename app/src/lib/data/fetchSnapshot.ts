@@ -9,7 +9,12 @@ import { TechSnapshotSchema, type TechSnapshot } from "../../types/tech-snapshot
  * (T-02-02 mitigation).
  */
 export async function fetchSnapshot(version = "v4.5.0"): Promise<TechSnapshot> {
-  const res = await fetch(`/data/${version}/tech.json`);
+  // `cache: "no-cache"` forces the browser to REVALIDATE with the server on
+  // every load (conditional GET → 304 when unchanged, fresh 200 when the data
+  // was regenerated). Without this the browser happily serves a stale cached
+  // tech.json after `npm run generate-data`, so re-runs of the pipeline (new
+  // localisation, flags, etc.) silently don't show up until a hard refresh.
+  const res = await fetch(`/data/${version}/tech.json`, { cache: "no-cache" });
 
   if (!res.ok) {
     throw new Error(`Failed to fetch tech.json: ${res.status} ${res.statusText}`);

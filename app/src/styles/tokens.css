@@ -26,6 +26,23 @@
   --area-society: #e69f00;
   --area-engineering: #d55e00;
 
+  /* Tech-tier colours — the reference tool's rarity-style sequence (grey → white
+     → green → blue → purple → orange), rendered bold. Adopted from
+     bloodstainedcrow/stellaris-tech-tree (assets/css/tech-tree.css). */
+  --tier-0: #9d9d9d;
+  --tier-1: #ffffff;
+  --tier-2: #1eff00;
+  --tier-3: #45a9ff;
+  --tier-4: #c380f1;
+  --tier-5: #ff8000;
+
+  /* Discord brand "blurple" — for the Funsmith Club header link. */
+  --discord: #5865f2;
+
+  /* Rare-tech accent (violet) — the far end of the rare-card background blend
+     (dangerous techs blend to --color-danger instead). */
+  --rare: #a855f7;
+
   /* Selection highlight (quick 260708-4io): the gold "targeted" color for a
      click-selected card's outline/glow and its highlighted prereq/child edges.
      A single token so the card outline, edge stroke, and ancestry-panel

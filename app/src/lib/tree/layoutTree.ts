@@ -33,6 +33,7 @@ export type BucketId =
   | "dangerous"
   | "repeatable"
   | "archaeology"
+  | "standard"
   | "event";
 
 /** Display payload carried by a synthetic bucket root node. */

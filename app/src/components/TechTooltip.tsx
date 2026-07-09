@@ -69,18 +69,33 @@ export function TechTooltip({
   // Place to the right of the card if it fits, otherwise to its left.
   const placeRight = anchor.right + 12 + TOOLTIP_W <= window.innerWidth;
   const left = placeRight ? anchor.right + 12 : anchor.left - 12 - TOOLTIP_W;
-  const top = Math.max(8, Math.min(anchor.top, window.innerHeight - 380));
+  // Anchor near the card's top, but never start lower than ~1/3 down the
+  // viewport — that guarantees a tall tooltip has most of the screen height to
+  // grow into, instead of being starved (and forced to scroll) when the hovered
+  // card sits low. `maxHeight` then fills from `top` to the viewport bottom, so
+  // the tooltip grows as tall as its content needs. "If it can't fit, make it
+  // bigger" — it only scrolls when content exceeds nearly the whole viewport.
+  const top = Math.max(8, Math.min(anchor.top, Math.round(window.innerHeight * 0.34)));
+  const maxHeight = window.innerHeight - top - 8;
 
   return (
     <div
       className="tech-tooltip"
       data-area={tech.area}
-      style={{ left: `${left}px`, top: `${top}px`, width: `${TOOLTIP_W}px` }}
+      style={{ left: `${left}px`, top: `${top}px`, width: `${TOOLTIP_W}px`, maxHeight: `${maxHeight}px` }}
       role="tooltip"
     >
       <div className="tech-tooltip__title">{tech.name}</div>
       <div className="tech-tooltip__meta">
-        {categoryLabel(category)} · Tier {tech.tier} · Cost {tech.cost} · Weight {tech.weight}
+        {categoryLabel(category)} ·{" "}
+        <span className="tier-num" data-tier={tech.tier}>Tier {tech.tier}</span> · Cost{" "}
+        <img
+          className="tech-tooltip__cost-icon"
+          src={`${iconBase}/_research_${tech.area}.webp`}
+          alt={`${tech.area} research`}
+          title={`${tech.area} research`}
+        />
+        {tech.cost} · Weight {tech.weight}
       </div>
 
       {(tech.dlc || tech.flags.isRare || tech.flags.isDangerous) && (

@@ -64,15 +64,66 @@ export interface ResolvedTechText {
 }
 
 /**
+ * Recursively resolves `$token$` references in a localisation value against the
+ * global map. Many tech names/descriptions are stored NOT as literal text but
+ * as a reference to another game object's loc key — e.g. `tech_bio_reactor`'s
+ * value is `"$building_bio_reactor$"`, and `building_bio_reactor` resolves to
+ * "Bio-Reactor". A resolved value can itself contain more `$...$`, so this
+ * recurses (depth-guarded against cyclic references). A `$key|format$`
+ * specifier keeps only the `key` part for lookup. A token absent from the map is
+ * left verbatim (best-effort — never throws).
+ */
+export function resolveLocTokens(
+  value: string,
+  map: Map<string, string>,
+  depth = 0,
+): string {
+  if (depth > 12) return value; // cycle / runaway guard
+  return value.replace(/\$([^$]*)\$/g, (whole, inner: string) => {
+    if (inner === "") return whole; // literal `$$` etc.
+    const key = inner.split("|")[0]; // drop a `$key|fmt$` formatting spec
+    const hit = map.get(key);
+    return hit === undefined ? whole : resolveLocTokens(hit, map, depth + 1);
+  });
+}
+
+/**
+ * Strips Clausewitz display markup that only makes sense in-game: `§Y…§!`
+ * colour codes and `£energy£`-style inline icon tokens. Applied to resolved
+ * NAMES/DESCRIPTIONS so they read as clean plain text (Security Domain: we ship
+ * plain text, and these codes would otherwise render as literal noise).
+ */
+function stripLocMarkup(value: string): string {
+  return value
+    .replace(/§[A-Za-z!]/g, "") // §Y colour open / §! reset
+    .replace(/£\w+(?:\|\w+)?£?/g, "") // £icon£ tokens (optionally £icon|frame£)
+    .trim();
+}
+
+/**
+ * Fully resolve a raw loc value into clean display text: recursively expand
+ * `$token$` references, then strip in-game §colour / £icon markup. Shared by
+ * tech names/descriptions AND unlock (grant) text so both render as plain text
+ * with no residual raw tokens.
+ */
+export function resolveDisplayText(raw: string, map: Map<string, string>): string {
+  return stripLocMarkup(resolveLocTokens(raw, map));
+}
+
+/**
  * Resolves a tech key's display name and description from the global
  * localisation map. The name key is the tech key itself; the description
  * lives under `<techKey>_desc` when present.
  *
- * Returns raw localisation strings unmodified — does NOT convert §color§!
- * codes or $variable$ tokens to HTML (Security Domain: ship as plain text).
+ * Resolves `$token$` references recursively (a tech's name is often a reference
+ * to the building/module/megastructure it unlocks) and strips in-game §colour /
+ * £icon markup, so the output is clean display plain text — never HTML.
  */
 export function resolveTechText(techKey: string, map: Map<string, string>): ResolvedTechText {
-  const name = map.get(techKey) ?? null;
-  const description = map.get(`${techKey}_desc`) ?? null;
-  return { name, description };
+  const rawName = map.get(techKey);
+  const rawDesc = map.get(`${techKey}_desc`);
+  return {
+    name: rawName === undefined ? null : resolveDisplayText(rawName, map),
+    description: rawDesc === undefined ? null : resolveDisplayText(rawDesc, map),
+  };
 }

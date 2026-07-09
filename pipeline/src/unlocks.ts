@@ -19,6 +19,7 @@
  * No building/component cross-referencing here (UNLK-01, deferred to v2).
  */
 import type { UnlockContentRaw, PrereqforDescEntry, GrantsModifier } from "./parser/tech-extractor.js";
+import { resolveDisplayText } from "./localisation/loc-scanner.js";
 
 export interface BuildUnlocksResult {
   grants: string[];
@@ -37,7 +38,10 @@ export interface BuildUnlocksResult {
  */
 function resolveOrVerbatim(token: string, locMap: Map<string, string>): { text: string; resolved: boolean } {
   const hit = locMap.get(token);
-  if (hit !== undefined) return { text: hit, resolved: true };
+  // A resolved value is often a template with nested `$token$` refs + §colour
+  // markup (e.g. "$TECH_UNLOCK_COMPONENT_LINE$ $tech_curator_lab$ — …"); run it
+  // through the shared display resolver so grant text ships as clean plain text.
+  if (hit !== undefined) return { text: resolveDisplayText(hit, locMap), resolved: true };
   return { text: token, resolved: false };
 }
 

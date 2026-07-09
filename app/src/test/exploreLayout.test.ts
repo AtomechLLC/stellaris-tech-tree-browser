@@ -28,7 +28,7 @@ const categoryOf = (t: Tech): string => t.category[0] ?? "";
 const BUCKET_KEYS = new Set(EXPLORE_BUCKETS.map((b) => bucketKey(b.id)));
 
 describe("layoutExplore: collapsible forward tech tree with bucket roots", () => {
-  it("collapsed → only the 6 synthetic bucket cards, no tech nodes, no edges", () => {
+  it("collapsed → only the synthetic bucket cards, no tech nodes, no edges", () => {
     const snapshot = loadRealSnapshot();
 
     const layout = layoutExplore(snapshot, new Set(), undefined, CARD_W, CARD_H);
@@ -67,14 +67,18 @@ describe("layoutExplore: collapsible forward tech tree with bucket roots", () =>
     expect(layout.nodes[0].bucket!.id).toBe("starting");
   });
 
-  it("every no-prereq tech is grouped into exactly one bucket; starting techs → [Empire Starting Techs]", () => {
+  it("buckets group every root + all repeatables; starting → [Empire Starting Techs], repeatables → [Repeatable]", () => {
     const snapshot = loadRealSnapshot();
-    const roots = Object.values(snapshot.techs).filter(
-      (t) => t.prerequisites.length === 0,
-    );
-    const startingRoots = roots.filter((t) => t.flags.isStarting);
+    const all = Object.values(snapshot.techs);
+    const roots = all.filter((t) => t.prerequisites.length === 0);
+    // Non-repeatable roots are what the root-partition covers; repeatables are
+    // pulled out wholesale (root or not) into [Repeatable].
+    const nonRepeatableRoots = roots.filter((t) => !t.flags.isRepeatable);
+    // ALL starting techs (root or not) go in [Empire Starting Techs].
+    const allStarting = all.filter((t) => t.flags.isStarting);
+    const allRepeatables = all.filter((t) => t.flags.isRepeatable);
 
-    // Expand every bucket; the roots revealed at column 1 are its grouped roots.
+    // Expand every bucket; each bucket's grouped members are its edge targets.
     const expanded = layoutExplore(
       snapshot,
       new Set(BUCKET_KEYS),
@@ -82,26 +86,31 @@ describe("layoutExplore: collapsible forward tech tree with bucket roots", () =>
       CARD_W,
       CARD_H,
     );
-
-    // Each bucket's grouped roots are the direct targets of its bucket edge.
+    const targetsFrom = (key: string) => {
+      const s = new Set<string>();
+      for (const e of expanded.edges) if (e.from === key) s.add(e.to);
+      return s;
+    };
     const grouped = new Set<string>();
-    const startingGrouped = new Set<string>();
-    const startingKey = bucketKey("starting");
-    for (const def of EXPLORE_BUCKETS) {
-      const key = bucketKey(def.id);
-      for (const e of expanded.edges) {
-        if (e.from !== key) continue;
-        grouped.add(e.to);
-        if (key === startingKey) startingGrouped.add(e.to);
-      }
-    }
+    for (const def of EXPLORE_BUCKETS)
+      for (const k of targetsFrom(bucketKey(def.id))) grouped.add(k);
 
-    // The partition is total (every root grouped) and disjoint (sizes match).
-    expect(grouped.size).toBe(roots.length);
-    for (const t of roots) expect(grouped.has(t.key)).toBe(true);
-    // Every starting tech lands in [Empire Starting Techs], and only those.
-    expect(startingGrouped.size).toBe(startingRoots.length);
-    for (const t of startingRoots) expect(startingGrouped.has(t.key)).toBe(true);
+    // Every non-repeatable root is grouped somewhere.
+    for (const t of nonRepeatableRoots) expect(grouped.has(t.key)).toBe(true);
+    // Every starting tech (incl. ones with prerequisites) → [Empire Starting
+    // Techs], and only those.
+    const startingGrouped = targetsFrom(bucketKey("starting"));
+    expect(startingGrouped.size).toBe(allStarting.length);
+    for (const t of allStarting) expect(startingGrouped.has(t.key)).toBe(true);
+    // Every repeatable (root or not) → [Repeatable], and only those.
+    const repeatableGrouped = targetsFrom(bucketKey("repeatable"));
+    expect(repeatableGrouped.size).toBe(allRepeatables.length);
+    for (const t of allRepeatables) expect(repeatableGrouped.has(t.key)).toBe(true);
+    // [Standard] holds only weight>0 members; [Event] only weight===0.
+    for (const k of targetsFrom(bucketKey("standard")))
+      expect(snapshot.techs[k].weight).toBeGreaterThan(0);
+    for (const k of targetsFrom(bucketKey("event")))
+      expect(snapshot.techs[k].weight).toBe(0);
   });
 
   it("a non-empty bucket is expandable; expanding reveals its roots to the right with edges", () => {
@@ -218,7 +227,7 @@ describe("layoutFocus: a tech's dependency neighborhood", () => {
     )!;
     expect(focus).toBeDefined();
 
-    const layout = layoutFocus(snapshot, focus.key, CARD_W, CARD_H);
+    const layout = layoutFocus(snapshot, focus.key, new Set([focus.key]), CARD_W, CARD_H);
     const byKey = new Map(layout.nodes.map((n) => [n.key, n]));
     const focusNode = byKey.get(focus.key)!;
     expect(focusNode).toBeDefined();
@@ -250,7 +259,7 @@ describe("layoutFocus: a tech's dependency neighborhood", () => {
         (p) => (snapshot.techs[p]?.prerequisites.length ?? 0) > 0,
       ),
     )!;
-    const layout = layoutFocus(snapshot, focus.key, CARD_W, CARD_H);
+    const layout = layoutFocus(snapshot, focus.key, new Set([focus.key]), CARD_W, CARD_H);
     const keys = new Set(layout.nodes.map((n) => n.key));
 
     // BFS the real ancestry; every ancestor must appear as a node.
@@ -272,8 +281,29 @@ describe("layoutFocus: a tech's dependency neighborhood", () => {
 
   it("returns an empty layout for an unknown focus key (defensive)", () => {
     const snapshot = loadRealSnapshot();
-    const layout = layoutFocus(snapshot, "tech_does_not_exist", CARD_W, CARD_H);
+    const layout = layoutFocus(snapshot, "tech_does_not_exist", new Set(), CARD_W, CARD_H);
     expect(layout.nodes).toEqual([]);
     expect(layout.edges).toEqual([]);
+  });
+
+  it("expanding a dependent (single-click) reveals more nodes WITHOUT hiding any", () => {
+    const snapshot = loadRealSnapshot();
+    const kids = childrenOf(snapshot);
+    // focus whose direct dependent itself has dependents (so expanding it adds nodes).
+    let focus, dep;
+    for (const t of Object.values(snapshot.techs)) {
+      const d = (kids.get(t.key) ?? []).find((k) => (kids.get(k)?.length ?? 0) > 0);
+      if (d) { focus = t; dep = d; break; }
+    }
+    expect(focus && dep).toBeTruthy();
+
+    const collapsed = layoutFocus(snapshot, focus!.key, new Set([focus!.key]), CARD_W, CARD_H);
+    const expanded = layoutFocus(snapshot, focus!.key, new Set([focus!.key, dep!]), CARD_W, CARD_H);
+    const cKeys = new Set(collapsed.nodes.map((n) => n.key));
+    const eKeys = new Set(expanded.nodes.map((n) => n.key));
+
+    expect(cKeys.has(dep!)).toBe(true); // the dependent shows before expansion
+    expect(expanded.nodes.length).toBeGreaterThan(collapsed.nodes.length); // expand adds nodes
+    for (const k of cKeys) expect(eKeys.has(k)).toBe(true); // nothing hidden (superset)
   });
 });

@@ -75,6 +75,32 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
+ * Recursively resolves `@scripted_variable` references inside a preserved raw
+ * block (D-06), e.g. a weight_modifier's `factor = @ap_grasp_the_void_travel_tech`.
+ * Any string value starting with `@` is replaced by its value from `varMap`
+ * (global scripted_variables merged with file-local @vars); unresolvable refs and
+ * every non-@ value are left untouched, and the block's structure/keys are
+ * preserved. Without this the UI shows raw refs (×@ap_grasp_the_void_travel_tech)
+ * instead of the real multiplier (×1.5).
+ */
+function resolveVarsDeep(
+  value: unknown,
+  varMap: Map<string, number | string>,
+): unknown {
+  if (typeof value === "string" && value.startsWith("@")) {
+    const hit = varMap.get(value);
+    return hit !== undefined ? hit : value;
+  }
+  if (Array.isArray(value)) return value.map((v) => resolveVarsDeep(v, varMap));
+  if (isPlainObject(value)) {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = resolveVarsDeep(v, varMap);
+    return out;
+  }
+  return value;
+}
+
+/**
  * Resolves jomini's duplicate-key auto-arraying for scalar (non-block)
  * fields like a tech's own top-level `cost`/`weight` — e.g. a tech that
  * genuinely repeats `weight = 0` then `weight = @tier2weight3` in the source
@@ -250,21 +276,38 @@ export function extractTech(
   }
   if (isPlainObject(rawWeight)) {
     weightModifierRaw = weightModifierRaw ?? rawWeight;
-    const factor = (rawWeight as Record<string, unknown>).factor;
+    // Resolve an @scripted_variable base factor to its number (else 0).
+    const factor = resolveVarsDeep((rawWeight as Record<string, unknown>).factor, varMap);
     weight = typeof factor === "number" ? factor : 0;
   } else if (rawWeight !== undefined) {
     weight = resolveValue(rawWeight, varMap);
   }
+  // Resolve @scripted_variable factors inside the preserved modifier block so the
+  // UI shows real multipliers (×1.5) instead of raw refs (D-06 structure kept).
+  if (weightModifierRaw !== undefined) {
+    weightModifierRaw = resolveVarsDeep(weightModifierRaw, varMap);
+  }
 
   const prerequisites = flattenPrerequisites(raw.prerequisites);
 
-  const isRare = raw.is_rare === true;
-  const isDangerous = raw.is_dangerous === true;
-  const isRepeatable = raw.levels !== undefined;
-  const isStarting = raw.start_tech === true;
+  // Boolean flags via `lastScalarIfDuplicated`: some techs write the SAME flag
+  // twice (e.g. tech_lasers_1 has `start_tech = yes` on two lines), which jomini
+  // parses into an ARRAY — a bare `=== true` on the array is false and silently
+  // drops the flag. The helper collapses a duplicate-key array to its last scalar
+  // (and passes a single value through), so both forms flag correctly.
+  const isRare = lastScalarIfDuplicated(raw.is_rare) === true;
+  const isDangerous = lastScalarIfDuplicated(raw.is_dangerous) === true;
+  // A repeatable UPGRADE tech (endless weapon/armor/shield/economy upgrades).
+  // `levels` alone is insufficient — crisis techs (e.g. tech_cosmogenesis_thesis)
+  // also use `levels = -1` for their multi-stage mechanic. The game's reliable
+  // convention is the `tech_repeatable_` key prefix, so require BOTH: a levels
+  // field AND that prefix. Guards against mis-flagging non-repeatable multi-level
+  // techs (D-09).
+  const isRepeatable = raw.levels !== undefined && key.startsWith("tech_repeatable_");
+  const isStarting = lastScalarIfDuplicated(raw.start_tech) === true;
   // Pre-FTL "insight" techs (First Contact / observation-post research). Groups
   // the [Insight] explore bucket; flagged in the game files as `is_insight = yes`.
-  const isInsight = raw.is_insight === true;
+  const isInsight = lastScalarIfDuplicated(raw.is_insight) === true;
 
   const unlockContentRaw = extractUnlockContentRaw(raw);
 

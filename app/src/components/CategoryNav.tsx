@@ -26,8 +26,11 @@ type Area = Tech["area"];
 /** Keyboard/mouse shortcuts shown in the pinned bottom block. */
 const SHORTCUTS: { key: string; action: string }[] = [
   { key: "F", action: "Find" },
+  { key: "C", action: "Open child techs" },
+  { key: "Backspace", action: "Back (previous view)" },
   { key: "Esc", action: "Deselect / close" },
-  { key: "Click", action: "Select" },
+  { key: "Click", action: "Select / expand" },
+  { key: "Dbl-click", action: "Focus dependency tree" },
   { key: "Drag", action: "Pan" },
   { key: "Wheel", action: "Zoom" },
 ];
@@ -50,6 +53,8 @@ interface CategoryNavProps {
   active: Set<string>;
   /** category key → total tech count (stable; from the full layout). */
   counts: Record<string, number>;
+  /** Icon base URL (`/data/<version>/icons`) for the category subtype icons. */
+  iconBase: string;
   onToggleCategory: (cat: string) => void;
   onIsolateCategory: (cat: string) => void;
   onToggleArea: (area: Area) => void;
@@ -60,6 +65,7 @@ interface CategoryNavProps {
 export const CategoryNav = memo(function CategoryNav({
   active,
   counts,
+  iconBase,
   onToggleCategory,
   onIsolateCategory,
   onToggleArea,
@@ -77,7 +83,7 @@ export const CategoryNav = memo(function CategoryNav({
         data-active={allActive || undefined}
         onClick={onShowAll}
       >
-        Show all
+        {allActive ? "Hide all" : "Show all"}
       </button>
 
       {AREAS.map((area) => {
@@ -125,7 +131,15 @@ export const CategoryNav = memo(function CategoryNav({
                     onClick={() => onIsolateCategory(cat)}
                     title={`Show only ${categoryLabel(cat)}`}
                   >
-                    <span className="category-nav__cat-text">{categoryLabel(cat)}</span>
+                    <span className="category-nav__cat-label">
+                      <img
+                        className="category-nav__cat-icon"
+                        src={`${iconBase}/_category_${cat}.webp`}
+                        alt=""
+                        loading="lazy"
+                      />
+                      <span className="category-nav__cat-text">{categoryLabel(cat)}</span>
+                    </span>
                     <span className="category-nav__count">{counts[cat] ?? 0}</span>
                   </button>
                 </li>
