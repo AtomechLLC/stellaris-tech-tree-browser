@@ -46,6 +46,52 @@ function fallbackPath(from: LayoutNode, to: LayoutNode): string {
   ]);
 }
 
+/**
+ * Obstacle-aware elbow: route source-right → target-left so the segment that
+ * CROSSES intermediate columns runs at a Y with a clear row-gap, instead of
+ * straight through the cards between the two. Because edges are drawn BEHIND the
+ * cards, a straight run makes an edge appear to enter one card and exit the
+ * next — reading as a connection to a card it only passes. Used for the
+ * highlighted edges (the ones actually visible over the field).
+ */
+function routeAvoiding(from: LayoutNode, to: LayoutNode, nodes: LayoutNode[]): string {
+  const sx = from.x + from.w;
+  const syc = from.y + from.h / 2;
+  const tx = to.x;
+  const tyc = to.y + to.h / 2;
+  const GUT = 24; // step into the column gutter on each side of the crossing
+
+  // Backward / same-or-adjacent column with no room for a channel → simple elbow.
+  const x1 = sx + GUT;
+  const x2 = tx - GUT;
+  if (x2 <= x1 + 1) return fallbackPath(from, to);
+
+  // Cards whose x-span overlaps the crossing band [x1, x2] (excluding the two
+  // endpoints) are the obstacles the horizontal run must clear.
+  const blocks = nodes.filter(
+    (n) => n !== from && n !== to && n.x < x2 && n.x + n.w > x1,
+  );
+  const clearAt = (y: number): boolean =>
+    !blocks.some((n) => y >= n.y - 6 && y <= n.y + n.h + 6);
+
+  // Prefer the target row, then the source row, then step outward from the
+  // midpoint by a row pitch until a clear channel is found (else give up).
+  const midY = (syc + tyc) / 2;
+  const pitch = from.h + 24;
+  const candidates: number[] = [tyc, syc, midY];
+  for (let k = 1; k <= 8; k++) candidates.push(midY + k * pitch, midY - k * pitch);
+  const y = candidates.find(clearAt) ?? tyc;
+
+  return pointsToPath([
+    { x: sx, y: syc },
+    { x: x1, y: syc },
+    { x: x1, y },
+    { x: x2, y },
+    { x: x2, y: tyc },
+    { x: tx, y: tyc },
+  ]);
+}
+
 /** The SVG `d` for a SINGLE edge — ELK routing if present, else an elbow. */
 function edgePath(edge: LayoutEdge, nodeByKey: Map<string, LayoutNode>): string {
   if (edge.sections.length > 0) {
@@ -94,10 +140,20 @@ function buildPath(
 function buildEdgePaths(
   edges: LayoutEdge[],
   nodeByKey: Map<string, LayoutNode>,
+  nodes: LayoutNode[],
 ): { key: string; d: string }[] {
   const out: { key: string; d: string }[] = [];
   for (const edge of edges) {
-    const d = edgePath(edge, nodeByKey);
+    let d: string;
+    if (edge.sections.length > 0) {
+      d = edgePath(edge, nodeByKey);
+    } else {
+      // No ELK routing (the banded map) — route AROUND intervening cards so a
+      // highlighted edge never appears to pass through a tech it doesn't use.
+      const from = nodeByKey.get(edge.from);
+      const to = nodeByKey.get(edge.to);
+      d = from && to ? routeAvoiding(from, to, nodes) : "";
+    }
     if (d) out.push({ key: `${edge.from}->${edge.to}`, d });
   }
   return out;
@@ -131,13 +187,15 @@ export const EdgeLayer = memo(function EdgeLayer({
       incoming: buildEdgePaths(
         edges.filter((e) => e.to === selectedKey),
         nodeByKey,
+        nodes,
       ),
       outgoing: buildEdgePaths(
         edges.filter((e) => e.from === selectedKey),
         nodeByKey,
+        nodes,
       ),
     };
-  }, [edges, nodeByKey, selectedKey]);
+  }, [edges, nodeByKey, nodes, selectedKey]);
 
   return (
     <svg
