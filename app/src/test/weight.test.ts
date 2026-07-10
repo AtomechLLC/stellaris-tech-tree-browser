@@ -166,15 +166,62 @@ describe("describeWeightModifiers", () => {
     ).toEqual(["×2 if Expansion tradition (completed)"]);
   });
 
-  it("skips deep logic blocks (OR/NOR/NOT) without throwing", () => {
+  it("describes an OR logic block by joining its branches with ' or '", () => {
     const raw = {
       modifier: {
         factor: 2,
         OR: { has_origin: "origin_storm_chasers", has_storm_attraction_civic: true },
       },
     };
-    // The only condition is a nested OR block → not renderable → line dropped.
+    expect(describeWeightModifiers(raw, mapOf())).toEqual([
+      "×2 if (Storm Chasers origin or with storm attraction civic)",
+    ]);
+  });
+
+  it("drops a logic block if ANY branch is unrenderable (no misleading partial)", () => {
+    const raw = {
+      modifier: {
+        factor: 2,
+        OR: { has_origin: "origin_x", some_deep_unknown: { nested: { a: 1 } } },
+      },
+    };
     expect(describeWeightModifiers(raw, mapOf())).toEqual([]);
+  });
+
+  it("drops a multi-condition modifier when one condition can't be described", () => {
+    // Real Mega-Engineering shape: nomadic + a deeply-nested starbase scope. The
+    // scope is unrenderable, so the line must NOT render as just 'if nomadic'.
+    const raw = {
+      modifier: {
+        factor: 20,
+        is_nomadic: true,
+        any_owned_nonprimary_starbase: { solar_system: { space_owner: { has_technology: "tech_x" } } },
+      },
+    };
+    expect(describeWeightModifiers(raw, mapOf())).toEqual([]);
+  });
+
+  it("humanizes Mega-Engineering's real drivers and collapses the starbase scaling", () => {
+    const techByKey = mapOf(tech("tech_mega_engineering", "Mega-Engineering"));
+    const raw = {
+      factor: 0.25,
+      modifier: [
+        { factor: 1.5, OR: { has_trait_in_council: [{ TRAIT: "leader_trait_curator" }, { TRAIT: "leader_trait_maniacal" }] } },
+        { factor: 1.5, count_starbase_sizes: { starbase_size: "starbase_starhold", count: { GREATER_THAN_EQUAL: 1 } } },
+        { factor: 1.5, count_starbase_sizes: { starbase_size: "starbase_starhold", count: { GREATER_THAN_EQUAL: 2 } } },
+        { factor: 2, any_owned_planet: { is_planet_class: "pc_habitat" } },
+        { factor: 1.5, any_neighbor_country: { has_technology: "tech_mega_engineering" } },
+        { factor: 20, OR: { has_any_megastructure_in_empire: true, has_origin: "origin_shattered_ring" } },
+      ],
+    };
+    expect(describeWeightModifiers(raw, techByKey)).toEqual([
+      "Base ×0.25",
+      "×1.5 if a councilor is Curator or Maniacal",
+      "×1.5 if with Star Holds",
+      "×2 if you own a Habitat",
+      "×1.5 if a neighbor researched Mega-Engineering",
+      "×20 if (you have a megastructure or Shattered Ring origin)",
+    ]);
   });
 
   it("returns [] for empty / undefined / non-object input (defensive)", () => {
