@@ -533,6 +533,38 @@
   background: var(--tree-border);
 }
 
+/* Zoom % readout under the zoom buttons — quiet chrome, updated imperatively. */
+.zoom-readout {
+  width: 32px;
+  padding: 2px 0;
+  text-align: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: var(--tree-text);
+  opacity: 0.65;
+  user-select: none;
+}
+
+/* Filtered-empty hint — centered in the viewport when every category is off. */
+.tree-empty-hint {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  max-width: 340px;
+  padding: 14px 18px;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--tree-text);
+  background: var(--tree-panel);
+  border: 1px solid var(--tree-border);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
 /* Touch/mobile navigation controls — Find / Deselect / Back as tappable buttons,
    bottom-left of the viewport (mirrors .zoom-controls). Comfortable touch target
    size; always visible so touch users get the keyboard actions too. */

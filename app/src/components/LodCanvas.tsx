@@ -36,6 +36,8 @@ interface Props {
   transformRef: RefObject<Transform>;
   /** Currently selected tech key — drawn with a gold outline. */
   selectedKey?: string | null;
+  /** Hit-test-hovered tech key — drawn with a lighter emphasis outline. */
+  hoverKey?: string | null;
 }
 
 /** Icon cache shared across draws (the browser already has these decoded from
@@ -43,7 +45,7 @@ interface Props {
 const iconCache = new Map<string, HTMLImageElement>();
 
 export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
-  { nodes, edges, iconBase, viewportRef, transformRef, selectedKey },
+  { nodes, edges, iconBase, viewportRef, transformRef, selectedKey, hoverKey },
   ref,
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -172,11 +174,14 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
       ctx.globalAlpha = 1;
 
       const selected = n.key === selectedKey || n.tech?.key === selectedKey;
-      ctx.strokeStyle = selected ? C.select : col;
+      const hovered = !selected && (n.key === hoverKey || n.tech?.key === hoverKey);
+      ctx.strokeStyle = selected || hovered ? C.select : col;
       ctx.lineWidth = selected ? 2 : 1;
+      if (hovered) ctx.globalAlpha = 0.8;
       ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+      if (hovered) ctx.globalAlpha = 1;
     }
-  }, [nodes, edges, iconBase, viewportRef, transformRef, selectedKey, getIcon, areaColor]);
+  }, [nodes, edges, iconBase, viewportRef, transformRef, selectedKey, hoverKey, getIcon, areaColor]);
 
   drawRef.current = draw;
   useImperativeHandle(ref, () => ({ draw }), [draw]);

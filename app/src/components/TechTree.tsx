@@ -281,11 +281,19 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const transformRef = useRef<Transform>(DEFAULT_TRANSFORM);
   const scrollbarsRef = useRef<ScrollbarsHandle>(null);
   const lodCanvasRef = useRef<LodCanvasHandle>(null);
+  // Zoom % readout under the zoom buttons — updated imperatively per transform
+  // apply (like the scrollbars) so zooming never forces a React re-render.
+  const zoomReadoutRef = useRef<HTMLDivElement>(null);
   // Below the LOD threshold the map swaps its DOM cards + SVG edges for a single
   // canvas (LodCanvas). `lodMode` mirrors "scale < LOD_THRESHOLD"; flipped from
   // applyTransform only when the threshold is crossed (one re-render, not per pan).
   const [lodMode, setLodMode] = useState(false);
   const lodModeRef = useRef(false);
+  // LOD hit-testing (the canvas has no DOM cards, so hover/click/double-click
+  // are resolved by rect-testing the layout nodes against the pointer).
+  const layoutNodesRef = useRef<LayoutNode[]>([]);
+  const lodActiveRef = useRef(false);
+  const lodHoverKeyRef = useRef<string | null>(null);
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(
     null,
   );
@@ -407,6 +415,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         setLodMode(nextLod);
       }
       if (nextLod) lodCanvasRef.current?.draw();
+      // Zoom readout (imperative, like the scrollbars — no re-render per zoom).
+      const zr = zoomReadoutRef.current;
+      if (zr) zr.textContent = `${Math.round(t.scale * 100)}%`;
       // Debounced: mirror the new framing into the URL so a shared link reproduces
       // the current zoom + focal point. Pan/zoom is imperative (no re-render), so
       // this is the only hook that captures it.
@@ -954,9 +965,34 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // drag is suppressed via movedRef so panning doesn't reset. EXCEPTION: in the
   // Explore focus view, an empty-space tap is inert — it must NOT act as "back"
   // out of the focused tech (especially on touch, where stray taps are common).
+  // LOD hit-test: resolve a pointer position to the layout node under it (the
+  // canvas renders no DOM cards, so hover/click/dblclick rect-test the nodes —
+  // ~678 checks per event, negligible). Map nodes never overlap; first hit wins.
+  const hitTestLod = useCallback((clientX: number, clientY: number): LayoutNode | null => {
+    const rect = viewportRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    const t = transformRef.current;
+    const cx = (clientX - rect.left - t.x) / t.scale;
+    const cy = (clientY - rect.top - t.y) / t.scale;
+    for (const n of layoutNodesRef.current) {
+      if (n.tech && cx >= n.x && cx <= n.x + n.w && cy >= n.y && cy <= n.y + n.h) return n;
+    }
+    return null;
+  }, []);
+
   const onViewportClick = useCallback(
     (e: ReactMouseEvent<HTMLDivElement>) => {
       if (movedRef.current) return;
+      // LOD canvas mode: a click on a drawn tile selects that tech (toggle),
+      // exactly like clicking its DOM card — a miss falls through to deselect.
+      if (lodActiveRef.current) {
+        const node = hitTestLod(e.clientX, e.clientY);
+        if (node?.tech) {
+          pushHistory();
+          setSelectedKey((k) => (k === node.tech!.key ? null : node.tech!.key));
+          return;
+        }
+      }
       if ((e.target as HTMLElement).closest(".tech-card, .bucket-card")) return;
       if (viewMode === "explore" && focusKey) return;
       pushHistory();
@@ -964,7 +1000,19 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       setFocusKey(null);
       setFocusExpanded(new Set());
     },
-    [pushHistory, viewMode, focusKey],
+    [pushHistory, viewMode, focusKey, hitTestLod],
+  );
+
+  // LOD canvas mode: double-click a drawn tile → same "activate" as a DOM card
+  // (opens the Explore focus view for that tech). No-op in DOM mode — the cards
+  // handle their own onDoubleClick.
+  const onViewportDoubleClick = useCallback(
+    (e: ReactMouseEvent<HTMLDivElement>) => {
+      if (!lodActiveRef.current || movedRef.current) return;
+      const node = hitTestLod(e.clientX, e.clientY);
+      if (node?.tech) onActivate(node.tech.key);
+    },
+    [hitTestLod, onActivate],
   );
 
   // ── Pan (imperative — no re-render) ───────────────────────────────────────
@@ -1005,6 +1053,35 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       if (p) {
         p.x = e.clientX;
         p.y = e.clientY;
+      }
+      // LOD canvas hover (no buttons down): hit-test the tile under the cursor →
+      // tooltip + pointer cursor, mirroring DOM-card hover. The 160ms hover-hide
+      // grace keeps the tooltip reachable (it's interactive), same as DOM mode.
+      if (pointersRef.current.size === 0 && lodActiveRef.current) {
+        const node = hitTestLod(e.clientX, e.clientY);
+        const key = node?.tech?.key ?? null;
+        if (key !== lodHoverKeyRef.current) {
+          lodHoverKeyRef.current = key;
+          const rect = viewportRef.current?.getBoundingClientRect();
+          if (node?.tech && rect) {
+            cancelHoverHide();
+            const t = transformRef.current;
+            setHover({
+              tech: node.tech,
+              rect: new DOMRect(
+                rect.left + node.x * t.scale + t.x,
+                rect.top + node.y * t.scale + t.y,
+                node.w * t.scale,
+                node.h * t.scale,
+              ),
+            });
+          } else {
+            scheduleHoverHide();
+          }
+          const vp = viewportRef.current;
+          if (vp) vp.style.cursor = key ? "pointer" : "";
+        }
+        return;
       }
       // Two-finger pinch: zoom by the change in finger distance, panning with the
       // finger midpoint. Incremental (diff vs the last frame) so it composes
@@ -1057,7 +1134,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         y: drag.originY + (e.clientY - drag.startY),
       });
     },
-    [scheduleTransform, applyTransform],
+    [scheduleTransform, applyTransform, hitTestLod, cancelHoverHide, scheduleHoverHide],
   );
 
   const onPointerUp = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
@@ -1414,6 +1491,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   useEffect(() => {
     if (!layoutReady) return;
     nodeCountRef.current = layoutReady.nodes.length;
+    layoutNodesRef.current = layoutReady.nodes; // LOD hit-testing reads this
     const id = requestAnimationFrame(() => recomputeCull(true));
     return () => cancelAnimationFrame(id);
   }, [layoutReady, recomputeCull]);
@@ -1453,6 +1531,14 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // Canvas LOD is MAP-only (Explore layouts are smaller and stay interactive).
   // When active the DOM cards + SVG edges are dropped in favor of <LodCanvas>.
   const lodActive = lodMode && !explore;
+  lodActiveRef.current = lodActive; // mirrored for the imperative pointer handlers
+  // Leaving LOD mode: clear the hit-test hover state + pointer cursor override.
+  useEffect(() => {
+    if (lodActive) return;
+    lodHoverKeyRef.current = null;
+    const vp = viewportRef.current;
+    if (vp) vp.style.cursor = "";
+  }, [lodActive]);
   // In Explore, a focused tech shows its dependency neighborhood (focus view);
   // otherwise the browse spanning tree. `focused` gates chevrons/expansion off.
   const focused = explore && exploreFocus !== null;
@@ -1613,6 +1699,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         onPointerCancel={onPointerUp}
         onWheel={onWheel}
         onClick={onViewportClick}
+        onDoubleClick={onViewportDoubleClick}
       >
         <div
           className="tree-canvas"
@@ -1640,7 +1727,17 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
             viewportRef={viewportRef}
             transformRef={transformRef}
             selectedKey={highlightKey}
+            hoverKey={hover?.tech.key ?? null}
           />
+        )}
+
+        {/* Filtered-empty state: every category toggled off leaves a void with
+            no cards — say so instead of showing a silent blank map. */}
+        {layoutReady && layoutReady.nodes.length === 0 && (
+          <div className="tree-empty-hint">
+            No technologies match the current filters — pick a category on the
+            left, or “Show all”.
+          </div>
         )}
 
         {/* Scrollbars mirror the imperative pan/zoom transform; they auto-hide on
@@ -1733,6 +1830,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           <button type="button" onClick={resetView} aria-label="Reset view">
             ⟲
           </button>
+          <div className="zoom-readout" ref={zoomReadoutRef} aria-hidden>
+            {Math.round(transformRef.current.scale * 100)}%
+          </div>
         </div>
 
         {/* Touch/mobile navigation — the keyboard shortcuts (F / Esc / Backspace)
