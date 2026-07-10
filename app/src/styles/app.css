@@ -57,6 +57,84 @@
   white-space: nowrap;
 }
 
+/* "What's new" — header chip + patch-diff overlay (renders only when the
+   pipeline shipped a diff.json, i.e. a prior version snapshot existed). */
+.whats-new__chip {
+  margin-left: 10px;
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--color-select) 55%, var(--tree-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-select) 14%, transparent);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: var(--font-weight-heading);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.whats-new__chip:hover {
+  background: color-mix(in srgb, var(--color-select) 26%, transparent);
+}
+.whats-new {
+  position: fixed;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  background: var(--tree-panel);
+  border: 1px solid var(--tree-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6);
+  color: var(--tree-text);
+  font-family: var(--font-sans);
+}
+.whats-new__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-weight: var(--font-weight-heading);
+  border-bottom: 1px solid var(--tree-border);
+}
+.whats-new__header button {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--tree-border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--tree-text);
+  cursor: pointer;
+}
+.whats-new__body {
+  overflow-y: auto;
+  padding: 6px 14px 14px;
+  font-size: 13px;
+}
+.whats-new__body h3 {
+  margin: 12px 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-select);
+}
+.whats-new__body ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.whats-new__body li {
+  padding: 2px 0;
+}
+.whats-new__meta {
+  margin-left: 8px;
+  opacity: 0.65;
+  font-size: 12px;
+}
+
 .app-header__discord {
   margin-left: auto;
   flex: 0 0 auto;
@@ -424,7 +502,7 @@
 }
 
 /* View toggle (quick 260708-5di) — segmented Map ↔ Explore control, top-left of
-   the viewport. Mirrors the repack/zoom control chrome (tokens only). */
+   the viewport. Mirrors the map-action/zoom control chrome (tokens only). */
 .view-toggle {
   position: absolute;
   left: var(--space-md);
@@ -456,13 +534,17 @@
   background: color-mix(in srgb, var(--color-select) 18%, transparent);
 }
 
-/* Re-pack button (quick 260708-3zu) — top-right of the viewport. Re-runs the
-   layout on just the visible categories so their bands close up. */
-.repack-button {
+/* Top-right map actions (Export PNG) — shared strip. */
+.map-actions {
   position: absolute;
   right: var(--space-md);
   top: var(--space-md);
   z-index: 12;
+  display: flex;
+  gap: 6px;
+}
+
+.map-action-button {
   padding: 6px 12px;
   font-family: var(--font-sans);
   font-size: var(--font-size-label);
@@ -473,10 +555,10 @@
   border-radius: 4px;
   cursor: pointer;
 }
-.repack-button:hover:not(:disabled) {
+.map-action-button:hover:not(:disabled) {
   background: var(--tree-border);
 }
-.repack-button:disabled {
+.map-action-button:disabled {
   opacity: 0.6;
   cursor: progress;
 }
@@ -492,6 +574,38 @@
   z-index: 3;
   pointer-events: none;
 }
+
+/* Tier-column ruler — fixed strip at the top of the map viewport; each label
+   is centered over its tier column via an imperative translateX. Sits above
+   the canvas layers, below the view toggle. Tier colors match the card badges. */
+.tier-ruler {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 22px;
+  z-index: 10;
+  pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--tree-bg) 88%, transparent), transparent);
+}
+.tier-ruler__label {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  margin-left: -28px; /* ≈ half the label width → translateX centers on the column */
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: var(--font-weight-heading);
+  letter-spacing: 0.04em;
+  color: var(--tree-text);
+  opacity: 0.75;
+}
+.tier-ruler__label[data-tier="0"] { color: var(--tier-0); }
+.tier-ruler__label[data-tier="1"] { color: var(--tier-1); }
+.tier-ruler__label[data-tier="2"] { color: var(--tier-2); }
+.tier-ruler__label[data-tier="3"] { color: var(--tier-3); }
+.tier-ruler__label[data-tier="4"] { color: var(--tier-4); }
+.tier-ruler__label[data-tier="5"] { color: var(--tier-5); }
 
 /* Map scrollbars (custom — the canvas pans via CSS transform, not native
    overflow, so these thin tracks mirror the transform and drive it back). Sit at
@@ -1196,6 +1310,15 @@
   line-height: 1.4;
   opacity: 0.92;
 }
+/* Loaded-empire draw estimate — the payoff line, gold like the other
+   "your empire" accents. */
+.tech-tooltip__draw {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-select);
+}
+
 .tech-tooltip__weight-mods {
   list-style: none;
   margin: 3px 0 0;
@@ -1340,7 +1463,7 @@
 /* ── Pinned detail panel — the SELECTED tech's info, docked so it survives the
    pointer leaving (and is reachable at all on touch). Same section styles as
    the tooltip (it renders the same TechInfoBody). Desktop: docked top-right,
-   under the Re-pack button, clear of the map scrollbar. ─────────────────── */
+   under the map actions, clear of the map scrollbar. ─────────────────── */
 .tech-detail {
   position: fixed;
   right: 16px;

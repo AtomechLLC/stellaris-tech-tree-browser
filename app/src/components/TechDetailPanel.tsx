@@ -1,5 +1,6 @@
 import type { Tech } from "../types/tech-snapshot";
 import { TechInfoBody } from "./TechTooltip";
+import type { DrawEstimate } from "../lib/empire/draw";
 
 /**
  * Pinned detail panel for the SELECTED (or Explore-focused) tech. Unlike the
@@ -22,6 +23,7 @@ export function TechDetailPanel({
   onExplore,
   collapsed = false,
   onToggleCollapse,
+  draw,
 }: {
   tech: Tech;
   techByKey: Map<string, Tech>;
@@ -35,6 +37,8 @@ export function TechDetailPanel({
    *  itself fills the viewport, so the full panel occludes too much there. */
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  /** Loaded-empire draw estimate for this tech (Saved Empire view). */
+  draw?: DrawEstimate | null;
 }) {
   return (
     <aside
@@ -75,7 +79,7 @@ export function TechDetailPanel({
       )}
       {!collapsed && (
         <div className="tech-detail__body">
-          <TechInfoBody tech={tech} techByKey={techByKey} iconBase={iconBase} onJump={onJump} />
+          <TechInfoBody tech={tech} techByKey={techByKey} iconBase={iconBase} onJump={onJump} draw={draw} />
         </div>
       )}
     </aside>

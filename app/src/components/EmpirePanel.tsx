@@ -24,6 +24,7 @@ interface EmpirePanelProps {
     buckets: Map<string, Bucket> | null,
     counts: Record<Bucket, number> | null,
     empireName: string | null,
+    empire: SavedEmpire | null,
   ) => void;
 }
 
@@ -65,12 +66,12 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
   const selected = empires?.find((e) => e.id === selectedId) ?? null;
   useEffect(() => {
     if (!selected) {
-      onBuckets(null, null, null);
+      onBuckets(null, null, null, null);
       setResult(null);
       return;
     }
     const r = classifyEmpire(techLite, selected);
-    onBuckets(r.buckets, r.counts, selected.name);
+    onBuckets(r.buckets, r.counts, selected.name, selected);
     setResult({
       counts: r.counts,
       falseNever: r.falseNeverResearched.length,

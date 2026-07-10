@@ -296,3 +296,16 @@ export function classifyGate(node: GateNode | null, s: EmpireState): GateVerdict
   const now = kleene(node, s);
   return { never: !satisfiable, passesNow: now !== false };
 }
+
+/**
+ * 3-valued evaluation of a RAW jomini condition block (e.g. one weight-modifier
+ * entry's trigger keys) against the empire's current state: true / false /
+ * null = contains a condition the save can't answer. Weight-modifier triggers
+ * share the potential-gate vocabulary, so this reuses the same normalize +
+ * Kleene machinery. An empty/absent block is unconditionally true.
+ */
+export function evalConditionBlock(raw: unknown, s: EmpireState): boolean | null {
+  const node = normalizePotential(raw);
+  if (!node) return true;
+  return kleene(node, s);
+}

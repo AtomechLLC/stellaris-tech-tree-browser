@@ -6,12 +6,20 @@
  */
 
 import { dataUrl } from "../lib/data/paths";
+import { WhatsNew } from "./WhatsNew";
 
 // Fixed version path — the header renders before the snapshot loads, and the
 // icon is a static asset generated into the versioned icon set by the pipeline.
 const XENOPHILE_ICON = dataUrl("v4.5.0/icons/_ethic_xenophile.webp");
 
-export function Header({ version }: { version?: string }) {
+export function Header({
+  version,
+  dataVersion,
+}: {
+  version?: string;
+  /** Snapshot data version ("v4.5.0") — drives the What's-new diff lookup. */
+  dataVersion?: string;
+}) {
   return (
     <header className="app-header">
       <img className="app-header__ethic" src={XENOPHILE_ICON} alt="" aria-hidden />
@@ -21,6 +29,7 @@ export function Header({ version }: { version?: string }) {
           {version}
         </span>
       )}
+      {dataVersion && <WhatsNew version={dataVersion} />}
       <a
         className="app-header__discord"
         href="http://discord.gg/funsmithclub"

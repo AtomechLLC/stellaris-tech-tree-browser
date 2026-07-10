@@ -24,6 +24,34 @@ export interface FindEntry {
   /** Formatted effect lines ("+5% Research Speed", "Unlocks Espionage") — also
    *  searched, so "survey speed" surfaces the techs that grant it. */
   effects: string[];
+  /** Required DLC display name, or null — for the `dlc:` operator. */
+  dlc: string | null;
+}
+
+/**
+ * Query operators: `tier:4`, `area:phys`, `cat:biology`, `dlc:utopia` narrow
+ * the pool; the remaining free text matches name/effects as usual. Unknown
+ * `op:value` tokens are treated as free text (so "ratio:1" still searches).
+ */
+function parseQuery(raw: string): {
+  text: string;
+  filters: Array<(t: FindEntry) => boolean>;
+} {
+  const filters: Array<(t: FindEntry) => boolean> = [];
+  const free: string[] = [];
+  for (const token of raw.toLowerCase().split(/\s+/).filter(Boolean)) {
+    const m = token.match(/^(tier|area|cat|category|dlc):(.*)$/);
+    if (!m || !m[2]) {
+      free.push(token);
+      continue;
+    }
+    const v = m[2];
+    if (m[1] === "tier") filters.push((t) => t.tier === Number(v));
+    else if (m[1] === "area") filters.push((t) => t.area.startsWith(v));
+    else if (m[1] === "dlc") filters.push((t) => (t.dlc ?? "").toLowerCase().includes(v));
+    else filters.push((t) => t.category.toLowerCase().includes(v));
+  }
+  return { text: free.join(" "), filters };
 }
 
 interface FindOverlayProps {
@@ -43,16 +71,24 @@ export function FindOverlay({ techs, iconBase, onPick, onClose }: FindOverlayPro
     inputRef.current?.focus();
   }, []);
 
-  // Name matches rank first; then techs whose EFFECT lines match ("survey
-  // speed" → the techs granting it), carrying the matched line for the row.
+  // Operator tokens narrow the pool; then name matches rank first, then techs
+  // whose EFFECT lines match ("survey speed" → the techs granting it),
+  // carrying the matched line for the row. Operators alone (no free text)
+  // list the whole narrowed pool.
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    const byName = techs.filter((t) => t.name.toLowerCase().includes(q));
+    if (!query.trim()) return [];
+    const { text: q, filters } = parseQuery(query);
+    const pool = filters.length ? techs.filter((t) => filters.every((f) => f(t))) : techs;
+    if (!q) {
+      return (filters.length ? pool.slice(0, MAX_RESULTS) : []) as Array<
+        FindEntry & { matchedEffect?: string }
+      >;
+    }
+    const byName = pool.filter((t) => t.name.toLowerCase().includes(q));
     const named = new Set(byName.map((t) => t.key));
     const byEffect: Array<FindEntry & { matchedEffect?: string }> = [];
     if (byName.length < MAX_RESULTS) {
-      for (const t of techs) {
+      for (const t of pool) {
         if (named.has(t.key)) continue;
         const hit = t.effects.find((e) => e.toLowerCase().includes(q));
         if (hit) byEffect.push({ ...t, matchedEffect: hit });
@@ -109,7 +145,7 @@ export function FindOverlay({ techs, iconBase, onPick, onClose }: FindOverlayPro
           ref={inputRef}
           type="text"
           className="find-box__input"
-          placeholder="Find a technology or effect…"
+          placeholder="Find a tech or effect…  (tier:4 area:phys dlc:utopia)"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}

@@ -21,10 +21,15 @@ import { BucketCard } from "./BucketCard";
 import { EdgeLayer } from "./EdgeLayer";
 import { MapScrollbars, type ScrollbarsHandle } from "./MapScrollbars";
 import { LodCanvas, type LodCanvasHandle } from "./LodCanvas";
+import { TierRuler, type TierRulerHandle } from "./TierRuler";
+import { exportMapPng } from "../lib/export/mapImage";
 import { BandLayer } from "./BandLayer";
 import { CategoryNav } from "./CategoryNav";
 import { EmpirePanel } from "./EmpirePanel";
 import type { Bucket } from "../lib/empire/classify";
+import type { SavedEmpire } from "../lib/empire/savLoad";
+import { buildEmpireState } from "../lib/empire/gates";
+import { computeDrawEstimates } from "../lib/empire/draw";
 import { TechTooltip } from "./TechTooltip";
 import { TechDetailPanel } from "./TechDetailPanel";
 import { FindOverlay, type FindEntry } from "./FindOverlay";
@@ -248,6 +253,8 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const [detailCollapsed, setDetailCollapsed] = useState(false);
   // Copy-link feedback: flips the 🔗 button to ✓ briefly after a copy.
   const [linkCopied, setLinkCopied] = useState(false);
+  // PNG export in-flight (icon preload + encode takes a few seconds).
+  const [exporting, setExporting] = useState(false);
   // Click-selected ("targeted") tech key, or null. Selection highlights the
   // card, thickens its prereq/child edges, and (when it has filter-hidden
   // ancestors) opens the ancestry drill-down panel.
@@ -266,11 +273,6 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // View-history stack for the Back (Backspace) shortcut — snapshots of the
   // navigation state pushed before each view change, popped to go back.
   const historyRef = useRef<ViewSnapshot[]>([]);
-  // Re-pack busy state (button label + guard). Bumped each time a re-pack
-  // starts; the resolving handler ignores its result if this changed meanwhile
-  // (stale-result guard) so a rapid re-toggle+re-pack can't swap in old layout.
-  const [repacking, setRepacking] = useState(false);
-  const repackSeq = useRef(0);
   // F-Find overlay open state (quick 260708-4y2).
   const [findOpen, setFindOpen] = useState(false);
   // Which view is active (quick 260708-5di). "map" = the banded swimlane ELK
@@ -287,10 +289,31 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // layout stays the Map (coloring is orthogonal to layout).
   const [empireOn, setEmpireOn] = useState(false);
   const [bucketMap, setBucketMap] = useState<Map<string, Bucket> | null>(null);
+  const [savedEmpire, setSavedEmpire] = useState<SavedEmpire | null>(null);
   // Stable callback so <EmpirePanel>'s classify effect isn't re-triggered every render.
-  const onBuckets = useCallback((buckets: Map<string, Bucket> | null) => {
-    setBucketMap(buckets);
-  }, []);
+  const onBuckets = useCallback(
+    (
+      buckets: Map<string, Bucket> | null,
+      _counts: unknown,
+      _name: unknown,
+      empire: SavedEmpire | null,
+    ) => {
+      setBucketMap(buckets);
+      setSavedEmpire(empire);
+    },
+    [],
+  );
+
+  // Draw-chance estimates for the loaded empire's AVAILABLE techs — effective
+  // weight (modifiers evaluated against the empire) over the area pool.
+  const drawMap = useMemo(() => {
+    if (!bucketMap || !savedEmpire) return null;
+    return computeDrawEstimates(
+      Object.values(snapshot.techs),
+      bucketMap,
+      buildEmpireState(savedEmpire),
+    );
+  }, [bucketMap, savedEmpire, snapshot]);
 
   // Mobile/touch detection: a coarse pointer OR a narrow viewport. Tracked as
   // state (updated on media-query change) so orientation/resize flips it live.
@@ -315,6 +338,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const transformRef = useRef<Transform>(DEFAULT_TRANSFORM);
   const scrollbarsRef = useRef<ScrollbarsHandle>(null);
   const lodCanvasRef = useRef<LodCanvasHandle>(null);
+  const tierRulerRef = useRef<TierRulerHandle>(null);
   // Zoom % readout under the zoom buttons — updated imperatively per transform
   // apply (like the scrollbars) so zooming never forces a React re-render.
   const zoomReadoutRef = useRef<HTMLDivElement>(null);
@@ -395,6 +419,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         // Formatted effect lines, searched alongside the name ("survey speed"
         // → the techs granting it). Literal \n from loc text becomes a space.
         effects: t.unlocks.grants.map((g) => formatGrantLine(g.replace(/\\n/g, " "))),
+        dlc: t.dlc,
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [snapshot]);
@@ -455,6 +480,8 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       // Zoom readout (imperative, like the scrollbars — no re-render per zoom).
       const zr = zoomReadoutRef.current;
       if (zr) zr.textContent = `${Math.round(t.scale * 100)}%`;
+      // Tier-column labels track the columns across pan/zoom.
+      tierRulerRef.current?.update();
       // Debounced: mirror the new framing into the URL so a shared link reproduces
       // the current zoom + focal point. Pan/zoom is imperative (no re-render), so
       // this is the only hook that captures it.
@@ -558,8 +585,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     const nodes = layout.nodes.filter((n) => active.has(categoryOf(n)));
     const visible = new Set(nodes.map((n) => n.key));
     const edges = layout.edges.filter((e) => visible.has(e.from) && visible.has(e.to));
-    // Drop toggled-off bands so their tinted backgrounds vanish too (leaving a
-    // gap until Re-pack closes it up).
+    // Drop toggled-off bands so their tinted backgrounds vanish too.
     const bands = layout.bands.filter((b) => active.has(b.category));
     return { ...layout, nodes, edges, bands };
   }, [state, active]);
@@ -1544,29 +1570,6 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     [viewMode, exploreLayout, fitToNodes, resetView, applyTransform, pushHistory],
   );
 
-  // ── Re-pack: re-lay-out only the visible categories so their bands stack
-  // with no gaps. Swaps state.layout IN PLACE (status stays "ready", no
-  // unmount) and reframes; a stale result (active changed again mid-run) is
-  // ignored via a monotonic sequence guard.
-  const onRepack = useCallback(() => {
-    if (state.status !== "ready" || repacking) return;
-    const seq = ++repackSeq.current;
-    setRepacking(true);
-    layoutTree(snapshot, CARD_W, CARD_H, active)
-      .then((layout) => {
-        if (seq !== repackSeq.current) return; // stale — a newer re-pack won
-        setState({ status: "ready", layout });
-        setRepacking(false);
-        // Frame the freshly-packed tree.
-        if (layout.nodes.length > 0) fitToNodes(layout.nodes);
-        else resetView();
-      })
-      .catch(() => {
-        if (seq !== repackSeq.current) return;
-        setRepacking(false);
-      });
-  }, [state.status, repacking, snapshot, active, fitToNodes, resetView]);
-
   // The layout feeding the canvas: the banded map layout in Map mode, the pure
   // collapsible tree in Explore mode. Both are the same TreeLayout shape, so the
   // SAME cards + EdgeLayer + viewport transform render either one.
@@ -1577,8 +1580,8 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         ? exploreFocus ?? exploreLayout
         : filtered ?? state.layout;
 
-  // Re-cull whenever the LAYOUT changes (view switch, filter, re-pack, focus,
-  // expand) — the node positions/set differ, so the committed rect may be stale.
+  // Re-cull whenever the LAYOUT changes (view switch, filter, focus, expand) —
+  // the node positions/set differ, so the committed rect may be stale.
   // A rAF lets the transform (auto-fit) settle first. Pan/zoom re-culling is
   // handled imperatively in applyTransform.
   useEffect(() => {
@@ -1601,6 +1604,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       scrollbarsRef.current?.update();
       // The LOD canvas is sized to the viewport — redraw at the new dimensions.
       lodCanvasRef.current?.draw();
+      tierRulerRef.current?.update();
     };
     update();
     const ro = new ResizeObserver(update);
@@ -1849,6 +1853,10 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           </div>
         )}
 
+        {/* Tier-column ruler — map only (Explore's columns are reveal depth,
+            not tiers). Tracks the transform imperatively. */}
+        {!explore && <TierRuler ref={tierRulerRef} viewportRef={viewportRef} transformRef={transformRef} />}
+
         {/* Scrollbars mirror the imperative pan/zoom transform; they auto-hide on
             an axis that isn't overflowing. Rendered over the viewport, outside
             the transformed canvas. */}
@@ -1916,17 +1924,30 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           </button>
         </div>
 
-        {/* Re-pack is MAP-ONLY — the explore tree has no bands to close up. */}
+        {/* Map-only actions (Explore has no full-map poster to export). */}
         {!explore && (
-          <button
-            type="button"
-            className="repack-button"
-            onClick={onRepack}
-            disabled={repacking}
-            aria-busy={repacking}
-          >
-            {repacking ? "Re-packing…" : "Re-pack layout"}
-          </button>
+          <div className="map-actions">
+            <button
+              type="button"
+              className="map-action-button"
+              disabled={exporting || !layoutReady}
+              aria-busy={exporting}
+              title="Download the whole map as a PNG image"
+              onClick={() => {
+                if (!layoutReady) return;
+                setExporting(true);
+                exportMapPng(
+                  layoutReady,
+                  iconBase,
+                  `stellaris-tech-map-${snapshot.meta.gameVersion}.png`,
+                )
+                  .catch(() => {})
+                  .finally(() => setExporting(false));
+              }}
+            >
+              {exporting ? "Exporting…" : "Export PNG"}
+            </button>
+          </div>
         )}
 
         <div className="zoom-controls" role="group" aria-label="Zoom">
@@ -1989,6 +2010,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           onJump={onJumpToTech}
           onPointerEnter={onTooltipEnter}
           onPointerLeave={onTooltipLeave}
+          draw={empireOn ? drawMap?.get(hover.tech.key) ?? null : null}
         />
       )}
 
@@ -2000,6 +2022,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           onJump={onJumpToTech}
           collapsed={detailCollapsed}
           onToggleCollapse={() => setDetailCollapsed((c) => !c)}
+          draw={empireOn ? drawMap?.get(detailTech!.key) ?? null : null}
           onClose={() => setDetailHiddenFor(detailTech!.key)}
           onExplore={
             explore && focusKey === detailTech!.key

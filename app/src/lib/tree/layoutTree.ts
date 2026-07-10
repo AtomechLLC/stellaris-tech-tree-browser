@@ -130,7 +130,7 @@ export interface TreeLayout {
 
 // Banded-layout geometry constants. COL_W/ROW_H are derived from the card size
 // so tier columns and stacked rows always clear the real DOM cards.
-const COL_EXTRA = 110; // horizontal gutter between tier columns
+export const COL_EXTRA = 110; // horizontal gutter between tier columns
 const ROW_EXTRA = 20; // vertical gutter between stacked rows within a band
 const BAND_LABEL_H = 62; // top strip of each band reserved for its (42px) label
 const BAND_GAP = 52; // vertical gap between adjacent bands
@@ -139,7 +139,7 @@ const BAND_PAD_BOTTOM = 12; // padding below the last row inside a band
 // edge, and the tech cards sit a little further in again, so nothing is flush.
 export const BAND_LEFT_PAD = 6; // where each band background begins
 export const CARD_LEFT_PAD = 18; // where tier-0 cards begin (inset within the band)
-const TIER_COUNT = 6; // tiers 0..5
+export const TIER_COUNT = 6; // tiers 0..5
 
 /**
  * Builds the ELK graph directly from the tech snapshot: one ELK child per
@@ -242,8 +242,8 @@ function categoryOf(tech: Tech): string {
  *
  * `cardW`/`cardH` MUST match the rendered `.tech-card` size so positions line
  * up with the DOM cards exactly. `activeCategories` (optional) restricts the
- * layout to just those categories — so "re-pack" on a subset lays out and
- * bands only the visible categories, closing the gaps.
+ * layout to just those categories, laying out and banding only the visible
+ * ones with no gaps where a hidden category's band would have been.
  */
 export async function layoutTree(
   snapshot: TechSnapshot,
@@ -269,7 +269,7 @@ export async function layoutTree(
   }
 
   // Filter to the active categories (default = all) BEFORE building the ELK
-  // graph, so a re-pack on a subset lays out only those techs.
+  // graph, so a subset layout only includes and bands those techs.
   const techs =
     activeCategories && activeCategories.size > 0
       ? allTechs.filter((t) => activeCategories.has(categoryOf(t)))

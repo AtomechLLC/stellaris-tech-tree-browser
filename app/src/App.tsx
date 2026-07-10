@@ -56,7 +56,10 @@ export function App() {
 
   return (
     <div className="app-shell">
-      <Header version={version} />
+      <Header
+        version={version}
+        dataVersion={state.status === "ready" ? state.snapshot.meta.gameVersion : undefined}
+      />
       {state.status === "loading" && <LoadingOverlay />}
       {state.status === "error" && <ErrorOverlay onRetry={retry} />}
       {state.status === "ready" && state.techCount === 0 && <EmptyOverlay />}

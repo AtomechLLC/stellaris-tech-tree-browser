@@ -2,6 +2,7 @@ import type { Tech } from "../types/tech-snapshot";
 import { categoryLabel } from "../lib/graph/categories";
 import { describeWeightModifiers } from "../lib/graph/weight";
 import { formatGrantLine, splitGrantValue } from "../lib/graph/grants";
+import type { DrawEstimate } from "../lib/empire/draw";
 
 /**
  * Tech info UI, in two skins sharing one body:
@@ -51,6 +52,7 @@ export function TechInfoBody({
   iconBase,
   onJump,
   leadsToMax = Infinity,
+  draw,
 }: {
   tech: Tech;
   techByKey: Map<string, Tech>;
@@ -59,6 +61,8 @@ export function TechInfoBody({
   onJump?: (key: string) => void;
   /** Cap on Leads-To rows (the tooltip truncates; the panel shows all). */
   leadsToMax?: number;
+  /** Loaded-empire draw estimate (Saved Empire view, available techs only). */
+  draw?: DrawEstimate | null;
 }) {
   const category = tech.category[0] ?? "";
   const resolve = (key: string): Ref => {
@@ -145,6 +149,14 @@ export function TechInfoBody({
       <section className="tech-tooltip__sec">
         <div className="tech-tooltip__sec-title">Research Weight</div>
         <div className="tech-tooltip__weight-base">Base weight {tech.weight}</div>
+        {draw && (
+          // Loaded empire: effective weight over the area's available pool.
+          <div className="tech-tooltip__draw">
+            Your draw chance: {draw.approx ? "≈" : ""}
+            {draw.pct >= 10 ? Math.round(draw.pct) : draw.pct.toFixed(1)}% of the {draw.area}{" "}
+            pool (weight {Math.round(draw.weight * 10) / 10})
+          </div>
+        )}
         {weightMods.length > 0 && (
           <ul className="tech-tooltip__weight-mods">
             {weightMods.map((line, i) => {
@@ -233,6 +245,7 @@ export function TechTooltip({
   onJump,
   onPointerEnter,
   onPointerLeave,
+  draw,
 }: {
   tech: Tech;
   techByKey: Map<string, Tech>;
@@ -242,6 +255,8 @@ export function TechTooltip({
   onJump?: (key: string) => void;
   onPointerEnter?: () => void;
   onPointerLeave?: () => void;
+  /** Loaded-empire draw estimate for this tech (Saved Empire view). */
+  draw?: DrawEstimate | null;
 }) {
   // Place to the right of the card if it fits, otherwise to its left.
   const placeRight = anchor.right + 12 + TOOLTIP_W <= window.innerWidth;
@@ -271,6 +286,7 @@ export function TechTooltip({
         iconBase={iconBase}
         onJump={onJump}
         leadsToMax={TOOLTIP_LEADS_TO_MAX}
+        draw={draw}
       />
     </div>
   );
