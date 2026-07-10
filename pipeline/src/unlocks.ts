@@ -45,9 +45,92 @@ function resolveOrVerbatim(token: string, locMap: Map<string, string>): { text: 
   return { text: token, resolved: false };
 }
 
-/** Produces a human-readable grant string for a single feature_flags token. */
+/**
+ * Case-insensitive localisation lookup. Game loc keys are wildly case-mixed
+ * (`MOD_ARMY_DAMAGE_MULT`, `mod_MACHINE_species_trait_points_add`,
+ * `ESPIONAGE` vs `robotics`), so an exact `Map.get` misses most of them. The
+ * lowercased index is built once per locMap and memoized.
+ */
+const ciIndexCache = new WeakMap<Map<string, string>, Map<string, string>>();
+function locGetCI(locMap: Map<string, string>, key: string): string | undefined {
+  const exact = locMap.get(key);
+  if (exact !== undefined) return exact;
+  let ci = ciIndexCache.get(locMap);
+  if (!ci) {
+    ci = new Map<string, string>();
+    // First occurrence wins so canonical (usually earlier/base) entries stick.
+    for (const [k, v] of locMap) {
+      const lk = k.toLowerCase();
+      if (!ci.has(lk)) ci.set(lk, v);
+    }
+    ciIndexCache.set(locMap, ci);
+  }
+  return ci.get(key.toLowerCase());
+}
+
+/** Title Case a raw snake_case token ("all_technology_research_speed" →
+ *  "All Technology Research Speed") — the readable fallback when no loc exists. */
+function prettifyToken(token: string): string {
+  return token
+    .split("_")
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/**
+ * Produces a human-readable grant string for a single feature_flags token —
+ * wiki-style "Unlocks <Feature>". The loc name is looked up case-insensitively
+ * (`espionage` → `ESPIONAGE:0 "Espionage"`); tokens with no loc entry are
+ * prettified from their key with unlock markers stripped
+ * ("sustain_cosmic_storm_unlocked" → "Unlocks Sustain Cosmic Storm").
+ */
 function grantFromFeatureFlag(flag: string, locMap: Map<string, string>): { text: string; resolved: boolean } {
-  return resolveOrVerbatim(flag, locMap);
+  const hit = locGetCI(locMap, flag);
+  if (hit !== undefined) {
+    const text = resolveDisplayText(hit, locMap);
+    // A clean short NAME gets the "Unlocks" lead-in; loc that resolved into a
+    // sentence/template (rare) ships as-is.
+    if (text && !text.includes("$") && text.length <= 48 && !/^unlocks/i.test(text)) {
+      return { text: `Unlocks ${text}`, resolved: true };
+    }
+    if (text && !text.includes("$")) return { text, resolved: true };
+  }
+  const stripped = flag.replace(/^(unlock|allow)_/, "").replace(/_unlocked$/, "");
+  return { text: `Unlocks ${prettifyToken(stripped)}`, resolved: false };
+}
+
+/**
+ * Formats one numeric stat modifier as a wiki-style effect line:
+ * "+5% Research Speed" / "−15% Crime" / "+2 Encryption". The stat NAME comes
+ * from the game's own `mod_<key>` localisation (case-insensitive); a key with
+ * no loc entry falls back to its prettified token. VALUE formatting follows
+ * the game's convention: `_add`-style modifiers are flat numbers, everything
+ * else is a percentage — with "flat when |v| ≥ 2" as the tiebreak for the few
+ * unsuffixed flat stats (e.g. add_base_country_intel = 10,
+ * restored_node_bonus_skill = 2).
+ */
+export function formatStatGrant(
+  statKey: string,
+  value: number,
+  locMap: Map<string, string>,
+): { text: string; resolved: boolean } {
+  const raw = locGetCI(locMap, `mod_${statKey}`);
+  let name: string | null = null;
+  if (raw !== undefined) {
+    const resolvedName = resolveDisplayText(raw, locMap).trim();
+    // Reject templates that still carry $VALUE$-style holes — not a clean name.
+    if (resolvedName && !resolvedName.includes("$")) name = resolvedName;
+  }
+  const resolved = name !== null;
+  if (name === null) name = prettifyToken(statKey.replace(/_(add|mult)$/, "").replace(/^add_/, ""));
+
+  const flat = /_add$/.test(statKey) || /^add_/.test(statKey) || Math.abs(value) >= 2;
+  // Clean float noise (0.05 * 100 → 5.000000000000001).
+  const num = flat ? value : Math.round(value * 10000) / 100;
+  const magnitude = Math.abs(num);
+  const sign = num < 0 ? "−" : "+";
+  return { text: `${sign}${magnitude}${flat ? "" : "%"} ${name}`, resolved };
 }
 
 /** Produces a human-readable grant string for a single prereqfor_desc {title, desc} pair. */
@@ -141,25 +224,36 @@ function grantsFromModifier(
       continue;
     }
 
-    const { text: label, resolved: labelResolved } = resolveOrVerbatim(statKey, locMap);
-
     for (const scalar of asScalarArray(statValue)) {
-      let valueText = String(scalar);
+      // Resolve `@scripted_variable` values first so they can be formatted
+      // like any other number below.
+      let value: string | number | boolean = scalar;
       let valueResolved = true;
       if (typeof scalar === "string" && scalar.startsWith("@")) {
         const hit = varMap.get(scalar);
-        if (hit !== undefined) {
-          valueText = String(hit);
-        } else {
-          valueResolved = false;
-        }
+        if (hit !== undefined) value = hit;
+        else valueResolved = false;
       }
+      const numeric =
+        typeof value === "number"
+          ? value
+          : typeof value === "string" && value.trim() !== ""
+            ? Number(value)
+            : NaN; // booleans / empty strings take the legacy path
 
-      out.push({
-        text: `${label}: ${valueText}`,
-        resolved: labelResolved && valueResolved,
-        unresolvedVariable: !valueResolved,
-      });
+      if (valueResolved && Number.isFinite(numeric)) {
+        // Wiki-style effect line: "+5% Research Speed" / "+2 Encryption".
+        const { text, resolved } = formatStatGrant(statKey, numeric, locMap);
+        out.push({ text, resolved, unresolvedVariable: false });
+      } else {
+        // Non-numeric / unresolved-@var value — legacy "label: value" form.
+        const { text: label, resolved: labelResolved } = resolveOrVerbatim(statKey, locMap);
+        out.push({
+          text: `${label}: ${String(value)}`,
+          resolved: labelResolved && valueResolved,
+          unresolvedVariable: !valueResolved,
+        });
+      }
     }
   }
   return out;

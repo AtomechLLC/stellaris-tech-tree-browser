@@ -3,7 +3,7 @@
     "gameVersion": "v4.5.0",
     "versionLabel": "Cygnus v4.5.0 (bfcc)",
     "checksum": "bfcc",
-    "generatedAt": "2026-07-09T22:43:39.343Z",
+    "generatedAt": "2026-07-10T08:51:05.397Z",
     "techCount": 678,
     "areaCounts": {
       "society": 312,
@@ -97,7 +97,7 @@
       ],
       "unlocks": {
         "grants": [
-          "country_edict_fund_add: 20",
+          "+20 Edict Fund",
           "espionage"
         ],
         "leadsTo": [
@@ -190,8 +190,8 @@
       ],
       "unlocks": {
         "grants": [
-          "all_technology_research_speed: 0.05",
-          "planet_researchers_upkeep_mult: 0.05"
+          "+5% All Technology Research Speed",
+          "+5% Upkeep for [GetResearcherPluralWithIcon]"
         ],
         "leadsTo": [
           "tech_autocurating_vault",
@@ -255,7 +255,7 @@
       ],
       "unlocks": {
         "grants": [
-          "country_storm_protection_tech_level_add: 1"
+          "+1 Cosmic Storm Protection Tech Level"
         ],
         "leadsTo": []
       },
@@ -307,7 +307,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_metallurgists_produces_mult: 0.05"
+          "+5% Resources Produced from [GetFoundrySwapPluralWithIcon]"
         ],
         "leadsTo": [
           "tech_advanced_metallurgy_2",
@@ -347,7 +347,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_metallurgists_produces_mult: 0.05"
+          "+5% Resources Produced from [GetFoundrySwapPluralWithIcon]"
         ],
         "leadsTo": []
       },
@@ -396,7 +396,7 @@
       ],
       "unlocks": {
         "grants": [
-          "sustain_cosmic_storm_unlocked"
+          "Unlocks Sustain Cosmic Storm"
         ],
         "leadsTo": []
       },
@@ -649,8 +649,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Feature: Corvette-Scale Space Fauna Cloning",
-          "alien_cloning_unlocked"
+          "Unlocks Alien Cloning",
+          "Unlocks Feature: Corvette-Scale Space Fauna Cloning"
         ],
         "leadsTo": [
           "tech_controlled_mutations",
@@ -804,8 +804,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "envoys_add: 0.5",
-          "planet_non_artificial_max_districts_add: 1"
+          "+0.5 Envoys",
+          "+1 Max Districts (Non-artificial planets only)"
         ],
         "leadsTo": []
       },
@@ -1176,7 +1176,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "unlock_arcane_deciphering"
+          "Unlocks Arcane Deciphering"
         ],
         "leadsTo": []
       },
@@ -2352,9 +2352,9 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "Unlocks Component: Curator Archaeology Lab — A shipboard lab with advanced archaeological equipment, including a vast database supplied by the Curator Order where new discoveries can easily be cross-referenced.",
-          "ship_anomaly_generation_chance_mult: 0.1",
-          "ship_anomaly_research_speed_mult: 0.25"
+          "+10% Anomaly Discovery Chance",
+          "+25% Ship Anomaly Research Speed",
+          "Unlocks Component: Curator Archaeology Lab — A shipboard lab with advanced archaeological equipment, including a vast database supplied by the Curator Order where new discoveries can easily be cross-referenced."
         ],
         "leadsTo": []
       },
@@ -2416,8 +2416,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "Unlocks Component: Curator Archaeology Lab — A shipboard lab with advanced archaeological equipment, including a vast database supplied by the Curator Order where new discoveries can easily be cross-referenced.",
-          "ship_archaeological_site_clues_add: 2"
+          "+2 Archaeology Skill",
+          "Unlocks Component: Curator Archaeology Lab — A shipboard lab with advanced archaeological equipment, including a vast database supplied by the Curator Order where new discoveries can easily be cross-referenced."
         ],
         "leadsTo": []
       },
@@ -2973,8 +2973,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "planet_amenities_mult: 0.05",
-          "planet_crime_mult: -0.15"
+          "+5% Amenities",
+          "−15% [GetCrimeDeviancy]"
         ],
         "leadsTo": [
           "tech_penal_colonies",
@@ -3052,8 +3052,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "ascension_perks_add: 1",
-          "unity_ambitions"
+          "+1 Ascension Perks",
+          "Unlocks Unity Ambitions"
         ],
         "leadsTo": []
       },
@@ -3119,7 +3119,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "planet_building_build_speed_mult: 0.25"
+          "+25% Infrastructure Build Speed"
         ],
         "leadsTo": [
           "tech_construction_templates"
@@ -3182,7 +3182,7 @@
       ],
       "unlocks": {
         "grants": [
-          "assist_cloaking_detection_unlocked"
+          "Unlocks Assist Cloaking Detection"
         ],
         "leadsTo": []
       },
@@ -3330,7 +3330,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "unlock_astral_threads_actions"
+          "Unlocks Astral Threads Actions"
         ],
         "leadsTo": []
       },
@@ -3365,10 +3365,10 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "envoys_add: 0.25",
-          "station_gatherers_produces_mult: 0.05",
-          "station_researchers_produces_mult: 0.05",
-          "stations_upkeep_mult: -0.5"
+          "+0.25 Envoys",
+          "+5% Resources Produced from Mining Stations",
+          "+5% Resources Produced from Research Stations",
+          "−50% Station Upkeep"
         ],
         "leadsTo": []
       },
@@ -3406,8 +3406,8 @@
       "unlocks": {
         "grants": [
           "Success chance when Delving: +$@delve_success_tier_2|0$%",
-          "allow_psionic_aura_intensity_growth",
-          "allow_psionic_aura_intensity_spread"
+          "Unlocks Psionic Aura Intensity Growth",
+          "Unlocks Psionic Aura Intensity Spread"
         ],
         "leadsTo": []
       },
@@ -3497,7 +3497,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05"
+          "+5% Army Damage"
         ],
         "leadsTo": [
           "tech_autocannons_2"
@@ -3543,7 +3543,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05"
+          "+5% Army Damage"
         ],
         "leadsTo": [
           "tech_autocannons_3"
@@ -3589,7 +3589,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05"
+          "+5% Army Damage"
         ],
         "leadsTo": []
       },
@@ -3726,7 +3726,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "science_ship_survey_speed: 0.25"
+          "+25% Science Ship Survey Speed"
         ],
         "leadsTo": [
           "tech_arkship_system_scanner"
@@ -3793,8 +3793,8 @@
       ],
       "unlocks": {
         "grants": [
-          "country_tech_influence_produces_add: 1",
-          "envoys_add: 1"
+          "+1 Envoys",
+          "+1 Monthly Influence"
         ],
         "leadsTo": [
           "tech_embodied_dynamism"
@@ -4078,10 +4078,10 @@
       ],
       "unlocks": {
         "grants": [
+          "+25% Battleship Build Speed",
+          "+25% Offspring Battleship Build Speed",
           "Battleship Build Cost: -5%\\nBattleship Build Speed: +25%",
-          "ship_battleship_cost_mult: -0.05",
-          "shipsize_battleship_build_speed_mult: 0.25",
-          "shipsize_offspring_battleship_build_speed_mult: 0.25"
+          "−5% Battleship Build Cost"
         ],
         "leadsTo": []
       },
@@ -4124,9 +4124,9 @@
       ],
       "unlocks": {
         "grants": [
-          "Battleship Hull Points: +10%",
-          "shipsize_battleship_hull_mult: 0.1",
-          "shipsize_offspring_battleship_hull_mult: 0.1"
+          "+10% Battleship Hull Points",
+          "+10% Offspring Battleship Hull Points",
+          "Battleship Hull Points: +10%"
         ],
         "leadsTo": [
           "tech_battleship_hull_2"
@@ -4196,9 +4196,9 @@
       ],
       "unlocks": {
         "grants": [
-          "Battleship Hull Points: +10%",
-          "shipsize_battleship_hull_mult: 0.1",
-          "shipsize_offspring_battleship_hull_mult: 0.1"
+          "+10% Battleship Hull Points",
+          "+10% Offspring Battleship Hull Points",
+          "Battleship Hull Points: +10%"
         ],
         "leadsTo": []
       },
@@ -4275,8 +4275,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Ship Type: Battleship — Battleship\\nThe largest regular hull configuration available, the Battleship carries immense power into battle at even greater cost and reduced maneuverability.",
-          "command_limit_add: 60"
+          "+60 Fleet Command Limit",
+          "Unlocks Ship Type: Battleship — Battleship\\nThe largest regular hull configuration available, the Battleship carries immense power into battle at even greater cost and reduced maneuverability."
         ],
         "leadsTo": [
           "tech_arc_emitter_1",
@@ -4325,8 +4325,8 @@
       ],
       "unlocks": {
         "grants": [
-          "MACHINE_species_trait_points_add: 3",
-          "ROBOT_species_trait_points_add: 3",
+          "+3 Machine Modification Points",
+          "+3 Mechanical Modification Points",
           "robotics"
         ],
         "leadsTo": [
@@ -4864,7 +4864,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "country_occupation_armies_add: 2"
+          "+2 Max Occupation Garrisons"
         ],
         "leadsTo": [
           "tech_combat_training"
@@ -5018,8 +5018,8 @@
       ],
       "unlocks": {
         "grants": [
+          "Unlocks Active Reconnaissance",
           "Unlocks Component: Basic Cloaking Field Generator — Basic Cloaking Field Generator\\nA modified particle field allows our vessels to effectively 'hide' in open space. However, this comes at the cost of destabilizing other forms of energy shielding which would otherwise protect the ship.",
-          "active_reconnaissance_unlocked",
           "cloaking"
         ],
         "leadsTo": [
@@ -5515,7 +5515,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_jobs_produces_mult: 0.025"
+          "+2.5% Resources from  Jobs"
         ],
         "leadsTo": []
       },
@@ -5584,11 +5584,11 @@
       ],
       "unlocks": {
         "grants": [
-          "country_commander_cap_add: 1",
-          "country_official_cap_add: 1",
-          "country_scientist_cap_add: 1",
-          "envoys_add: 1",
-          "external_leader_pool_add: 1"
+          "+1 Commander Capacity",
+          "+1 Envoys",
+          "+1 External Leader Pool",
+          "+1 Official Capacity",
+          "+1 Scientist Capacity"
         ],
         "leadsTo": []
       },
@@ -5658,8 +5658,8 @@
       ],
       "unlocks": {
         "grants": [
-          "add_base_country_intel: 10",
-          "country_edict_fund_add: 20",
+          "+10 Base Intel Level",
+          "+20 Edict Fund",
           "espionage"
         ],
         "leadsTo": [
@@ -5699,10 +5699,10 @@
       ],
       "unlocks": {
         "grants": [
-          "capital",
-          "country_commander_cap_add: 1",
-          "country_official_cap_add: 1",
-          "country_scientist_cap_add: 1"
+          "+1 Commander Capacity",
+          "+1 Official Capacity",
+          "+1 Scientist Capacity",
+          "capital"
         ],
         "leadsTo": [
           "tech_alloys_2",
@@ -5815,7 +5815,7 @@
       ],
       "unlocks": {
         "grants": [
-          "pop_environment_tolerance: 0.05"
+          "+5% Habitability"
         ],
         "leadsTo": [
           "tech_colonization_3"
@@ -5850,7 +5850,7 @@
       ],
       "unlocks": {
         "grants": [
-          "pop_environment_tolerance: 0.05"
+          "+5% Habitability"
         ],
         "leadsTo": [
           "tech_colonization_4",
@@ -5886,7 +5886,7 @@
       ],
       "unlocks": {
         "grants": [
-          "pop_environment_tolerance: 0.05"
+          "+5% Habitability"
         ],
         "leadsTo": [
           "tech_colonization_5"
@@ -5921,7 +5921,7 @@
       ],
       "unlocks": {
         "grants": [
-          "pop_environment_tolerance: 0.05"
+          "+5% Habitability"
         ],
         "leadsTo": []
       },
@@ -6282,8 +6282,8 @@
       ],
       "unlocks": {
         "grants": [
-          "army_attack_damage_mult: 0.15",
-          "army_attack_morale_mult: 0.15"
+          "+15% Assault Army Damage",
+          "+15% Assault Army Morale"
         ],
         "leadsTo": [
           "tech_repeatable_improved_army_damage",
@@ -6325,7 +6325,7 @@
       ],
       "unlocks": {
         "grants": [
-          "ship_fire_rate_mult: 0.05"
+          "+5% Ship Fire Rate"
         ],
         "leadsTo": []
       },
@@ -6355,8 +6355,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "empire_size_penalty_mult: -0.05",
-          "envoys_add: 0.5"
+          "+0.5 Envoys",
+          "−5% Empire Size Effect"
         ],
         "leadsTo": []
       },
@@ -6480,8 +6480,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Resource Silos Capacity: +5000",
-          "planet_building_build_speed_mult: 0.5"
+          "+50% Infrastructure Build Speed",
+          "Resource Silos Capacity: +5000"
         ],
         "leadsTo": [
           "tech_repeatable_reduced_building_time"
@@ -6519,7 +6519,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_artisans_produces_mult: 0.05"
+          "+5% Resources Produced from [GetFactorySwapPluralWithIcon]"
         ],
         "leadsTo": [
           "tech_consumer_good_refinement_2"
@@ -6563,7 +6563,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_artisans_produces_mult: 0.05"
+          "+5% Resources Produced from [GetFactorySwapPluralWithIcon]"
         ],
         "leadsTo": []
       },
@@ -6612,9 +6612,9 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Component: Curator Containment Protocols — Gravity Snares capture double the amount of Space Fauna.",
-          "country_capture_amount_mult: 1",
-          "country_capture_chance_add: 0.1"
+          "+0.1 Fauna Capture Chance",
+          "+100% Fauna Capture Amount",
+          "Unlocks Component: Curator Containment Protocols — Gravity Snares capture double the amount of Space Fauna."
         ],
         "leadsTo": []
       },
@@ -6656,8 +6656,8 @@
       ],
       "unlocks": {
         "grants": [
-          "mutation_slots_add: 3",
-          "mutations"
+          "+3 Mutation Slots",
+          "Unlocks Mutations"
         ],
         "leadsTo": [
           "tech_combat_computers_bio_integration",
@@ -6711,8 +6711,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Feature: Unique Mutations — Unique Mutations\\nUnique Mutations are powerful mutations that can be applied only once and can sometimes be limited to a specific kind of Space Fauna. More Unique Mutations can be discovered from cloning and hunting.",
-          "mutation_slots_add: 3"
+          "+3 Mutation Slots",
+          "Unlocks Feature: Unique Mutations — Unique Mutations\\nUnique Mutations are powerful mutations that can be applied only once and can sometimes be limited to a specific kind of Space Fauna. More Unique Mutations can be discovered from cloning and hunting."
         ],
         "leadsTo": [
           "tech_unique_mutation_crystalline_entity",
@@ -6753,11 +6753,11 @@
       ],
       "unlocks": {
         "grants": [
+          "+25% Corvette Build Speed",
+          "+25% Frigate Build Speed",
+          "+25% Offspring Corvette Build Speed",
           "Corvette Build Cost: -5%\\nCorvette Build Speed: +25%\\nFrigate Build Cost: -5%\\nFrigate Build Speed: +25%",
-          "ship_corvette_cost_mult: -0.05",
-          "shipsize_corvette_build_speed_mult: 0.25",
-          "shipsize_frigate_build_speed_mult: 0.25",
-          "shipsize_offspring_corvette_build_speed_mult: 0.25"
+          "−5% Corvette Build Cost"
         ],
         "leadsTo": []
       },
@@ -6795,10 +6795,10 @@
       ],
       "unlocks": {
         "grants": [
-          "Corvette Hull Points: +10%\\nFrigate Hull Points: +10%",
-          "shipsize_corvette_hull_mult: 0.1",
-          "shipsize_frigate_hull_mult: 0.1",
-          "shipsize_offspring_corvette_hull_mult: 0.1"
+          "+10% Corvette Hull Points",
+          "+10% Frigate Hull Points",
+          "+10% Offspring Corvette Hull Points",
+          "Corvette Hull Points: +10%\\nFrigate Hull Points: +10%"
         ],
         "leadsTo": [
           "tech_corvette_hull_2"
@@ -6862,10 +6862,10 @@
       ],
       "unlocks": {
         "grants": [
-          "Corvette Hull Points: +10%\\nFrigate Hull Points: +10%",
-          "shipsize_corvette_hull_mult: 0.1",
-          "shipsize_frigate_hull_mult: 0.1",
-          "shipsize_offspring_corvette_hull_mult: 0.1"
+          "+10% Corvette Hull Points",
+          "+10% Frigate Hull Points",
+          "+10% Offspring Corvette Hull Points",
+          "Corvette Hull Points: +10%\\nFrigate Hull Points: +10%"
         ],
         "leadsTo": []
       },
@@ -7838,10 +7838,10 @@
       ],
       "unlocks": {
         "grants": [
+          "+25% Cruiser Build Speed",
+          "+25% Offspring Cruiser Build Speed",
           "Cruiser Build Cost: -5%\\nCruiser Build Speed: +25%",
-          "ship_cruiser_cost_mult: -0.05",
-          "shipsize_cruiser_build_speed_mult: 0.25",
-          "shipsize_offspring_cruiser_build_speed_mult: 0.25"
+          "−5% Cruiser Build Cost"
         ],
         "leadsTo": []
       },
@@ -7884,9 +7884,9 @@
       ],
       "unlocks": {
         "grants": [
-          "Cruiser Hull Points: +10%",
-          "shipsize_cruiser_hull_mult: 0.1",
-          "shipsize_offspring_cruiser_hull_mult: 0.1"
+          "+10% Cruiser Hull Points",
+          "+10% Offspring Cruiser Hull Points",
+          "Cruiser Hull Points: +10%"
         ],
         "leadsTo": [
           "tech_cruiser_hull_2"
@@ -7956,9 +7956,9 @@
       ],
       "unlocks": {
         "grants": [
-          "Cruiser Hull Points: +10%",
-          "shipsize_cruiser_hull_mult: 0.1",
-          "shipsize_offspring_cruiser_hull_mult: 0.1"
+          "+10% Cruiser Hull Points",
+          "+10% Offspring Cruiser Hull Points",
+          "Cruiser Hull Points: +10%"
         ],
         "leadsTo": []
       },
@@ -8035,8 +8035,8 @@
       ],
       "unlocks": {
         "grants": [
+          "+40 Fleet Command Limit",
           "Unlocks Ship Type: Cruiser — Cruiser\\nThe Cruiser is the first three-section design, allowing for a wide range of module configurations for those willing to pay the price.",
-          "command_limit_add: 40",
           "ship"
         ],
         "leadsTo": [
@@ -8081,7 +8081,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_colony_development_speed_mult: 0.5"
+          "+50% Colony Development Speed"
         ],
         "leadsTo": [
           "tech_cryostasis_2"
@@ -8122,7 +8122,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_colony_development_speed_mult: 0.5"
+          "+50% Colony Development Speed"
         ],
         "leadsTo": []
       },
@@ -8378,8 +8378,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "Unlocks Component: Curator Exploration Lab — These shipboard lab facilities incorporate advanced technologies from the ancient Curator Order to further increase survey speeds.",
-          "science_ship_survey_speed: 0.33"
+          "+33% Science Ship Survey Speed",
+          "Unlocks Component: Curator Exploration Lab — These shipboard lab facilities incorporate advanced technologies from the ancient Curator Order to further increase survey speeds."
         ],
         "leadsTo": []
       },
@@ -8679,8 +8679,8 @@
       ],
       "unlocks": {
         "grants": [
-          "espionage",
-          "intel_decryption_add: 2"
+          "+2 Codebreaking",
+          "espionage"
         ],
         "leadsTo": [
           "tech_decryption_2"
@@ -8729,8 +8729,8 @@
       ],
       "unlocks": {
         "grants": [
-          "espionage",
-          "intel_decryption_add: 2"
+          "+2 Codebreaking",
+          "espionage"
         ],
         "leadsTo": [
           "tech_decryption_3"
@@ -8779,7 +8779,7 @@
       ],
       "unlocks": {
         "grants": [
-          "intel_decryption_add: 2"
+          "+2 Codebreaking"
         ],
         "leadsTo": []
       },
@@ -8937,8 +8937,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Megastructure: Deep Space Citadel — A Deep Space Citadel is an armored Starbase designed for maximum defense within a stellar gravity well.",
-          "deep_space_citadel_limit_add: 1"
+          "+1 Deep Space Citadel System Capacity",
+          "Unlocks Megastructure: Deep Space Citadel — A Deep Space Citadel is an armored Starbase designed for maximum defense within a stellar gravity well."
         ],
         "leadsTo": []
       },
@@ -8999,7 +8999,7 @@
       ],
       "unlocks": {
         "grants": [
-          "shipsize_military_station_small_hull_mult: 0.1"
+          "+10% Defense Platform Hull Points"
         ],
         "leadsTo": [
           "tech_repeatable_improved_military_station_damage",
@@ -9099,10 +9099,10 @@
       ],
       "unlocks": {
         "grants": [
+          "+25% Destroyer Build Speed",
+          "+25% Offspring Destroyer Build Speed",
           "Destroyer Build Cost: -5%\\nDestroyer Build Speed: +25%",
-          "ship_destroyer_cost_mult: -0.05",
-          "shipsize_destroyer_build_speed_mult: 0.25",
-          "shipsize_offspring_destroyer_build_speed_mult: 0.25"
+          "−5% Destroyer Build Cost"
         ],
         "leadsTo": []
       },
@@ -9145,9 +9145,9 @@
       ],
       "unlocks": {
         "grants": [
-          "Destroyer Hull Points: +10%",
-          "shipsize_destroyer_hull_mult: 0.1",
-          "shipsize_offspring_destroyer_hull_mult: 0.1"
+          "+10% Destroyer Hull Points",
+          "+10% Offspring Destroyer Hull Points",
+          "Destroyer Hull Points: +10%"
         ],
         "leadsTo": [
           "tech_destroyer_hull_2"
@@ -9217,9 +9217,9 @@
       ],
       "unlocks": {
         "grants": [
-          "Destroyer Hull Points: +10%",
-          "shipsize_destroyer_hull_mult: 0.1",
-          "shipsize_offspring_destroyer_hull_mult: 0.1"
+          "+10% Destroyer Hull Points",
+          "+10% Offspring Destroyer Hull Points",
+          "Destroyer Hull Points: +10%"
         ],
         "leadsTo": []
       },
@@ -9296,8 +9296,8 @@
       ],
       "unlocks": {
         "grants": [
+          "+20 Fleet Command Limit",
           "Unlocks Ship Type: Destroyer — Destroyer\\nAs a larger two-section design, the Destroyer offers a broad array of strategic armament options.",
-          "command_limit_add: 20",
           "ship"
         ],
         "leadsTo": [
@@ -9548,7 +9548,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "command_limit_add: 20"
+          "+20 Fleet Command Limit"
         ],
         "leadsTo": [
           "tech_doctrine_fleet_size_2"
@@ -9589,7 +9589,7 @@
       ],
       "unlocks": {
         "grants": [
-          "command_limit_add: 40"
+          "+40 Fleet Command Limit"
         ],
         "leadsTo": [
           "tech_doctrine_fleet_size_3"
@@ -9630,7 +9630,7 @@
       ],
       "unlocks": {
         "grants": [
-          "command_limit_add: 60"
+          "+60 Fleet Command Limit"
         ],
         "leadsTo": [
           "tech_doctrine_fleet_size_4"
@@ -9671,7 +9671,7 @@
       ],
       "unlocks": {
         "grants": [
-          "command_limit_add: 80"
+          "+80 Fleet Command Limit"
         ],
         "leadsTo": [
           "tech_doctrine_fleet_size_5"
@@ -9712,7 +9712,7 @@
       ],
       "unlocks": {
         "grants": [
-          "command_limit_add: 100"
+          "+100 Fleet Command Limit"
         ],
         "leadsTo": [
           "tech_repeatable_command_limit"
@@ -9751,7 +9751,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "country_naval_cap_add: 25"
+          "+25 Naval Capacity"
         ],
         "leadsTo": [
           "tech_doctrine_navy_size_2"
@@ -9792,7 +9792,7 @@
       ],
       "unlocks": {
         "grants": [
-          "country_naval_cap_add: 50"
+          "+50 Naval Capacity"
         ],
         "leadsTo": [
           "tech_doctrine_navy_size_3"
@@ -9833,7 +9833,7 @@
       ],
       "unlocks": {
         "grants": [
-          "country_naval_cap_add: 75"
+          "+75 Naval Capacity"
         ],
         "leadsTo": [
           "tech_doctrine_navy_size_4"
@@ -9874,7 +9874,7 @@
       ],
       "unlocks": {
         "grants": [
-          "country_naval_cap_add: 100"
+          "+100 Naval Capacity"
         ],
         "leadsTo": [
           "tech_repeatable_naval_cap"
@@ -9965,7 +9965,7 @@
       ],
       "unlocks": {
         "grants": [
-          "droids",
+          "Unlocks Droids",
           "robotics"
         ],
         "leadsTo": [
@@ -10202,8 +10202,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "Unlocks Megastructure: Dyson Swarm — An array of interlinked satellites, the Dyson Swarm is designed to improve the output of stellar deposits.",
-          "dyson_swarm_limit_add: 3"
+          "+3 Dyson Swarm Capacity",
+          "Unlocks Megastructure: Dyson Swarm — An array of interlinked satellites, the Dyson Swarm is designed to improve the output of stellar deposits."
         ],
         "leadsTo": []
       },
@@ -10315,7 +10315,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_farmers_food_produces_mult: 0.05",
+          "+5% Produced from [GetFarmerSwapPluralWithIcon]",
           "zone"
         ],
         "leadsTo": [
@@ -10357,7 +10357,7 @@
       ],
       "unlocks": {
         "grants": [
-          "terraform_inhabited"
+          "Unlocks Terraform Inhabited"
         ],
         "leadsTo": []
       },
@@ -10417,7 +10417,7 @@
       ],
       "unlocks": {
         "grants": [
-          "country_edict_fund_add: 20"
+          "+20 Edict Fund"
         ],
         "leadsTo": []
       },
@@ -10482,11 +10482,11 @@
       ],
       "unlocks": {
         "grants": [
-          "country_commander_cap_add: 1",
-          "country_official_cap_add: 1",
-          "country_scientist_cap_add: 1",
-          "envoys_add: 1",
-          "external_leader_pool_add: 1"
+          "+1 Commander Capacity",
+          "+1 Envoys",
+          "+1 External Leader Pool",
+          "+1 Official Capacity",
+          "+1 Scientist Capacity"
         ],
         "leadsTo": []
       },
@@ -10538,8 +10538,8 @@
       ],
       "unlocks": {
         "grants": [
-          "espionage",
-          "intel_encryption_add: 2"
+          "+2 Encryption",
+          "espionage"
         ],
         "leadsTo": [
           "tech_encryption_2"
@@ -10588,8 +10588,8 @@
       ],
       "unlocks": {
         "grants": [
-          "espionage",
-          "intel_encryption_add: 2"
+          "+2 Encryption",
+          "espionage"
         ],
         "leadsTo": [
           "tech_encryption_3"
@@ -10638,7 +10638,7 @@
       ],
       "unlocks": {
         "grants": [
-          "intel_encryption_add: 2"
+          "+2 Encryption"
         ],
         "leadsTo": []
       },
@@ -11086,7 +11086,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "pop_organic_resettlement_cost_mult: -0.3"
+          "−30% Organic Pop Resettlement Cost"
         ],
         "leadsTo": []
       },
@@ -11255,7 +11255,7 @@
       "unlocks": {
         "grants": [
           "Unlocks Feature: Epigenetic Triggers — Allows us to remove Presapient Traits from Biological Species through Species Modification.",
-          "uplifting"
+          "Unlocks Uplift"
         ],
         "leadsTo": [
           "tech_morphogenetic_field_mastery"
@@ -11536,7 +11536,7 @@
       ],
       "unlocks": {
         "grants": [
-          "experimental_subspace_navigation"
+          "Unlocks Experimental Subspace Navigation"
         ],
         "leadsTo": []
       },
@@ -13784,7 +13784,7 @@
       "unlocks": {
         "grants": [
           "Unlocks Diplomacy: Form Federation",
-          "diplomacy_influence_upkeep_mult: -0.25"
+          "−25% Diplomatic Agreement Influence Upkeep"
         ],
         "leadsTo": [
           "tech_xeno_diplomacy"
@@ -14311,7 +14311,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planetary_ftl_inhibitor"
+          "Unlocks Planetary Ftl Inhibitor"
         ],
         "leadsTo": []
       },
@@ -14402,8 +14402,8 @@
       ],
       "unlocks": {
         "grants": [
-          "capital",
-          "country_government_civic_points_add: 1"
+          "+1 Civic Slots",
+          "capital"
         ],
         "leadsTo": [
           "tech_capital_productivity_3",
@@ -14471,7 +14471,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "country_starbase_capacity_add: 2"
+          "+2 Station Capacity"
         ],
         "leadsTo": [
           "tech_interstellar_campaigns",
@@ -14595,8 +14595,8 @@
       ],
       "unlocks": {
         "grants": [
-          "add_base_country_intel: 10",
-          "country_edict_fund_add: 20"
+          "+10 Base Intel Level",
+          "+20 Edict Fund"
         ],
         "leadsTo": [
           "tech_repeatable_improved_core_system_cap",
@@ -14669,8 +14669,8 @@
       ],
       "unlocks": {
         "grants": [
-          "country_claim_influence_cost_mult: -0.1",
-          "country_war_exhaustion_mult: -0.1"
+          "−10% Claim Influence Cost",
+          "−10% War Exhaustion Gain"
         ],
         "leadsTo": [
           "tech_existential_campaigns"
@@ -14769,7 +14769,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "planet_jobs_energy_produces_mult: 0.05"
+          "+5% Energy Credits from  Jobs"
         ],
         "leadsTo": []
       },
@@ -14880,7 +14880,7 @@
       ],
       "unlocks": {
         "grants": [
-          "gateway_activation"
+          "Unlocks Gateway Activation"
         ],
         "leadsTo": [
           "tech_gateway_construction"
@@ -14968,7 +14968,7 @@
       ],
       "unlocks": {
         "grants": [
-          "gateway_construction"
+          "Unlocks Gateway Construction"
         ],
         "leadsTo": []
       },
@@ -15165,7 +15165,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_farmers_food_produces_mult: 0.05"
+          "+5% Produced from [GetFarmerSwapPluralWithIcon]"
         ],
         "leadsTo": [
           "tech_nano_vitality_crops",
@@ -15486,10 +15486,10 @@
       ],
       "unlocks": {
         "grants": [
-          "BIOLOGICAL_species_trait_points_add: 2",
-          "biological",
-          "modify_traits",
-          "pop_self_modification"
+          "+2 Organic Species Modification Points",
+          "Unlocks Modify Traits",
+          "Unlocks Pop Self Modification",
+          "biological"
         ],
         "leadsTo": [
           "tech_gene_expressions",
@@ -15593,8 +15593,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "biological",
-          "logistic_growth_mult: 0.1"
+          "+10% Pop Growth Speed",
+          "biological"
         ],
         "leadsTo": [
           "tech_cloning",
@@ -15737,7 +15737,7 @@
       ],
       "unlocks": {
         "grants": [
-          "habitability_gene_modding"
+          "Unlocks Habitability Gene Modding"
         ],
         "leadsTo": []
       },
@@ -15817,7 +15817,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_defense_health_mult: 0.25"
+          "+25% Defense Army Health"
         ],
         "leadsTo": []
       },
@@ -15958,8 +15958,8 @@
       ],
       "unlocks": {
         "grants": [
-          "country_capture_amount_add: 1",
-          "country_capture_chance_add: 0.05",
+          "+0.05 Fauna Capture Chance",
+          "+1 Fauna Capture Amount",
           "snare_capacity"
         ],
         "leadsTo": [
@@ -16011,8 +16011,8 @@
       ],
       "unlocks": {
         "grants": [
-          "country_capture_amount_add: 1",
-          "country_capture_chance_add: 0.05",
+          "+0.05 Fauna Capture Chance",
+          "+1 Fauna Capture Amount",
           "snare_capacity"
         ],
         "leadsTo": [
@@ -16064,8 +16064,8 @@
       ],
       "unlocks": {
         "grants": [
-          "country_capture_amount_add: 1",
-          "country_capture_chance_add: 0.05",
+          "+0.05 Fauna Capture Chance",
+          "+1 Fauna Capture Amount",
           "snare_capacity"
         ],
         "leadsTo": []
@@ -16101,7 +16101,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "unlock_gravity_snares"
+          "Unlocks Gravity Snares"
         ],
         "leadsTo": [
           "tech_alien_cloning",
@@ -16171,8 +16171,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Naval Capacity per 100 Soldier Jobs: +1",
-          "army_defense_damage_mult: 0.33"
+          "+33% Defense Army Damage",
+          "Naval Capacity per 100 Soldier Jobs: +1"
         ],
         "leadsTo": [
           "tech_global_defense_grid"
@@ -16448,7 +16448,7 @@
       ],
       "unlocks": {
         "grants": [
-          "habitat_max_districts_add: 1"
+          "+1 Habitat Max Districts"
         ],
         "leadsTo": [
           "tech_habitat_3"
@@ -16519,7 +16519,7 @@
       ],
       "unlocks": {
         "grants": [
-          "habitat_max_districts_add: 1"
+          "+1 Habitat Max Districts"
         ],
         "leadsTo": []
       },
@@ -16568,14 +16568,14 @@
       ],
       "unlocks": {
         "grants": [
+          "+25% Elder Harbinger Build Speed",
+          "+25% Elder Offspring Harbinger Build Speed",
+          "+25% Juvenile Harbinger Build Speed",
+          "+25% Juvenile Offspring Harbinger Build Speed",
+          "+25% Mature Harbinger Build Speed",
+          "+25% Mature Offspring Harbinger Build Speed",
           "Harbinger Build Cost: -5%\\nHarbinger Build Speed: +25%",
-          "ship_harbinger_cost_mult: -0.05",
-          "shipsize_harbinger_stage_1_build_speed_mult: 0.25",
-          "shipsize_harbinger_stage_2_build_speed_mult: 0.25",
-          "shipsize_harbinger_stage_3_build_speed_mult: 0.25",
-          "shipsize_offspring_harbinger_stage_1_build_speed_mult: 0.25",
-          "shipsize_offspring_harbinger_stage_2_build_speed_mult: 0.25",
-          "shipsize_offspring_harbinger_stage_3_build_speed_mult: 0.25"
+          "−5% Harbinger Build Cost"
         ],
         "leadsTo": []
       },
@@ -16812,8 +16812,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Ship Type: Juvenile Harbinger — Juvenile Harbinger\\nThe Harbinger bolsters the fleet by spawning strike craft.",
-          "command_limit_add: 40"
+          "+40 Fleet Command Limit",
+          "Unlocks Ship Type: Juvenile Harbinger — Juvenile Harbinger\\nThe Harbinger bolsters the fleet by spawning strike craft."
         ],
         "leadsTo": [
           "tech_arkship_tier_2",
@@ -17413,8 +17413,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Component: Hyperdrive II — Hyperdrive II\\nWe have identified the existence of points in space where a ship expends less energy to",
-          "planet_resettlement_unemployed_mult: 0.25"
+          "+25% Automatic Resettlement Chance",
+          "Unlocks Component: Hyperdrive II — Hyperdrive II\\nWe have identified the existence of points in space where a ship expends less energy to"
         ],
         "leadsTo": [
           "tech_hyper_drive_3",
@@ -17466,8 +17466,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Component: Hyperdrive III — Hyperdrive III\\nA new generation of hyper drives capable of accessing the subspace slipstreams that are present within hyperspace. This leads to dramatically improved drive performance.",
-          "planet_resettlement_unemployed_mult: 0.25"
+          "+25% Automatic Resettlement Chance",
+          "Unlocks Component: Hyperdrive III — Hyperdrive III\\nA new generation of hyper drives capable of accessing the subspace slipstreams that are present within hyperspace. This leads to dramatically improved drive performance."
         ],
         "leadsTo": [
           "tech_gateway_activation"
@@ -17652,7 +17652,7 @@
       ],
       "unlocks": {
         "grants": [
-          "hyper_relay_construction"
+          "Unlocks Hyper Relay Construction"
         ],
         "leadsTo": []
       },
@@ -18032,7 +18032,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "country_storm_protection_tech_level_add: 1",
+          "+1 Cosmic Storm Protection Tech Level",
           "tech_advanced_industrial_storm_protection"
         ],
         "leadsTo": [
@@ -18088,9 +18088,9 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.1",
-          "army_health: 0.1",
-          "pop_environment_tolerance: 0.05"
+          "+10% Army Damage",
+          "+10% Army Health",
+          "+5% Habitability"
         ],
         "leadsTo": [
           "tech_neuro_quantum_links"
@@ -18324,8 +18324,8 @@
       ],
       "unlocks": {
         "grants": [
-          "country_claim_influence_cost_mult: -0.1",
-          "country_war_exhaustion_mult: -0.1"
+          "−10% Claim Influence Cost",
+          "−10% War Exhaustion Gain"
         ],
         "leadsTo": [
           "tech_galactic_campaigns"
@@ -18574,7 +18574,7 @@
       "unlocks": {
         "grants": [
           "Unlocks Component: Jump Drive — Jump Drive\\nA groundbreaking technological marvel, the Jump Drive shreds the local space-time continuum and rearranges it on the quantum level to be identical to that of the target destination - and thus the ship appears to near-instantly",
-          "jump_method"
+          "Unlocks Jump Method"
         ],
         "leadsTo": [
           "tech_arkship_exodus_jump"
@@ -18737,7 +18737,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05",
+          "+5% Army Damage",
           "energy_weapons"
         ],
         "leadsTo": [
@@ -18787,7 +18787,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05",
+          "+5% Army Damage",
           "energy_weapons"
         ],
         "leadsTo": [
@@ -18834,7 +18834,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05",
+          "+5% Army Damage",
           "energy_weapons"
         ],
         "leadsTo": [
@@ -18884,7 +18884,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05",
+          "+5% Army Damage",
           "energy_weapons"
         ],
         "leadsTo": [
@@ -19528,7 +19528,7 @@
       ],
       "unlocks": {
         "grants": [
-          "pop_factions_produces_mult: 0.05"
+          "+5% Faction Resource Output"
         ],
         "leadsTo": []
       },
@@ -19568,7 +19568,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "society_tech_cost_mult: -0.05"
+          "−5% Research Cost ( Society)"
         ],
         "leadsTo": []
       },
@@ -19608,9 +19608,9 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "empire_size_districts_mult: -0.3",
-          "envoys_add: 0.25",
-          "planet_districts_cost_mult: -0.3"
+          "+0.25 Envoys",
+          "−30% District Cost",
+          "−30% Empire Size from Districts"
         ],
         "leadsTo": []
       },
@@ -19886,7 +19886,7 @@
       ],
       "unlocks": {
         "grants": [
-          "country_starbase_capacity_add: 2"
+          "+2 Station Capacity"
         ],
         "leadsTo": []
       },
@@ -20049,7 +20049,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05",
+          "+5% Army Damage",
           "kinetic_weapons"
         ],
         "leadsTo": [
@@ -20097,7 +20097,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05",
+          "+5% Army Damage",
           "kinetic_weapons"
         ],
         "leadsTo": [
@@ -20146,7 +20146,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05",
+          "+5% Army Damage",
           "kinetic_weapons"
         ],
         "leadsTo": [
@@ -20195,7 +20195,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05",
+          "+5% Army Damage",
           "kinetic_weapons"
         ],
         "leadsTo": [
@@ -20383,14 +20383,14 @@
       ],
       "unlocks": {
         "grants": [
+          "+25% Elder Mauler Build Speed",
+          "+25% Elder Offspring Mauler Build Speed",
+          "+25% Juvenile Mauler Build Speed",
+          "+25% Juvenile Offspring Mauler Build Speed",
+          "+25% Mature Mauler Build Speed",
+          "+25% Mature Offspring Mauler Build Speed",
           "Mauler Build Cost: -5%\\nMauler Build Speed: +25%",
-          "ship_mauler_cost_mult: -0.05",
-          "shipsize_mauler_stage_1_build_speed_mult: 0.25",
-          "shipsize_mauler_stage_2_build_speed_mult: 0.25",
-          "shipsize_mauler_stage_3_build_speed_mult: 0.25",
-          "shipsize_offspring_mauler_stage_1_build_speed_mult: 0.25",
-          "shipsize_offspring_mauler_stage_2_build_speed_mult: 0.25",
-          "shipsize_offspring_mauler_stage_3_build_speed_mult: 0.25"
+          "−5% Mauler Build Cost"
         ],
         "leadsTo": []
       },
@@ -20467,9 +20467,9 @@
       ],
       "unlocks": {
         "grants": [
+          "+20 Fleet Command Limit",
           "Unlocks Ship Type: Mature Mauler — Mature Mauler\\nA Mature Mauler has been selectively grown to support greater firepower and armor.",
-          "bio_ships",
-          "command_limit_add: 20"
+          "bio_ships"
         ],
         "leadsTo": [
           "tech_growth_chamber_1",
@@ -21080,11 +21080,11 @@
       ],
       "unlocks": {
         "grants": [
-          "arc_furnace_limit_add: 2",
-          "country_resource_max_add: 20000",
-          "country_starbase_capacity_add: 3",
-          "dyson_swarm_limit_add: 2",
-          "megaengineering"
+          "+2 Arc Furnace Capacity",
+          "+2 Dyson Swarm Capacity",
+          "+20000 Resource Storage Capacity",
+          "+3 Station Capacity",
+          "Unlocks Megaengineering"
         ],
         "leadsTo": [
           "tech_dyson_sphere",
@@ -21309,7 +21309,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "planet_pop_assembly_mult: 0.1"
+          "+10% Mechanical Pop Assembly Speed"
         ],
         "leadsTo": [
           "tech_self_assembling_components"
@@ -22001,7 +22001,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_miners_minerals_produces_mult: 0.05",
+          "+5% Produced from [GetMinerSwapPluralWithIcon]",
           "zone"
         ],
         "leadsTo": [
@@ -22038,7 +22038,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_miners_minerals_produces_mult: 0.05"
+          "+5% Produced from [GetMinerSwapPluralWithIcon]"
         ],
         "leadsTo": [
           "tech_mining_3"
@@ -22073,7 +22073,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_miners_minerals_produces_mult: 0.05"
+          "+5% Produced from [GetMinerSwapPluralWithIcon]"
         ],
         "leadsTo": []
       },
@@ -22410,8 +22410,8 @@
       ],
       "unlocks": {
         "grants": [
-          "starbase_buildings_cost_mult: -0.25",
-          "starbase_modules_cost_mult: -0.25"
+          "−25% Station Building Cost",
+          "−25% Station Module Cost"
         ],
         "leadsTo": [
           "tech_space_defense_station_improvement"
@@ -22670,8 +22670,8 @@
       ],
       "unlocks": {
         "grants": [
-          "MACHINE_species_trait_points_add: 1",
-          "ROBOT_species_trait_points_add: 1"
+          "+1 Machine Modification Points",
+          "+1 Mechanical Modification Points"
         ],
         "leadsTo": []
       },
@@ -22984,7 +22984,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_farmers_food_produces_mult: 0.05"
+          "+5% Produced from [GetFarmerSwapPluralWithIcon]"
         ],
         "leadsTo": [
           "tech_nutrient_replication"
@@ -23144,7 +23144,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_jobs_specialist_produces_mult: 0.025"
+          "+2.5% [GetSpecialist] Pop Resource Output"
         ],
         "leadsTo": []
       },
@@ -23204,8 +23204,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "leader_lifespan_add: 10",
-          "species_leader_exp_gain: 0.25"
+          "+10 Leader Lifespan",
+          "+25% Species Leader Exp Gain"
         ],
         "leadsTo": []
       },
@@ -23235,8 +23235,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "all_technology_research_speed: 0.05",
-          "envoys_add: 0.25"
+          "+0.25 Envoys",
+          "+5% All Technology Research Speed"
         ],
         "leadsTo": []
       },
@@ -23415,8 +23415,8 @@
       ],
       "unlocks": {
         "grants": [
-          "councilor_exp_gain: 0.25",
-          "restored_node_bonus_skill: 2"
+          "+2 Restored Node Additional Skill",
+          "+25% Councilor Exp Gain"
         ],
         "leadsTo": [
           "tech_node_culling_3"
@@ -23506,8 +23506,8 @@
       ],
       "unlocks": {
         "grants": [
-          "councilor_skill_add: 1",
-          "restored_node_bonus_skill: 2"
+          "+1 Effective Councilor Skill",
+          "+2 Restored Node Additional Skill"
         ],
         "leadsTo": []
       },
@@ -23682,8 +23682,8 @@
       ],
       "unlocks": {
         "grants": [
-          "councilor_exp_gain: 0.25",
-          "restored_node_bonus_skill: 2"
+          "+2 Restored Node Additional Skill",
+          "+25% Councilor Exp Gain"
         ],
         "leadsTo": [
           "tech_node_reformatting_3"
@@ -23773,8 +23773,8 @@
       ],
       "unlocks": {
         "grants": [
-          "councilor_skill_add: 1",
-          "restored_node_bonus_skill: 2"
+          "+1 Effective Councilor Skill",
+          "+2 Restored Node Additional Skill"
         ],
         "leadsTo": []
       },
@@ -23982,7 +23982,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_farmers_food_produces_mult: 0.05"
+          "+5% Produced from [GetFarmerSwapPluralWithIcon]"
         ],
         "leadsTo": []
       },
@@ -24072,8 +24072,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "Unlocks Megastructure: Arc Furnace — Utilizing the raw power of a molten planet, the Arc Furnace unlocks otherwise inaccessible minerals and improves system-wide mining operations.",
-          "arc_furnace_limit_add: 3"
+          "+3 Arc Furnace Capacity",
+          "Unlocks Megastructure: Arc Furnace — Utilizing the raw power of a molten planet, the Arc Furnace unlocks otherwise inaccessible minerals and improves system-wide mining operations."
         ],
         "leadsTo": []
       },
@@ -24108,7 +24108,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "ship_speed_mult: 0.1"
+          "+10% Sublight Speed"
         ],
         "leadsTo": []
       },
@@ -24205,8 +24205,8 @@
       ],
       "unlocks": {
         "grants": [
+          "+3 Station Capacity",
           "Unlocks Megastructure: Orbital Ring — An Orbital Ring is a Starbase variant that forms a band encircling the planet, providing defense and additional specialization.",
-          "country_starbase_capacity_add: 3",
           "infrastructure"
         ],
         "leadsTo": []
@@ -24284,8 +24284,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "envoys_add: 0.25",
-          "fleet_mia_time_mult: -0.15"
+          "+0.25 Envoys",
+          "−15% Time Spent Missing In Action"
         ],
         "leadsTo": []
       },
@@ -25431,11 +25431,11 @@
       ],
       "unlocks": {
         "grants": [
-          "habitat_max_districts_add: 1",
+          "+1 Habitat Max Districts",
+          "+15% Infrastructure Build Speed",
+          "+25% Colony Development Speed",
           "infrastructure",
-          "planet_building_build_speed_mult: 0.15",
-          "planet_colony_development_speed_mult: 0.25",
-          "planet_structures_cost_mult: -0.1"
+          "−10% Infrastructure Cost"
         ],
         "leadsTo": [
           "tech_orbital_ring_tier_1",
@@ -25475,10 +25475,10 @@
       ],
       "unlocks": {
         "grants": [
-          "habitat_max_districts_add: 1",
-          "planet_building_build_speed_mult: 0.15",
-          "planet_colony_development_speed_mult: 0.25",
-          "planet_structures_cost_mult: -0.1"
+          "+1 Habitat Max Districts",
+          "+15% Infrastructure Build Speed",
+          "+25% Colony Development Speed",
+          "−10% Infrastructure Cost"
         ],
         "leadsTo": []
       },
@@ -25575,10 +25575,10 @@
       ],
       "unlocks": {
         "grants": [
+          "+2.5% Monthly Unity",
           "Grants a small amount of  Unity",
-          "campaign_edicts",
-          "capital",
-          "country_unity_produces_mult: 0.025"
+          "Unlocks Campaign Edicts",
+          "capital"
         ],
         "leadsTo": [
           "tech_adaptive_bureaucracy",
@@ -25633,7 +25633,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05"
+          "+5% Army Damage"
         ],
         "leadsTo": [
           "tech_plasma_2"
@@ -25679,7 +25679,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05"
+          "+5% Army Damage"
         ],
         "leadsTo": [
           "tech_plasma_3"
@@ -25725,7 +25725,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.05"
+          "+5% Army Damage"
         ],
         "leadsTo": []
       },
@@ -25765,8 +25765,8 @@
       ],
       "unlocks": {
         "grants": [
-          "all_technology_research_speed: 0.05",
-          "planet_researchers_upkeep_mult: 0.05"
+          "+5% All Technology Research Speed",
+          "+5% Upkeep for [GetResearcherPluralWithIcon]"
         ],
         "leadsTo": []
       },
@@ -25973,7 +25973,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_technician_energy_produces_mult: 0.05",
+          "+5% Produced from [GetTechnicianSwapPluralWithIcon]",
           "zone"
         ],
         "leadsTo": [
@@ -26015,7 +26015,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_technician_energy_produces_mult: 0.05"
+          "+5% Produced from [GetTechnicianSwapPluralWithIcon]"
         ],
         "leadsTo": [
           "tech_power_plant_4",
@@ -26056,7 +26056,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_technician_energy_produces_mult: 0.05"
+          "+5% Produced from [GetTechnicianSwapPluralWithIcon]"
         ],
         "leadsTo": []
       },
@@ -26091,8 +26091,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Job Efficiency for Workers & Menial Drones: 0.05",
-          "army_damage_mult: 0.1",
+          "+10% Army Damage",
+          "+5% Worker And Simple Drone Cat Bonus Workforce",
           "robotics"
         ],
         "leadsTo": [
@@ -26230,8 +26230,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "Sublight Speed Loss from Cloaking: -50%",
-          "envoys_add: 0.5"
+          "+0.5 Envoys",
+          "Sublight Speed Loss from Cloaking: -50%"
         ],
         "leadsTo": []
       },
@@ -26269,7 +26269,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "planet_jobs_trade_produces_mult: 0.025"
+          "+2.5% Trade from  Jobs"
         ],
         "leadsTo": []
       },
@@ -26354,7 +26354,7 @@
       "unlocks": {
         "grants": [
           "Unlocks Component: Psi Jump Drive — Psi Jump Drive\\nThe Psi Jump Drive harnesses the psi energies emitted by the crew to force the vessel through the very fabric of reality, instantly",
-          "jump_method"
+          "Unlocks Jump Method"
         ],
         "leadsTo": [
           "tech_cloaking_psi"
@@ -26408,7 +26408,7 @@
       "unlocks": {
         "grants": [
           "Success chance when Delving: +$@delve_success_tier_1|0$%",
-          "unlock_psionic_aura"
+          "Unlocks Psionic Aura"
         ],
         "leadsTo": [
           "tech_aura_intensification",
@@ -26820,9 +26820,9 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "army_morale_damage_taken_mult: -0.1",
-          "empire_size_pops_mult: -0.05",
-          "psionics"
+          "psionics",
+          "−10% Army Morale Damage Taken",
+          "−5% Empire Size from Pops"
         ],
         "leadsTo": [
           "tech_covenant_composer",
@@ -27318,8 +27318,8 @@
       ],
       "unlocks": {
         "grants": [
-          "ships_upkeep_mult: -0.05",
-          "starbase_shipyard_build_speed_mult: 0.1"
+          "+10% Ship Build Speed",
+          "−5% Ship Upkeep"
         ],
         "leadsTo": [
           "tech_command_matrix"
@@ -27392,7 +27392,7 @@
       ],
       "unlocks": {
         "grants": [
-          "command_limit_add: 20"
+          "+20 Fleet Command Limit"
         ],
         "leadsTo": []
       },
@@ -27427,7 +27427,7 @@
       ],
       "unlocks": {
         "grants": [
-          "ship_armor_mult: 0.05"
+          "+5% Armor Hit Points"
         ],
         "leadsTo": []
       },
@@ -27462,7 +27462,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_damage_mult: 0.1"
+          "+10% Army Damage"
         ],
         "leadsTo": []
       },
@@ -27497,7 +27497,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_health: 0.1"
+          "+10% Army Health"
         ],
         "leadsTo": []
       },
@@ -27532,7 +27532,7 @@
       ],
       "unlocks": {
         "grants": [
-          "country_unity_produces_mult: 0.05"
+          "+5% Monthly Unity"
         ],
         "leadsTo": []
       },
@@ -27567,7 +27567,7 @@
       ],
       "unlocks": {
         "grants": [
-          "leader_lifespan_add: 5"
+          "+5 Leader Lifespan"
         ],
         "leadsTo": []
       },
@@ -27602,7 +27602,7 @@
       ],
       "unlocks": {
         "grants": [
-          "shipclass_military_station_damage_mult: 0.1"
+          "+10% Defense Platform Damage"
         ],
         "leadsTo": []
       },
@@ -27637,7 +27637,7 @@
       ],
       "unlocks": {
         "grants": [
-          "shipclass_military_station_hull_mult: 0.1"
+          "+10% Defense Platform Hull Points"
         ],
         "leadsTo": []
       },
@@ -27672,7 +27672,7 @@
       ],
       "unlocks": {
         "grants": [
-          "ship_shield_mult: 0.05"
+          "+5% Shield Hit Points"
         ],
         "leadsTo": []
       },
@@ -27707,7 +27707,7 @@
       ],
       "unlocks": {
         "grants": [
-          "country_starbase_capacity_add: 1"
+          "+1 Station Capacity"
         ],
         "leadsTo": []
       },
@@ -27742,7 +27742,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_jobs_energy_produces_mult: 0.05"
+          "+5% Energy Credits from  Jobs"
         ],
         "leadsTo": []
       },
@@ -27777,7 +27777,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_jobs_food_produces_mult: 0.05"
+          "+5% Food from  Jobs"
         ],
         "leadsTo": []
       },
@@ -27817,7 +27817,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_jobs_minerals_produces_mult: 0.05"
+          "+5% Minerals from  Jobs"
         ],
         "leadsTo": []
       },
@@ -27914,7 +27914,7 @@
       ],
       "unlocks": {
         "grants": [
-          "country_naval_cap_add: 20"
+          "+20 Naval Capacity"
         ],
         "leadsTo": []
       },
@@ -27947,7 +27947,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "planet_buildings_cost_mult: -0.05"
+          "−5% Building Cost"
         ],
         "leadsTo": []
       },
@@ -27982,7 +27982,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_building_build_speed_mult: 0.1"
+          "+10% Infrastructure Build Speed"
         ],
         "leadsTo": []
       },
@@ -28017,7 +28017,7 @@
       ],
       "unlocks": {
         "grants": [
-          "weapon_type_energy_weapon_damage_mult: 0.05"
+          "+5% Energy Weapon Damage"
         ],
         "leadsTo": []
       },
@@ -28052,7 +28052,7 @@
       ],
       "unlocks": {
         "grants": [
-          "weapon_type_energy_weapon_fire_rate_mult: 0.05"
+          "+5% Energy Weapon Fire Rate"
         ],
         "leadsTo": []
       },
@@ -28088,7 +28088,7 @@
       ],
       "unlocks": {
         "grants": [
-          "weapon_type_explosive_weapon_damage_mult: 0.05"
+          "+5% Explosive Weapon Damage"
         ],
         "leadsTo": []
       },
@@ -28124,7 +28124,7 @@
       ],
       "unlocks": {
         "grants": [
-          "weapon_type_explosive_weapon_fire_rate_mult: 0.05"
+          "+5% Explosive Weapon Fire Rate"
         ],
         "leadsTo": []
       },
@@ -28159,7 +28159,7 @@
       ],
       "unlocks": {
         "grants": [
-          "weapon_type_kinetic_weapon_damage_mult: 0.05"
+          "+5% Kinetic Weapon Damage"
         ],
         "leadsTo": []
       },
@@ -28194,7 +28194,7 @@
       ],
       "unlocks": {
         "grants": [
-          "weapon_type_kinetic_weapon_fire_rate_mult: 0.05"
+          "+5% Kinetic Weapon Fire Rate"
         ],
         "leadsTo": []
       },
@@ -28229,7 +28229,7 @@
       ],
       "unlocks": {
         "grants": [
-          "weapon_type_strike_craft_weapon_damage_mult: 0.1"
+          "+10% Strike Craft Damage"
         ],
         "leadsTo": []
       },
@@ -28264,7 +28264,7 @@
       ],
       "unlocks": {
         "grants": [
-          "weapon_type_strike_craft_weapon_fire_rate_mult: 0.1"
+          "+10% Strike Craft Fire Rate"
         ],
         "leadsTo": []
       },
@@ -28352,7 +28352,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_jobs_produces_mult: 0.025"
+          "+2.5% Resources from  Jobs"
         ],
         "leadsTo": []
       },
@@ -28387,7 +28387,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "unlock_astral_rift_exploration"
+          "Unlocks Astral Rift Exploration"
         ],
         "leadsTo": []
       },
@@ -28484,8 +28484,8 @@
       ],
       "unlocks": {
         "grants": [
-          "modify_robots",
-          "pop_environment_tolerance: 0.05"
+          "+5% Habitability",
+          "Unlocks Modify Robots"
         ],
         "leadsTo": [
           "tech_fe_assembly_1",
@@ -28538,9 +28538,9 @@
       ],
       "unlocks": {
         "grants": [
-          "leader_lifespan_add: 20",
-          "modify_robots",
-          "pop_environment_tolerance: 0.05"
+          "+20 Leader Lifespan",
+          "+5% Habitability",
+          "Unlocks Modify Robots"
         ],
         "leadsTo": [
           "tech_binary_motivators",
@@ -28610,8 +28610,8 @@
       ],
       "unlocks": {
         "grants": [
-          "MACHINE_species_trait_points_add: 3",
-          "ROBOT_species_trait_points_add: 3"
+          "+3 Machine Modification Points",
+          "+3 Mechanical Modification Points"
         ],
         "leadsTo": [
           "tech_robomodding_points_2"
@@ -28711,8 +28711,8 @@
       ],
       "unlocks": {
         "grants": [
-          "MACHINE_species_trait_points_add: 1",
-          "ROBOT_species_trait_points_add: 1"
+          "+1 Machine Modification Points",
+          "+1 Mechanical Modification Points"
         ],
         "leadsTo": []
       },
@@ -28858,8 +28858,8 @@
       ],
       "unlocks": {
         "grants": [
-          "robotics",
-          "robots"
+          "Unlocks Robots",
+          "robotics"
         ],
         "leadsTo": [
           "tech_droid_workers",
@@ -28924,8 +28924,8 @@
       ],
       "unlocks": {
         "grants": [
-          "all_technology_research_speed: 0.05",
-          "planet_researchers_upkeep_mult: 0.05"
+          "+5% All Technology Research Speed",
+          "+5% Upkeep for [GetResearcherPluralWithIcon]"
         ],
         "leadsTo": [
           "tech_combat_computers_3",
@@ -28968,9 +28968,9 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "Gain a benefit for insulting another empire every 5 years.",
-          "country_insult_efficiency: 0.5",
-          "envoys_add: 0.5"
+          "+0.5 Envoys",
+          "+50% Insult Efficiency",
+          "Gain a benefit for insulting another empire every 5 years."
         ],
         "leadsTo": []
       },
@@ -29526,7 +29526,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_pop_assembly_mult: 0.1"
+          "+10% Mechanical Pop Assembly Speed"
         ],
         "leadsTo": []
       },
@@ -29586,7 +29586,7 @@
       ],
       "unlocks": {
         "grants": [
-          "num_tech_alternatives_add: 1"
+          "+1 Num Tech Alternatives"
         ],
         "leadsTo": [
           "tech_combat_computers_2",
@@ -30072,7 +30072,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_health: 0.05"
+          "+5% Army Health"
         ],
         "leadsTo": [
           "tech_cloaking_1",
@@ -30116,7 +30116,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_health: 0.05"
+          "+5% Army Health"
         ],
         "leadsTo": [
           "tech_cloaking_2",
@@ -30162,7 +30162,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_health: 0.05"
+          "+5% Army Health"
         ],
         "leadsTo": [
           "tech_cloaking_3",
@@ -30207,7 +30207,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_health: 0.05"
+          "+5% Army Health"
         ],
         "leadsTo": [
           "tech_dark_matter_deflector"
@@ -30280,7 +30280,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_health: 0.05",
+          "+5% Army Health",
           "infrastructure"
         ],
         "leadsTo": [
@@ -30326,7 +30326,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_health: 0.05",
+          "+5% Army Health",
           "infrastructure"
         ],
         "leadsTo": [
@@ -30371,7 +30371,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_health: 0.05",
+          "+5% Army Health",
           "infrastructure"
         ],
         "leadsTo": [
@@ -30417,7 +30417,7 @@
       ],
       "unlocks": {
         "grants": [
-          "army_health: 0.05"
+          "+5% Army Health"
         ],
         "leadsTo": []
       },
@@ -30476,8 +30476,8 @@
       "unlocks": {
         "grants": [
           "Negative Effects from Cosmic Storms on Ship Defenses: -45%",
-          "storm_ship_hull_breaker_mult: -0.45",
-          "tech_ship_hull_storm_breaker"
+          "tech_ship_hull_storm_breaker",
+          "−45% Negative Effects from Cosmic Storms on Ship Defenses"
         ],
         "leadsTo": [
           "tech_ship_hull_storm_breaker_2"
@@ -30543,7 +30543,7 @@
       "unlocks": {
         "grants": [
           "Negative Effects from Cosmic Storms on Ship Defenses: -90%",
-          "storm_ship_hull_breaker_mult: -0.45"
+          "−45% Negative Effects from Cosmic Storms on Ship Defenses"
         ],
         "leadsTo": []
       },
@@ -31210,8 +31210,8 @@
       ],
       "unlocks": {
         "grants": [
-          "starbase_upgrade_cost_mult: -0.15",
-          "starbase_upgrade_speed_mult: 0.25"
+          "+25% Station Upgrade Speed",
+          "−15% Station Upgrade Cost"
         ],
         "leadsTo": []
       },
@@ -31241,9 +31241,9 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "Automated Exploration Protocols",
+          "Unlocks Automated Exploration Protocols",
           "Unlocks Ship Type: Science Ship — Science Ship\\nThe Science Ship is used as a base of operations for a top Scientist, ready to explore the vastness of space.",
-          "unlocks_auto_research"
+          "Unlocks Unlocks Auto Research"
         ],
         "leadsTo": [
           "tech_colonization_1",
@@ -31279,7 +31279,7 @@
       ],
       "unlocks": {
         "grants": [
-          "station_gatherers_produces_mult: 0.1"
+          "+10% Resources Produced from Mining Stations"
         ],
         "leadsTo": [
           "tech_space_mining_2"
@@ -31314,7 +31314,7 @@
       ],
       "unlocks": {
         "grants": [
-          "station_gatherers_produces_mult: 0.1"
+          "+10% Resources Produced from Mining Stations"
         ],
         "leadsTo": [
           "tech_planetary_engineering",
@@ -31350,7 +31350,7 @@
       ],
       "unlocks": {
         "grants": [
-          "station_gatherers_produces_mult: 0.1"
+          "+10% Resources Produced from Mining Stations"
         ],
         "leadsTo": [
           "tech_space_mining_4"
@@ -31385,7 +31385,7 @@
       ],
       "unlocks": {
         "grants": [
-          "station_gatherers_produces_mult: 0.1"
+          "+10% Resources Produced from Mining Stations"
         ],
         "leadsTo": [
           "tech_space_mining_5"
@@ -31420,7 +31420,7 @@
       ],
       "unlocks": {
         "grants": [
-          "station_gatherers_produces_mult: 0.1"
+          "+10% Resources Produced from Mining Stations"
         ],
         "leadsTo": []
       },
@@ -31453,7 +31453,7 @@
       ],
       "unlocks": {
         "grants": [
-          "station_researchers_produces_mult: 0.1"
+          "+10% Resources Produced from Research Stations"
         ],
         "leadsTo": [
           "tech_space_science_2"
@@ -31488,7 +31488,7 @@
       ],
       "unlocks": {
         "grants": [
-          "station_researchers_produces_mult: 0.1"
+          "+10% Resources Produced from Research Stations"
         ],
         "leadsTo": [
           "tech_space_science_3"
@@ -31523,7 +31523,7 @@
       ],
       "unlocks": {
         "grants": [
-          "station_researchers_produces_mult: 0.1"
+          "+10% Resources Produced from Research Stations"
         ],
         "leadsTo": [
           "tech_space_science_4"
@@ -31558,7 +31558,7 @@
       ],
       "unlocks": {
         "grants": [
-          "station_researchers_produces_mult: 0.1"
+          "+10% Resources Produced from Research Stations"
         ],
         "leadsTo": [
           "tech_space_science_5"
@@ -31593,7 +31593,7 @@
       ],
       "unlocks": {
         "grants": [
-          "station_researchers_produces_mult: 0.1"
+          "+10% Resources Produced from Research Stations"
         ],
         "leadsTo": []
       },
@@ -32128,14 +32128,14 @@
       ],
       "unlocks": {
         "grants": [
+          "+25% Elder Offspring Stinger Build Speed",
+          "+25% Elder Stinger Build Speed",
+          "+25% Juvenile Offspring Stinger Build Speed",
+          "+25% Juvenile Stinger Build Speed",
+          "+25% Mature Offspring Stinger Build Speed",
+          "+25% Mature Stinger Build Speed",
           "Stinger Build Cost: -5%\\nStinger Build Speed: +25%",
-          "ship_stinger_cost_mult: -0.05",
-          "shipsize_offspring_stinger_stage_1_build_speed_mult: 0.25",
-          "shipsize_offspring_stinger_stage_2_build_speed_mult: 0.25",
-          "shipsize_offspring_stinger_stage_3_build_speed_mult: 0.25",
-          "shipsize_stinger_stage_1_build_speed_mult: 0.25",
-          "shipsize_stinger_stage_2_build_speed_mult: 0.25",
-          "shipsize_stinger_stage_3_build_speed_mult: 0.25"
+          "−5% Stinger Build Cost"
         ],
         "leadsTo": []
       },
@@ -32372,8 +32372,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Ship Type: Juvenile Stinger — Juvenile Stinger\\nA swift and deadly bioship, bred for precision strikes and tactical superiority.",
-          "command_limit_add: 40"
+          "+40 Fleet Command Limit",
+          "Unlocks Ship Type: Juvenile Stinger — Juvenile Stinger\\nA swift and deadly bioship, bred for precision strikes and tactical superiority."
         ],
         "leadsTo": [
           "tech_arc_emitter_1",
@@ -32505,9 +32505,9 @@
       ],
       "unlocks": {
         "grants": [
+          "+1 Cosmic Storm Location Intel",
+          "+1 Cosmic Storm Movement Intel",
           "Unlocks Feature: Cosmic Weather Forecast — Unlocks the ability to see Cosmic Storm Formation Predictions and Cosmic Storm Movement Predictions in the Weather Forecast Map Mode",
-          "country_storm_location_intel_add: 1",
-          "country_storm_movement_intel_add: 1",
           "tech_storm_prediction"
         ],
         "leadsTo": [
@@ -32575,9 +32575,9 @@
       ],
       "unlocks": {
         "grants": [
-          "Upgrades Feature: Cosmic Weather Forecast — Maximizes the range of Cosmic Storm Formation Predictions and Cosmic Storm Movement Predictions in the Weather Forecast Map Mode",
-          "country_storm_location_intel_add: 2",
-          "country_storm_movement_intel_add: 2"
+          "+2 Cosmic Storm Location Intel",
+          "+2 Cosmic Storm Movement Intel",
+          "Upgrades Feature: Cosmic Weather Forecast — Maximizes the range of Cosmic Storm Formation Predictions and Cosmic Storm Movement Predictions in the Weather Forecast Map Mode"
         ],
         "leadsTo": []
       },
@@ -32872,8 +32872,8 @@
       ],
       "unlocks": {
         "grants": [
-          "army_morale: 0.1",
-          "bliss_standard"
+          "+10% Army Morale",
+          "Unlocks Bliss Standard"
         ],
         "leadsTo": [
           "tech_tracking_implants"
@@ -32931,7 +32931,7 @@
       "unlocks": {
         "grants": [
           "Unlocks Component: Subspace Drive — Jump Drive\\nAn insight borne of a desperate desire to leave our home, these Subspace Drive engines were designed to facilitate limited interstellar travel. While only allowing small-scale jumps, they provide a unique opportunity to jumpstart our galactic exploration.",
-          "jump_method"
+          "Unlocks Jump Method"
         ],
         "leadsTo": []
       },
@@ -32966,8 +32966,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "envoys_add: 0.25",
-          "planet_metallurgists_alloys_produces_add: 0.25"
+          "+0.25 Envoys",
+          "+0.25 Produced per 100 [GetFoundrySwapPluralWithIcon]"
         ],
         "leadsTo": []
       },
@@ -33200,7 +33200,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "all_technology_research_speed: 0.2"
+          "+20% All Technology Research Speed"
         ],
         "leadsTo": []
       },
@@ -33265,7 +33265,7 @@
       ],
       "unlocks": {
         "grants": [
-          "robot_leaders"
+          "Unlocks Robot Leaders"
         ],
         "leadsTo": []
       },
@@ -33316,7 +33316,7 @@
       ],
       "unlocks": {
         "grants": [
-          "planet_jobs_produces_mult: 0.025"
+          "+2.5% Resources from  Jobs"
         ],
         "leadsTo": []
       },
@@ -33417,9 +33417,9 @@
       ],
       "unlocks": {
         "grants": [
-          "robotic_pop_bonus_workforce_mult: 0.1",
-          "robotics",
-          "synths"
+          "+10% Job Efficiency for Mechanical and Machine Pops",
+          "Unlocks Synths",
+          "robotics"
         ],
         "leadsTo": [
           "tech_robomodding_points_2",
@@ -33574,8 +33574,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "envoys_add: 0.25",
-          "megastructures_hyper_relay_unity_produces_add: 1"
+          "+0.25 Envoys",
+          "+1 Monthly  Unity from Hyper Relays"
         ],
         "leadsTo": []
       },
@@ -33642,7 +33642,7 @@
       ],
       "unlocks": {
         "grants": [
-          "build_terraform_station"
+          "Unlocks Build Terraform Station"
         ],
         "leadsTo": [
           "tech_climate_restoration",
@@ -34032,7 +34032,7 @@
       ],
       "unlocks": {
         "grants": [
-          "shipsize_titan_hull_mult: 0.1"
+          "+10% Titan Hull Points"
         ],
         "leadsTo": [
           "tech_titan_hull_2"
@@ -34097,7 +34097,7 @@
       ],
       "unlocks": {
         "grants": [
-          "shipsize_titan_hull_mult: 0.1"
+          "+10% Titan Hull Points"
         ],
         "leadsTo": []
       },
@@ -34170,9 +34170,9 @@
       ],
       "unlocks": {
         "grants": [
+          "+80 Fleet Command Limit",
           "Unlocks Ship Type: Titan — Titan\\nThese massive warships are the pride of the fleet. They are bristling with weapons and typically serve as flagships.",
-          "Unlocks Station: Ion Cannon — Ion Cannon\\nIon Cannons are massive defense platforms that can be built to orbit a starbase, blasting enemy ships with deadly fire from a long range.",
-          "command_limit_add: 80"
+          "Unlocks Station: Ion Cannon — Ion Cannon\\nIon Cannons are massive defense platforms that can be built to orbit a starbase, blasting enemy ships with deadly fire from a long range."
         ],
         "leadsTo": [
           "tech_colossus",
@@ -34240,7 +34240,7 @@
       ],
       "unlocks": {
         "grants": [
-          "pc_nuked_habitability: 0.2"
+          "+20% Tomb World Habitability"
         ],
         "leadsTo": []
       },
@@ -34626,9 +34626,9 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "envoys_add: 0.25",
-          "espionage_operation_difficulty_add: -1",
-          "espionage_operation_speed_mult: 0.1"
+          "+0.25 Envoys",
+          "+10% Operation Speed",
+          "−1 Operation Difficulty"
         ],
         "leadsTo": []
       },
@@ -34911,8 +34911,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "planet_amenities_no_happiness_mult: 0.05",
-          "planet_crime_no_happiness_mult: -0.15"
+          "+5% Amenities",
+          "−15% Deviancy"
         ],
         "leadsTo": [
           "tech_collective_production_methods",
@@ -34955,8 +34955,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "BIOLOGICAL_logistic_growth_mult: 0.1",
-          "leader_organic_lifespan_mult: 0.1"
+          "+10% Biological Pop Growth Speed",
+          "+10% Organic Leader Lifespan"
         ],
         "leadsTo": []
       },
@@ -34991,8 +34991,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "Listening Posts provide +1 Detection Strength and Sensor Range for every 3 Detection Arrays",
-          "envoys_add: 0.25"
+          "+0.25 Envoys",
+          "Listening Posts provide +1 Detection Strength and Sensor Range for every 3 Detection Arrays"
         ],
         "leadsTo": []
       },
@@ -35063,7 +35063,7 @@
       ],
       "unlocks": {
         "grants": [
-          "leader_lifespan_add: 10"
+          "+10 Leader Lifespan"
         ],
         "leadsTo": [
           "tech_repeatable_improved_leader_life_span",
@@ -35112,10 +35112,10 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "damage_vs_country_type_frenzied_voidworms_mult: 0.15",
-          "damage_vs_country_type_voidworms_crisis_mult: 0.15",
-          "damage_vs_country_type_voidworms_mult: 0.15",
-          "damage_vs_country_type_voidworms_treasure_hunters_mult: 0.15"
+          "+15% Damage to Voidworms",
+          "+15% Damage to Voidworms",
+          "+15% Damage to Voidworms",
+          "+15% Damage to Voidworms"
         ],
         "leadsTo": []
       },
@@ -35387,8 +35387,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Station: Waystations\\nUnlocks Contract: Build Waystation — Waystations collect celestial resources and form interstellar trade routes.",
-          "country_starbase_capacity_add: 2"
+          "+2 Station Capacity",
+          "Unlocks Station: Waystations\\nUnlocks Contract: Build Waystation — Waystations collect celestial resources and form interstellar trade routes."
         ],
         "leadsTo": [
           "tech_waystation_2"
@@ -35476,10 +35476,10 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Station Upgrade: Wayport — Allows the construction of upgraded Waystations with expanded storage and improved logistical capacity.",
-          "country_starbase_capacity_add: 4",
-          "nomadic_constructor_limit_add: 2",
-          "shipsize_nomads_constructor_stockpile_capacity_mult: 0.25"
+          "+2 Logistic Ship Capacity",
+          "+25% Logistic Ship Stockpile Capacity",
+          "+4 Station Capacity",
+          "Unlocks Station Upgrade: Wayport — Allows the construction of upgraded Waystations with expanded storage and improved logistical capacity."
         ],
         "leadsTo": [
           "tech_modular_engineering",
@@ -35562,10 +35562,10 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Station Upgrade: Wayhold — Allows the construction of fully developed Waystations that strengthen the Wayline network and maximize logistical efficiency.",
-          "country_starbase_capacity_add: 6",
-          "nomadic_constructor_limit_add: 2",
-          "shipsize_nomads_constructor_stockpile_capacity_mult: 0.25"
+          "+2 Logistic Ship Capacity",
+          "+25% Logistic Ship Stockpile Capacity",
+          "+6 Station Capacity",
+          "Unlocks Station Upgrade: Wayhold — Allows the construction of fully developed Waystations that strengthen the Wayline network and maximize logistical efficiency."
         ],
         "leadsTo": []
       },
@@ -37145,14 +37145,14 @@
       ],
       "unlocks": {
         "grants": [
+          "+25% Elder Offspring Weaver Build Speed",
+          "+25% Elder Weaver Build Speed",
+          "+25% Juvenile Offspring Weaver Build Speed",
+          "+25% Juvenile Weaver Build Speed",
+          "+25% Mature Offspring Weaver Build Speed",
+          "+25% Mature Weaver Build Speed",
           "Weaver Build Cost: -5%\\nWeaver Build Speed: +25%",
-          "ship_weaver_cost_mult: -0.05",
-          "shipsize_offspring_weaver_stage_1_build_speed_mult: 0.25",
-          "shipsize_offspring_weaver_stage_2_build_speed_mult: 0.25",
-          "shipsize_offspring_weaver_stage_3_build_speed_mult: 0.25",
-          "shipsize_weaver_stage_1_build_speed_mult: 0.25",
-          "shipsize_weaver_stage_2_build_speed_mult: 0.25",
-          "shipsize_weaver_stage_3_build_speed_mult: 0.25"
+          "−5% Weaver Build Cost"
         ],
         "leadsTo": []
       },
@@ -37229,8 +37229,8 @@
       ],
       "unlocks": {
         "grants": [
-          "Unlocks Ship Type: Mature Weaver — Mature Weaver\\nA Mature Weaver has been selectively grown to enhance mobility and adaptability in fleet operations.",
-          "command_limit_add: 20"
+          "+20 Fleet Command Limit",
+          "Unlocks Ship Type: Mature Weaver — Mature Weaver\\nA Mature Weaver has been selectively grown to enhance mobility and adaptability in fleet operations."
         ],
         "leadsTo": [
           "tech_growth_chamber_1",
@@ -37536,7 +37536,7 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "build_terraform_station"
+          "Unlocks Build Terraform Station"
         ],
         "leadsTo": []
       },
@@ -37644,7 +37644,7 @@
       ],
       "unlocks": {
         "grants": [
-          "wormhole_stabilization"
+          "Unlocks Wormhole Stabilization"
         ],
         "leadsTo": []
       },
@@ -37674,8 +37674,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "damage_vs_rival_mult: 0.1",
-          "envoys_add: 0.5"
+          "+0.5 Envoys",
+          "+10% Damage to Rivals"
         ],
         "leadsTo": []
       },
@@ -37733,7 +37733,7 @@
       ],
       "unlocks": {
         "grants": [
-          "diplo_weight_mult: 0.1"
+          "+10% Diplomatic Weight"
         ],
         "leadsTo": [
           "tech_xeno_relations"
@@ -37784,8 +37784,8 @@
       "prerequisites": [],
       "unlocks": {
         "grants": [
-          "Grants a small amount of  Influence\\nAllows Renowned Leaders to appear.",
-          "first_contact_speed_mult: 0.2"
+          "+20% First Contact Speed",
+          "Grants a small amount of  Influence\\nAllows Renowned Leaders to appear."
         ],
         "leadsTo": []
       },
@@ -37872,7 +37872,7 @@
       ],
       "unlocks": {
         "grants": [
-          "diplo_weight_mult: 0.1"
+          "+10% Diplomatic Weight"
         ],
         "leadsTo": []
       },
