@@ -19,6 +19,7 @@ import { TechCard, CARD_W, CARD_H } from "./TechCard";
 import { BucketCard } from "./BucketCard";
 import { EdgeLayer } from "./EdgeLayer";
 import { MapScrollbars, type ScrollbarsHandle } from "./MapScrollbars";
+import { LodCanvas, type LodCanvasHandle } from "./LodCanvas";
 import { BandLayer } from "./BandLayer";
 import { CategoryNav } from "./CategoryNav";
 import { EmpirePanel } from "./EmpirePanel";
@@ -279,6 +280,12 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const transformRef = useRef<Transform>(DEFAULT_TRANSFORM);
   const scrollbarsRef = useRef<ScrollbarsHandle>(null);
+  const lodCanvasRef = useRef<LodCanvasHandle>(null);
+  // Below the LOD threshold the map swaps its DOM cards + SVG edges for a single
+  // canvas (LodCanvas). `lodMode` mirrors "scale < LOD_THRESHOLD"; flipped from
+  // applyTransform only when the threshold is crossed (one re-render, not per pan).
+  const [lodMode, setLodMode] = useState(false);
+  const lodModeRef = useRef(false);
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(
     null,
   );
@@ -392,6 +399,14 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       recomputeCull();
       // Keep the map scrollbars' thumbs in sync with the new pan/zoom.
       scrollbarsRef.current?.update();
+      // LOD: below the threshold, drive the canvas renderer; flip the mount flag
+      // only when the threshold is actually crossed (avoids a per-pan setState).
+      const nextLod = t.scale < LOD_THRESHOLD;
+      if (nextLod !== lodModeRef.current) {
+        lodModeRef.current = nextLod;
+        setLodMode(nextLod);
+      }
+      if (nextLod) lodCanvasRef.current?.draw();
       // Debounced: mirror the new framing into the URL so a shared link reproduces
       // the current zoom + focal point. Pan/zoom is imperative (no re-render), so
       // this is the only hook that captures it.
@@ -1413,6 +1428,8 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       viewportSizeRef.current = { w: r.width, h: r.height };
       // Track length depends on viewport size — re-sync the scrollbar thumbs.
       scrollbarsRef.current?.update();
+      // The LOD canvas is sized to the viewport — redraw at the new dimensions.
+      lodCanvasRef.current?.draw();
     };
     update();
     const ro = new ResizeObserver(update);
@@ -1420,7 +1437,22 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     return () => ro.disconnect();
   }, []);
 
+  // Seed `lodMode` from the ACTUAL current scale after mount / layout changes —
+  // the initial transform (and URL-framing / auto-fit) is applied without a
+  // threshold "crossing", so applyTransform alone wouldn't catch a first paint
+  // that's already zoomed out.
+  useEffect(() => {
+    const nextLod = transformRef.current.scale < LOD_THRESHOLD;
+    if (nextLod !== lodModeRef.current) {
+      lodModeRef.current = nextLod;
+      setLodMode(nextLod);
+    }
+  }, [layoutReady, viewMode]);
+
   const explore = viewMode === "explore";
+  // Canvas LOD is MAP-only (Explore layouts are smaller and stay interactive).
+  // When active the DOM cards + SVG edges are dropped in favor of <LodCanvas>.
+  const lodActive = lodMode && !explore;
   // In Explore, a focused tech shows its dependency neighborhood (focus view);
   // otherwise the browse spanning tree. `focused` gates chevrons/expansion off.
   const focused = explore && exploreFocus !== null;
@@ -1457,11 +1489,14 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       );
     }
     return {
-      // Bands are MAP-ONLY — Explore renders no band/watermark backgrounds.
+      // Bands are MAP-ONLY — Explore renders no band/watermark backgrounds. Kept
+      // even under the LOD canvas (13 cheap divs) so the swimlane tints stay.
       bands: explore ? null : (
         <BandLayer bands={visibleBands} width={layoutReady.width} />
       ),
-      edge: (
+      // Under the LOD canvas the DOM edge SVG + cards are dropped entirely —
+      // <LodCanvas> paints both — so the tall SVG never re-rasterizes on zoom.
+      edge: lodActive ? null : (
         <EdgeLayer
           edges={visibleEdges}
           nodes={layoutReady.nodes}
@@ -1470,7 +1505,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           selectedKey={highlightKey}
         />
       ),
-      cards: visibleNodes.map((node) =>
+      cards: lodActive ? null : visibleNodes.map((node) =>
         // Synthetic Explore bucket root → a BucketCard (no tech/tooltip/select;
         // click just toggles its expansion). Real tech → the normal TechCard.
         node.bucket ? (
@@ -1529,6 +1564,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   }, [
     layoutReady,
     explore,
+    lodActive,
     focused,
     iconBase,
     onCardEnter,
@@ -1592,6 +1628,20 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           {content?.edge}
           {content?.cards}
         </div>
+
+        {/* Zoomed-out LOD renderer (map only) — replaces the DOM cards + SVG edges
+            with one screen-space canvas so pan/zoom stays cheap far out. */}
+        {lodActive && layoutReady && (
+          <LodCanvas
+            ref={lodCanvasRef}
+            nodes={layoutReady.nodes}
+            edges={layoutReady.edges}
+            iconBase={iconBase}
+            viewportRef={viewportRef}
+            transformRef={transformRef}
+            selectedKey={highlightKey}
+          />
+        )}
 
         {/* Scrollbars mirror the imperative pan/zoom transform; they auto-hide on
             an axis that isn't overflowing. Rendered over the viewport, outside

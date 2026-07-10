@@ -453,6 +453,17 @@
 }
 
 /* Zoom +/- / reset control — bottom-right of the viewport. */
+/* Zoomed-out LOD renderer — a screen-space canvas overlaying the viewport that
+   replaces the DOM cards + SVG edges while zoomed far out. Non-interactive (pan
+   events pass through to the viewport); sits above the band tints, below the UI
+   controls. */
+.lod-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
 /* Map scrollbars (custom — the canvas pans via CSS transform, not native
    overflow, so these thin tracks mirror the transform and drive it back). Sit at
    the viewport's right/bottom edges; the zoom/touch controls are inset far
