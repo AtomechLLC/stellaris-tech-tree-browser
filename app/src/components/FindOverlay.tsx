@@ -21,6 +21,9 @@ export interface FindEntry {
   tier: number;
   area: string;
   icon: string | null;
+  /** Formatted effect lines ("+5% Research Speed", "Unlocks Espionage") — also
+   *  searched, so "survey speed" surfaces the techs that grant it. */
+  effects: string[];
 }
 
 interface FindOverlayProps {
@@ -40,12 +43,25 @@ export function FindOverlay({ techs, iconBase, onPick, onClose }: FindOverlayPro
     inputRef.current?.focus();
   }, []);
 
+  // Name matches rank first; then techs whose EFFECT lines match ("survey
+  // speed" → the techs granting it), carrying the matched line for the row.
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return techs
-      .filter((t) => t.name.toLowerCase().includes(q))
-      .slice(0, MAX_RESULTS);
+    const byName = techs.filter((t) => t.name.toLowerCase().includes(q));
+    const named = new Set(byName.map((t) => t.key));
+    const byEffect: Array<FindEntry & { matchedEffect?: string }> = [];
+    if (byName.length < MAX_RESULTS) {
+      for (const t of techs) {
+        if (named.has(t.key)) continue;
+        const hit = t.effects.find((e) => e.toLowerCase().includes(q));
+        if (hit) byEffect.push({ ...t, matchedEffect: hit });
+        if (byName.length + byEffect.length >= MAX_RESULTS) break;
+      }
+    }
+    return [...byName, ...byEffect].slice(0, MAX_RESULTS) as Array<
+      FindEntry & { matchedEffect?: string }
+    >;
   }, [query, techs]);
 
   // Keep the active row in range as results change (a new query resets to 0).
@@ -93,11 +109,11 @@ export function FindOverlay({ techs, iconBase, onPick, onClose }: FindOverlayPro
           ref={inputRef}
           type="text"
           className="find-box__input"
-          placeholder="Find a technology…"
+          placeholder="Find a technology or effect…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
-          aria-label="Search technologies by name"
+          aria-label="Search technologies by name or effect"
           autoComplete="off"
           spellCheck={false}
         />
@@ -124,7 +140,13 @@ export function FindOverlay({ techs, iconBase, onPick, onClose }: FindOverlayPro
                 ) : (
                   <span className="find-box__icon find-box__icon--empty" />
                 )}
-                <span className="find-box__name">{t.name}</span>
+                <span className="find-box__name">
+                  {t.name}
+                  {/* Why this tech matched: the effect line the query hit. */}
+                  {t.matchedEffect && (
+                    <span className="find-box__effect">{t.matchedEffect}</span>
+                  )}
+                </span>
                 <span className="find-box__meta">
                   {categoryLabel(t.category)} · Tier {t.tier}
                 </span>

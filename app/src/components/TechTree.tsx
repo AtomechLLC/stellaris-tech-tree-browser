@@ -14,6 +14,7 @@ import { layoutExplore, layoutFocus, BUCKET_KEY_PREFIX } from "../lib/tree/explo
 import { augmentSnapshotWithPerks, isPerkKey, PERK_PREFIX } from "../lib/tree/perks";
 import { augmentSnapshotWithEventSources, isSourceKey, sourceKindOf } from "../lib/tree/eventSources";
 import { dataUrl } from "../lib/data/paths";
+import { formatGrantLine } from "../lib/graph/grants";
 import { CATEGORY_ORDER, CATEGORY_AREA } from "../lib/graph/categories";
 import { TechCard, CARD_W, CARD_H } from "./TechCard";
 import { BucketCard } from "./BucketCard";
@@ -93,6 +94,9 @@ interface ViewSnapshot {
 }
 
 const DEFAULT_TRANSFORM: Transform = { x: 40, y: 40, scale: 0.4 };
+
+/** localStorage key for the last view's query string (return-visit restore). */
+const LAST_VIEW_KEY = "stellaris-tech:last-view";
 const cssTransform = (t: Transform) =>
   `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
 
@@ -209,7 +213,26 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   const [state, setState] = useState<LayoutState>({ status: "loading" });
   // Parse the shareable URL ONCE (at mount) to seed the initial nav state below.
   const urlInitRef = useRef<Partial<UrlNavState> | null>(null);
-  if (urlInitRef.current === null) urlInitRef.current = parseUrlNav(snapshot);
+  if (urlInitRef.current === null) {
+    // Return-visit restore: a BARE url (no shared link) adopts the last
+    // session's saved view before parsing, so a returning visitor lands where
+    // they left off. Shared links (any query string) always win.
+    if (!window.location.search) {
+      try {
+        const saved = localStorage.getItem(LAST_VIEW_KEY);
+        if (saved) {
+          window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + saved + window.location.hash,
+          );
+        }
+      } catch {
+        /* storage unavailable (private mode) — start at the default view */
+      }
+    }
+    urlInitRef.current = parseUrlNav(snapshot);
+  }
   const urlInit = urlInitRef.current;
   const [active, setActive] = useState<Set<string>>(
     () => urlInit.active ?? new Set<string>(CATEGORY_ORDER),
@@ -219,6 +242,12 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // clearing the selection; reset when the selection moves on (so re-selecting
   // later shows the panel again). See <TechDetailPanel>.
   const [detailHiddenFor, setDetailHiddenFor] = useState<string | null>(null);
+  // Panel collapse (title bar only) — a map-mode option for users who want the
+  // selection pinned without the full column. (The panel never renders in
+  // Explore — see detailVisible.)
+  const [detailCollapsed, setDetailCollapsed] = useState(false);
+  // Copy-link feedback: flips the 🔗 button to ✓ briefly after a copy.
+  const [linkCopied, setLinkCopied] = useState(false);
   // Click-selected ("targeted") tech key, or null. Selection highlights the
   // card, thickens its prereq/child edges, and (when it has filter-hidden
   // ancestors) opens the ancestry drill-down panel.
@@ -363,6 +392,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         tier: t.tier,
         area: t.area,
         icon: t.icon,
+        // Formatted effect lines, searched alongside the name ("survey speed"
+        // → the techs granting it). Literal \n from loc text becomes a space.
+        effects: t.unlocks.grants.map((g) => formatGrantLine(g.replace(/\\n/g, " "))),
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [snapshot]);
@@ -651,6 +683,14 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       window.history.replaceState(null, "", url);
     }
     lastNavSigRef.current = sig;
+    // Return-visit restore: remember this view for the next bare-URL load.
+    if (qs) {
+      try {
+        localStorage.setItem(LAST_VIEW_KEY, qs);
+      } catch {
+        /* storage unavailable — restore just won't happen */
+      }
+    }
   }, [viewMode, active, selectedKey, focusKey, focusExpanded, expandedKeys, currentFraming]);
   useEffect(() => {
     syncUrlRef.current = syncUrl;
@@ -1607,7 +1647,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   useEffect(() => {
     setDetailHiddenFor((h) => (h && h !== highlightKey ? null : h));
   }, [highlightKey]);
-  const detailVisible = !!detailTech && detailTech.key !== detailHiddenFor;
+  // MAP-ONLY: in Explore the focus tree itself fills the viewport and the
+  // panel occludes it — there the transient hover tooltip carries the details.
+  const detailVisible = !explore && !!detailTech && detailTech.key !== detailHiddenFor;
   const content = useMemo(() => {
     if (!layoutReady) return null;
     // Cull: render only cards intersecting the committed viewport-plus-margin rect
@@ -1652,6 +1694,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           width={layoutReady.width}
           height={layoutReady.height}
           selectedKey={highlightKey}
+          // Highlights + ancestry chain build from the FULL edge list so the
+          // prerequisite path doesn't break where the cull rect ends.
+          allEdges={layoutReady.edges}
         />
       ),
       cards: lodActive ? null : visibleNodes.map((node) =>
@@ -1791,6 +1836,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
             transformRef={transformRef}
             selectedKey={highlightKey}
             hoverKey={hover?.tech.key ?? null}
+            bucketMap={empireOn ? bucketMap : undefined}
           />
         )}
 
@@ -1910,6 +1956,25 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           <button type="button" onClick={onBack} aria-label="Back" title="Back (Backspace)">
             ←
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              // Flush the debounced URL sync so the copied link carries the
+              // CURRENT framing, then copy. Clipboard API needs localhost/https.
+              syncUrlRef.current();
+              navigator.clipboard
+                ?.writeText(window.location.href)
+                .then(() => {
+                  setLinkCopied(true);
+                  window.setTimeout(() => setLinkCopied(false), 1500);
+                })
+                .catch(() => {});
+            }}
+            aria-label="Copy link to this view"
+            title="Copy link to this view"
+          >
+            {linkCopied ? "✓" : "🔗"}
+          </button>
         </div>
       </div>
 
@@ -1933,6 +1998,8 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           techByKey={techByKey}
           iconBase={iconBase}
           onJump={onJumpToTech}
+          collapsed={detailCollapsed}
+          onToggleCollapse={() => setDetailCollapsed((c) => !c)}
           onClose={() => setDetailHiddenFor(detailTech!.key)}
           onExplore={
             explore && focusKey === detailTech!.key

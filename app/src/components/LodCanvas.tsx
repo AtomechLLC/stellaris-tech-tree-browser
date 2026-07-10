@@ -1,6 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import type { RefObject } from "react";
 import type { LayoutNode, LayoutEdge } from "../lib/tree/layoutTree";
+import type { Bucket } from "../lib/empire/classify";
 
 /**
  * Zoomed-out level-of-detail renderer (map only). When the view is zoomed past
@@ -38,6 +39,9 @@ interface Props {
   selectedKey?: string | null;
   /** Hit-test-hovered tech key — drawn with a lighter emphasis outline. */
   hoverKey?: string | null;
+  /** Saved Empire coloring (tech key → bucket) — mirrors the DOM cards'
+   *  data-bucket styling so a loaded .sav reads while zoomed out too. */
+  bucketMap?: Map<string, Bucket> | null;
 }
 
 /** Icon cache shared across draws (the browser already has these decoded from
@@ -45,7 +49,7 @@ interface Props {
 const iconCache = new Map<string, HTMLImageElement>();
 
 export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
-  { nodes, edges, iconBase, viewportRef, transformRef, selectedKey, hoverKey },
+  { nodes, edges, iconBase, viewportRef, transformRef, selectedKey, hoverKey, bucketMap },
   ref,
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -56,6 +60,7 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
     society: "#e69f00",
     engineering: "#d55e00",
     select: "#ffd23f",
+    good: "#57c96a",
     edge: "#cbd5e1",
     panel: "#161c28",
   });
@@ -70,6 +75,7 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
       society: get("--area-society", "#e69f00"),
       engineering: get("--area-engineering", "#d55e00"),
       select: get("--color-select", "#ffd23f"),
+      good: get("--color-good", "#57c96a"),
       edge: get("--color-edge", "#cbd5e1"),
       panel: get("--tree-card-bg", "#161c28"),
     };
@@ -121,30 +127,57 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, vw, vh);
 
-    // Edges: one batched path of straight source-right → target-left lines
-    // (elbows are invisible at this zoom, and one stroke is far cheaper).
-    ctx.strokeStyle = C.edge;
-    ctx.globalAlpha = 0.35;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (const e of edges) {
-      const a = nodeByKey.current.get(e.from);
-      const b = nodeByKey.current.get(e.to);
-      if (!a || !b) continue;
-      const sx = (a.x + a.w) * t.scale + t.x;
-      const sy = (a.y + a.h / 2) * t.scale + t.y;
-      const tx = b.x * t.scale + t.x;
-      const ty = (b.y + b.h / 2) * t.scale + t.y;
-      if ((sx < 0 && tx < 0) || (sy < 0 && ty < 0) || (sx > vw && tx > vw) || (sy > vh && ty > vh)) {
-        continue; // both endpoints off the same edge of the screen
+    // Edges: at overview zoom the full straight-line edge field is visual
+    // noise (hundreds of crisscrossing lines), so draw NOTHING by default —
+    // only the SELECTED tech's connections: its direct edges bright gold, and
+    // its full recursive prerequisite chain dimmer (the "path to reach it").
+    if (selectedKey) {
+      const byTo = new Map<string, LayoutEdge[]>();
+      for (const e of edges) {
+        const arr = byTo.get(e.to);
+        if (arr) arr.push(e);
+        else byTo.set(e.to, [e]);
       }
-      ctx.moveTo(sx, sy);
-      ctx.lineTo(tx, ty);
+      const chain: LayoutEdge[] = [];
+      const seen = new Set<string>([selectedKey]);
+      const queue = [selectedKey];
+      while (queue.length > 0) {
+        const k = queue.shift()!;
+        for (const e of byTo.get(k) ?? []) {
+          chain.push(e);
+          if (!seen.has(e.from)) {
+            seen.add(e.from);
+            queue.push(e.from);
+          }
+        }
+      }
+      const strokeSet = (set: LayoutEdge[], alpha: number, width: number) => {
+        ctx.strokeStyle = C.select;
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        for (const e of set) {
+          const a = nodeByKey.current.get(e.from);
+          const b = nodeByKey.current.get(e.to);
+          if (!a || !b) continue;
+          ctx.moveTo((a.x + a.w) * t.scale + t.x, (a.y + a.h / 2) * t.scale + t.y);
+          ctx.lineTo(b.x * t.scale + t.x, (b.y + b.h / 2) * t.scale + t.y);
+        }
+        ctx.stroke();
+      };
+      strokeSet(chain.filter((e) => e.to !== selectedKey), 0.4, 1); // deep chain
+      strokeSet(
+        [...chain.filter((e) => e.to === selectedKey), ...edges.filter((e) => e.from === selectedKey)],
+        0.9,
+        1.5,
+      ); // direct in/out
+      ctx.globalAlpha = 1;
     }
-    ctx.stroke();
-    ctx.globalAlpha = 1;
 
-    // Nodes: icon tile (or a colored square while it loads) + area strip + border.
+    // Nodes: icon tile (or a colored square while it loads) + area strip +
+    // border. With a Saved Empire loaded, mirror the DOM cards' bucket look:
+    // researched = green border, available = gold border, reachable = faded,
+    // never = near-invisible.
     for (const n of nodes) {
       const x = n.x * t.scale + t.x;
       const y = n.y * t.scale + t.y;
@@ -153,7 +186,10 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
       if (x + w < 0 || y + h < 0 || x > vw || y > vh) continue;
       const col = areaColor(n.tech?.area);
       const iconSize = Math.min(h, w);
+      const bucket = bucketMap?.get(n.key);
+      const tileAlpha = bucket === "never" ? 0.22 : bucket === "reachable" ? 0.45 : 1;
 
+      ctx.globalAlpha = tileAlpha;
       ctx.fillStyle = C.panel;
       ctx.fillRect(x, y, w, h);
 
@@ -161,27 +197,34 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
       if (icon && icon.complete && icon.naturalWidth > 0) {
         ctx.drawImage(icon, x, y, iconSize, h);
       } else {
-        ctx.globalAlpha = 0.5;
+        ctx.globalAlpha = 0.5 * tileAlpha;
         ctx.fillStyle = col;
         ctx.fillRect(x, y, iconSize, h);
-        ctx.globalAlpha = 1;
+        ctx.globalAlpha = tileAlpha;
       }
 
       // Area-colored header strip (the card's title bar, at a glance).
-      ctx.globalAlpha = 0.5;
+      ctx.globalAlpha = 0.5 * tileAlpha;
       ctx.fillStyle = col;
       ctx.fillRect(x + iconSize, y, Math.max(0, w - iconSize), Math.max(1, h * 0.32));
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = tileAlpha;
 
       const selected = n.key === selectedKey || n.tech?.key === selectedKey;
       const hovered = !selected && (n.key === hoverKey || n.tech?.key === hoverKey);
-      ctx.strokeStyle = selected || hovered ? C.select : col;
-      ctx.lineWidth = selected ? 2 : 1;
-      if (hovered) ctx.globalAlpha = 0.8;
+      ctx.strokeStyle =
+        selected || hovered
+          ? C.select
+          : bucket === "researched"
+            ? C.good
+            : bucket === "available"
+              ? C.select
+              : col;
+      ctx.lineWidth = selected || bucket === "researched" || bucket === "available" ? 2 : 1;
+      if (hovered) ctx.globalAlpha = 0.8 * tileAlpha;
       ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-      if (hovered) ctx.globalAlpha = 1;
+      ctx.globalAlpha = 1;
     }
-  }, [nodes, edges, iconBase, viewportRef, transformRef, selectedKey, hoverKey, getIcon, areaColor]);
+  }, [nodes, edges, iconBase, viewportRef, transformRef, selectedKey, hoverKey, bucketMap, getIcon, areaColor]);
 
   drawRef.current = draw;
   useImperativeHandle(ref, () => ({ draw }), [draw]);

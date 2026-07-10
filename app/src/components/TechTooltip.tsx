@@ -1,6 +1,7 @@
 import type { Tech } from "../types/tech-snapshot";
 import { categoryLabel } from "../lib/graph/categories";
 import { describeWeightModifiers } from "../lib/graph/weight";
+import { formatGrantLine, splitGrantValue } from "../lib/graph/grants";
 
 /**
  * Tech info UI, in two skins sharing one body:
@@ -112,7 +113,9 @@ export function TechInfoBody({
     );
   };
   const description = isReadable(tech.description) ? clean(tech.description!) : null;
-  const unlocks = tech.unlocks.grants.map(clean).filter(isReadable);
+  // Wiki-style effect lines ("+5% Army Damage", "Unlocks Espionage") — raw
+  // `key: value` / bare-token grants are formatted; readable text passes through.
+  const unlocks = tech.unlocks.grants.map(clean).filter(isReadable).map(formatGrantLine);
   // "What boosts your chance of drawing this tech" — readable lines from the raw
   // weight_modifier block (has_technology names resolved via techByKey).
   const weightMods = describeWeightModifiers(tech.weightModifierRaw, techByKey);
@@ -144,9 +147,26 @@ export function TechInfoBody({
         <div className="tech-tooltip__weight-base">Base weight {tech.weight}</div>
         {weightMods.length > 0 && (
           <ul className="tech-tooltip__weight-mods">
-            {weightMods.map((line, i) => (
-              <li key={i}>{line}</li>
-            ))}
+            {weightMods.map((line, i) => {
+              // Direction marker from the line's ×factor: >1 boosts the draw
+              // chance (green ✓), <1 penalizes/blocks it (red ✗). Lines with an
+              // unresolved ×@var factor get no marker.
+              const factor = Number(line.match(/×(\d+(?:\.\d+)?)/)?.[1]);
+              const dir = !Number.isFinite(factor) || factor === 1 ? null : factor > 1 ? "good" : "bad";
+              return (
+                <li key={i} data-dir={dir ?? undefined}>
+                  {/* Trailing space collapses while the mark is absolutely
+                      positioned, but keeps "✓ Base ×2" readable if the
+                      stylesheet is ever stale (HMR) or stripped. */}
+                  {dir && (
+                    <span className={`wm-mark wm-mark--${dir}`} aria-hidden>
+                      {dir === "good" ? "✓" : "✗"}
+                    </span>
+                  )}{" "}
+                  {line}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -169,9 +189,21 @@ export function TechInfoBody({
         <section className="tech-tooltip__sec">
           <div className="tech-tooltip__sec-title">Unlocks</div>
           <ul className="tech-tooltip__effects">
-            {unlocks.map((e, i) => (
-              <li key={i}>{e}</li>
-            ))}
+            {unlocks.map((e, i) => {
+              // Emphasize the leading signed value ("+5%", "−20") for scanning.
+              const { value, rest } = splitGrantValue(e);
+              return (
+                <li key={i}>
+                  {value ? (
+                    <>
+                      <span className="tech-tooltip__effect-val">{value}</span> {rest}
+                    </>
+                  ) : (
+                    e
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}

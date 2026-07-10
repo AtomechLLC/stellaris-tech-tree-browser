@@ -406,6 +406,17 @@
   opacity: 1;
 }
 
+/* Deep prerequisite chain (beyond the direct edges) — same gold, dimmer and
+   thinner, so the full path to the selected tech reads without shouting over
+   its immediate connections. */
+.edge-layer__path--ancestry {
+  fill: none;
+  stroke: var(--color-select);
+  stroke-width: 2;
+  stroke-dasharray: none;
+  opacity: 0.45;
+}
+
 /* Arrowhead marker on the selected tech's incoming dependency edges — same gold
    as the highlight so it reads as one connector pointing INTO the selected tech. */
 .edge-layer__arrowhead {
@@ -1195,13 +1206,27 @@
 }
 .tech-tooltip__weight-mods li {
   position: relative;
-  padding-left: 10px;
+  padding-left: 16px;
 }
-.tech-tooltip__weight-mods li::before {
+/* Bullet only for direction-less lines — ✓/✗ marks replace it otherwise. */
+.tech-tooltip__weight-mods li:not([data-dir])::before {
   content: "•";
   position: absolute;
   left: 0;
   opacity: 0.5;
+}
+/* Weight-line direction marks: green ✓ = boosts the draw chance (×>1),
+   red ✗ = penalizes/blocks it (×<1). Token colors only (D-11). */
+.wm-mark {
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+.wm-mark--good {
+  color: var(--color-good);
+}
+.wm-mark--bad {
+  color: var(--color-danger);
 }
 
 /* Required Technologies — icon thumbnail + name per prerequisite. */
@@ -1297,6 +1322,13 @@
   left: 0;
   opacity: 0.5;
 }
+/* Leading stat value ("+5%", "−20") — emphasized so effect lists scan like the
+   wiki's. Token-driven gold, tabular digits so columns of values align. */
+.tech-tooltip__effect-val {
+  font-weight: 600;
+  color: var(--color-select);
+  font-variant-numeric: tabular-nums;
+}
 
 /* "Leads To" reuses the prereq icon+name list; the trailing "+N more" row has no
    icon, so indent it to line up with the named rows (26px icon + 8px gap). */
@@ -1344,7 +1376,8 @@
   font-weight: var(--font-weight-heading);
   line-height: 1.3;
 }
-.tech-detail__close {
+.tech-detail__close,
+.tech-detail__collapse {
   flex: 0 0 auto;
   width: 26px;
   height: 26px;
@@ -1357,8 +1390,17 @@
   line-height: 1;
   cursor: pointer;
 }
-.tech-detail__close:hover {
+.tech-detail__close:hover,
+.tech-detail__collapse:hover {
   background: var(--tree-border);
+}
+
+/* Collapsed: a slim title bar (Explore's default — the focus tree fills the
+   viewport, so the full panel occludes too much there). Shrinks to content
+   width so it hides as little of the tree as possible. */
+.tech-detail[data-collapsed] {
+  width: auto;
+  max-width: 320px;
 }
 .tech-detail__explore {
   flex: 0 0 auto;
@@ -1699,6 +1741,18 @@
 }
 .find-box__icon--empty {
   border-style: dashed;
+}
+
+/* The effect line that matched an effect-text query — why this row is here. */
+.find-box__effect {
+  display: block;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--color-select);
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .find-box__name {

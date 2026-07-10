@@ -15,6 +15,9 @@
   --color-surface: #ffffff;
   --color-accent: #2563eb;
   --color-danger: #b91c1c;
+  /* Positive/affirmative accent (green ✓ markers, "boost" indicators). Same
+     green as the Saved Empire "researched" ring so good-news reads uniformly. */
+  --color-good: #57c96a;
   --color-edge: #cbd5e1;
   --color-text: #111827;
   --color-border: #e5e7eb;

@@ -86,7 +86,11 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
     setError(null);
     try {
       const buf = await fetch(dataUrl(`${version}/sample.sav`)).then((r) => {
-        if (!r.ok) throw new Error("no sample save available");
+        // A missing sample falls through to the SPA's index.html (200, html) —
+        // catch that here so the error says what's wrong, not "invalid zip data".
+        if (!r.ok || (r.headers.get("content-type") ?? "").includes("text/html")) {
+          throw new Error("no sample save available");
+        }
         return r.arrayBuffer();
       });
       await handleBytes(new Uint8Array(buf));

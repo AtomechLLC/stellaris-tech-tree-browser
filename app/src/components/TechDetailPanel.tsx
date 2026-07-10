@@ -20,6 +20,8 @@ export function TechDetailPanel({
   onJump,
   onClose,
   onExplore,
+  collapsed = false,
+  onToggleCollapse,
 }: {
   tech: Tech;
   techByKey: Map<string, Tech>;
@@ -29,10 +31,31 @@ export function TechDetailPanel({
   onClose: () => void;
   /** Open the Explore focus view for this tech. Omitted when already focused. */
   onExplore?: () => void;
+  /** Collapsed = title bar only. Explore defaults collapsed — the focus tree
+   *  itself fills the viewport, so the full panel occludes too much there. */
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   return (
-    <aside className="tech-detail" data-area={tech.area} aria-label={`${tech.name} details`}>
+    <aside
+      className="tech-detail"
+      data-area={tech.area}
+      data-collapsed={collapsed ? "" : undefined}
+      aria-label={`${tech.name} details`}
+    >
       <header className="tech-detail__header">
+        {onToggleCollapse && (
+          <button
+            type="button"
+            className="tech-detail__collapse"
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? "Expand details" : "Collapse details"}
+            aria-expanded={!collapsed}
+            title={collapsed ? "Expand" : "Collapse"}
+          >
+            {collapsed ? "▸" : "▾"}
+          </button>
+        )}
         {/* PLAIN TEXT — React children, never innerHTML (D-05). */}
         <div className="tech-detail__title">{tech.name}</div>
         <button
@@ -45,14 +68,16 @@ export function TechDetailPanel({
           ✕
         </button>
       </header>
-      {onExplore && (
+      {!collapsed && onExplore && (
         <button type="button" className="tech-detail__explore" onClick={onExplore}>
           View dependency tree
         </button>
       )}
-      <div className="tech-detail__body">
-        <TechInfoBody tech={tech} techByKey={techByKey} iconBase={iconBase} onJump={onJump} />
-      </div>
+      {!collapsed && (
+        <div className="tech-detail__body">
+          <TechInfoBody tech={tech} techByKey={techByKey} iconBase={iconBase} onJump={onJump} />
+        </div>
+      )}
     </aside>
   );
 }

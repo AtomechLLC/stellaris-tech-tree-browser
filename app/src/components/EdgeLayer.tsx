@@ -13,12 +13,17 @@ import type { LayoutEdge, LayoutNode } from "../lib/tree/layoutTree";
  */
 
 interface EdgeLayerProps {
+  /** Edges for the dim base layer — may be viewport-CULLED for paint cost. */
   edges: LayoutEdge[];
   nodes: LayoutNode[];
   width: number;
   height: number;
   /** Currently selected tech key — its incident edges are drawn highlighted. */
   selectedKey?: string | null;
+  /** FULL (uncalled) edge list for the selection highlight + ancestry chain —
+   *  the prereq path must not break where the cull rect ends. Falls back to
+   *  `edges` when omitted. */
+  allEdges?: LayoutEdge[];
 }
 
 /** Builds an SVG path `d` string from a list of points as straight segments. */
@@ -167,8 +172,10 @@ export const EdgeLayer = memo(function EdgeLayer({
   width,
   height,
   selectedKey,
+  allEdges,
 }: EdgeLayerProps) {
   const nodeByKey = useMemo(() => new Map(nodes.map((n) => [n.key, n])), [nodes]);
+  const highlightSource = allEdges ?? edges;
 
   // Perf: concatenate every edge into ONE path `d` string → a single <path> DOM
   // node instead of 613. The browser paints/composites one element far more
@@ -176,26 +183,53 @@ export const EdgeLayer = memo(function EdgeLayer({
   // Memoized on [edges, nodes] only, so a selection change never rebuilds it.
   const d = useMemo(() => buildPath(edges, nodeByKey), [edges, nodeByKey]);
 
-  // Highlight paths for the selected tech's incident edges, split by direction so
-  // only the INCOMING ones (a dependency → the selected tech, `to === selectedKey`)
-  // carry an arrowhead pointing at the selected tech. Outgoing edges (selected →
-  // its dependents) are highlighted the same gold but without a head. Both drawn
-  // on top of the dim base path. Rebuilt only when selection/layout changes.
-  const { incoming, outgoing } = useMemo(() => {
-    if (!selectedKey) return { incoming: [], outgoing: [] };
+  // Highlight paths for the selected tech, three layers:
+  //  • incoming — direct prereq → selected edges (bright gold, arrowhead)
+  //  • outgoing — selected → dependent edges (bright gold, arrowhead)
+  //  • ancestry — the REST of the recursive prerequisite chain back to the
+  //    roots (dimmer gold), so "how do I reach this tech" reads at a glance,
+  //    not just its immediate neighbors.
+  // All drawn on top of the dim base path; rebuilt only on selection/layout.
+  const { incoming, outgoing, ancestry } = useMemo(() => {
+    if (!selectedKey) return { incoming: [], outgoing: [], ancestry: [] };
+    // BFS backward over prereq edges (edge.from = prereq, edge.to = dependent).
+    const byTo = new Map<string, LayoutEdge[]>();
+    for (const e of highlightSource) {
+      const arr = byTo.get(e.to);
+      if (arr) arr.push(e);
+      else byTo.set(e.to, [e]);
+    }
+    const chain: LayoutEdge[] = [];
+    const seen = new Set<string>([selectedKey]);
+    const queue = [selectedKey];
+    while (queue.length > 0) {
+      const k = queue.shift()!;
+      for (const e of byTo.get(k) ?? []) {
+        chain.push(e);
+        if (!seen.has(e.from)) {
+          seen.add(e.from);
+          queue.push(e.from);
+        }
+      }
+    }
     return {
       incoming: buildEdgePaths(
-        edges.filter((e) => e.to === selectedKey),
+        chain.filter((e) => e.to === selectedKey),
         nodeByKey,
         nodes,
       ),
       outgoing: buildEdgePaths(
-        edges.filter((e) => e.from === selectedKey),
+        highlightSource.filter((e) => e.from === selectedKey),
+        nodeByKey,
+        nodes,
+      ),
+      ancestry: buildEdgePaths(
+        chain.filter((e) => e.to !== selectedKey),
         nodeByKey,
         nodes,
       ),
     };
-  }, [edges, nodeByKey, nodes, selectedKey]);
+  }, [highlightSource, nodeByKey, nodes, selectedKey]);
 
   return (
     <svg
@@ -224,6 +258,16 @@ export const EdgeLayer = memo(function EdgeLayer({
           a combined path can only mark its final subpath, so directional arrows
           live on the per-edge highlight paths below instead. */}
       <path className="edge-layer__path" d={d} />
+      {/* Deep prerequisite chain (dimmer gold, under the direct edges) — the
+          full "path to reach this tech" back to its roots. */}
+      {ancestry.map((e) => (
+        <path
+          key={`anc:${e.key}`}
+          className="edge-layer__path--ancestry"
+          d={e.d}
+          markerEnd="url(#edge-arrow)"
+        />
+      ))}
       {/* Each highlighted edge is its OWN path so every one carries an arrowhead
           at its TARGET end — dependency flow reads on every line, both prereq →
           selected and selected → dependent (not just the last). */}
