@@ -6,6 +6,8 @@ import {
   categoryLabel,
   type CategoryKey,
 } from "../lib/graph/categories";
+import type { ArchetypeFilters } from "../lib/empire/archetype";
+import { ArchetypeToggles } from "./ArchetypeToggles";
 
 /**
  * Left navigation panel (quick 260708-2v7): the 13 tech categories grouped
@@ -61,6 +63,10 @@ interface CategoryNavProps {
   onToggleArea: (area: Area) => void;
   onIsolateArea: (area: Area) => void;
   onShowAll: () => void;
+  /** Empire-archetype filter (map only) — Landed/Nomad, Machine/Biological,
+   *  Alloy Ship/Bioship, Fauna. Rendered above the Hide/Show all button. */
+  archetypeFilters: ArchetypeFilters;
+  onSetArchetype: (key: keyof ArchetypeFilters, value: boolean) => void;
 }
 
 export const CategoryNav = memo(function CategoryNav({
@@ -72,12 +78,15 @@ export const CategoryNav = memo(function CategoryNav({
   onToggleArea,
   onIsolateArea,
   onShowAll,
+  archetypeFilters,
+  onSetArchetype,
 }: CategoryNavProps) {
   const allActive = active.size === CATEGORY_ORDER.length;
 
   return (
     <nav className="category-nav" aria-label="Filter by category">
       <div className="category-nav__scroll">
+      <ArchetypeToggles filters={archetypeFilters} iconBase={iconBase} onSet={onSetArchetype} />
       <button
         type="button"
         className="category-nav__all"

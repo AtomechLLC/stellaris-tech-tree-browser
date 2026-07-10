@@ -22,7 +22,16 @@ interface SnapshotDiff {
   changed: Array<{ key: string; name: string; changes: FieldChange[] }>;
 }
 
-export function WhatsNew({ version }: { version: string }) {
+export function WhatsNew({
+  version,
+  onJump,
+}: {
+  version: string;
+  /** Jump the map/explore view to a clicked tech. Added/Changed rows are
+   *  clickable (the tech exists in the current snapshot); Removed rows stay
+   *  plain text — that tech no longer exists, so there's nowhere to jump. */
+  onJump?: (key: string) => void;
+}) {
   const [diff, setDiff] = useState<SnapshotDiff | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -72,7 +81,25 @@ export function WhatsNew({ version }: { version: string }) {
                 <ul>
                   {diff.added.map((t) => (
                     <li key={t.key} data-area={t.area}>
-                      {t.name} <span className="whats-new__meta">Tier {t.tier}</span>
+                      {onJump ? (
+                        <button
+                          type="button"
+                          className="whats-new__item"
+                          onClick={() => {
+                            onJump(t.key);
+                            setOpen(false);
+                          }}
+                          title={`Jump to ${t.name}`}
+                        >
+                          {t.name}
+                          <span className="whats-new__go" aria-hidden>
+                            ↗
+                          </span>
+                        </button>
+                      ) : (
+                        t.name
+                      )}
+                      <span className="whats-new__meta">Tier {t.tier}</span>
                     </li>
                   ))}
                 </ul>
@@ -84,7 +111,24 @@ export function WhatsNew({ version }: { version: string }) {
                 <ul>
                   {diff.changed.map((t) => (
                     <li key={t.key}>
-                      {t.name}
+                      {onJump ? (
+                        <button
+                          type="button"
+                          className="whats-new__item"
+                          onClick={() => {
+                            onJump(t.key);
+                            setOpen(false);
+                          }}
+                          title={`Jump to ${t.name}`}
+                        >
+                          {t.name}
+                          <span className="whats-new__go" aria-hidden>
+                            ↗
+                          </span>
+                        </button>
+                      ) : (
+                        t.name
+                      )}
                       <span className="whats-new__meta">
                         {t.changes.map((c) => `${c.field} ${c.from} → ${c.to}`).join(" · ")}
                       </span>

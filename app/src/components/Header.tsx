@@ -15,10 +15,13 @@ const XENOPHILE_ICON = dataUrl("v4.5.0/icons/_ethic_xenophile.webp");
 export function Header({
   version,
   dataVersion,
+  onJumpToTech,
 }: {
   version?: string;
   /** Snapshot data version ("v4.5.0") — drives the What's-new diff lookup. */
   dataVersion?: string;
+  /** Jump the map/explore view to a tech clicked in the What's-new panel. */
+  onJumpToTech?: (key: string) => void;
 }) {
   return (
     <header className="app-header">
@@ -29,7 +32,7 @@ export function Header({
           {version}
         </span>
       )}
-      {dataVersion && <WhatsNew version={dataVersion} />}
+      {dataVersion && <WhatsNew version={dataVersion} onJump={onJumpToTech} />}
       <a
         className="app-header__discord"
         href="http://discord.gg/funsmithclub"

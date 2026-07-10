@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { TechSnapshot } from "./types/tech-snapshot";
 import { fetchSnapshot } from "./lib/data/fetchSnapshot";
-import { TechTree } from "./components/TechTree";
+import { TechTree, type TechTreeHandle } from "./components/TechTree";
 import { Header } from "./components/Header";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { ErrorOverlay } from "./components/ErrorOverlay";
@@ -16,6 +16,12 @@ type LoadState =
 export function App() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [retryToken, setRetryToken] = useState(0);
+  // TechTree lives outside Header in the tree, but the header's What's-new
+  // panel needs to trigger a jump — imperative handle bridges the two siblings.
+  const techTreeRef = useRef<TechTreeHandle>(null);
+  const onJumpToTech = useCallback((key: string) => {
+    techTreeRef.current?.jumpToTech(key);
+  }, []);
 
   const retry = useCallback(() => {
     setState({ status: "loading" });
@@ -59,6 +65,7 @@ export function App() {
       <Header
         version={version}
         dataVersion={state.status === "ready" ? state.snapshot.meta.gameVersion : undefined}
+        onJumpToTech={state.status === "ready" ? onJumpToTech : undefined}
       />
       {state.status === "loading" && <LoadingOverlay />}
       {state.status === "error" && <ErrorOverlay onRetry={retry} />}
@@ -74,7 +81,7 @@ export function App() {
             />
           )}
         >
-          <TechTree snapshot={state.snapshot} />
+          <TechTree ref={techTreeRef} snapshot={state.snapshot} />
         </ErrorBoundary>
       )}
     </div>

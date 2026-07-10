@@ -67,6 +67,10 @@ interface TechCardProps {
   /** Saved Empire tab (spike 005): the tech's bucket for this empire, or
    *  undefined when the empire coloring is off. Drives `data-bucket` → CSS. */
   bucket?: Bucket;
+  /** Empire-archetype filter (map only): true when this tech's gate can never
+   *  be satisfied under the pressed archetype toggles. Drives a grey-out,
+   *  independent of (and composes with) the Saved Empire bucket coloring. */
+  archetypeBlocked?: boolean;
   /** Synthetic ascension-perk parent node (Explore): render the hexagon + name
    *  and "Ascension Perk" label instead of the tier/cost/weight chrome. */
   perk?: boolean;
@@ -95,6 +99,7 @@ export const TechCard = memo(function TechCard({
   expanded,
   onToggleExpand,
   bucket,
+  archetypeBlocked,
   perk,
   sourceKind,
 }: TechCardProps) {
@@ -116,6 +121,7 @@ export const TechCard = memo(function TechCard({
       data-danger={tech.flags.isDangerous ? "" : undefined}
       data-rare={tech.flags.isRare ? "" : undefined}
       data-bucket={bucket}
+      data-archetype-blocked={archetypeBlocked ? "" : undefined}
       data-perk={perk ? "" : undefined}
       data-source={sourceKind}
       style={{

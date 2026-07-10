@@ -1,6 +1,8 @@
 import {
+  forwardRef,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
@@ -30,6 +32,12 @@ import type { Bucket } from "../lib/empire/classify";
 import type { SavedEmpire } from "../lib/empire/savLoad";
 import { buildEmpireState } from "../lib/empire/gates";
 import { computeDrawEstimates } from "../lib/empire/draw";
+import {
+  isTechAccessibleUnderArchetype,
+  hasActiveArchetypeFilter,
+  type ArchetypeFilters,
+} from "../lib/empire/archetype";
+import { ArchetypeToggles } from "./ArchetypeToggles";
 import { TechTooltip } from "./TechTooltip";
 import { TechDetailPanel } from "./TechDetailPanel";
 import { FindOverlay, type FindEntry } from "./FindOverlay";
@@ -214,7 +222,17 @@ function serializeUrlNav(s: UrlNavState): string {
   return qs ? `?${qs}` : "";
 }
 
-export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
+/** Imperative handle so components OUTSIDE the tree (e.g. the header's
+ *  What's-new panel, a sibling of TechTree under App) can trigger a jump —
+ *  reuses the exact same onJumpToTech logic the tooltip/panel rows use. */
+export interface TechTreeHandle {
+  jumpToTech: (key: string) => void;
+}
+
+export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(function TechTree(
+  { snapshot },
+  ref,
+) {
   const [state, setState] = useState<LayoutState>({ status: "loading" });
   // Parse the shareable URL ONCE (at mount) to seed the initial nav state below.
   const urlInitRef = useRef<Partial<UrlNavState> | null>(null);
@@ -314,6 +332,32 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       buildEmpireState(savedEmpire),
     );
   }, [bucketMap, savedEmpire, snapshot]);
+
+  // ── Empire-archetype filter (map only) ─────────────────────────────────────
+  // A no-save-required, manual version of the same idea: toggle a handful of
+  // archetype flags (Nomad/Landed, Machine/Biological, Bioship/Alloy Ship —
+  // each an exclusive pair — plus standalone Fauna) and grey out any tech
+  // whose potential gate can never be satisfied under them. Independent of
+  // the Saved Empire feature (works with or without empireOn).
+  const [archetypeFilters, setArchetypeFilters] = useState<ArchetypeFilters>({});
+  // Press an already-active value again to clear it back to "unconstrained".
+  const onSetArchetype = useCallback((key: keyof ArchetypeFilters, value: boolean) => {
+    setArchetypeFilters((prev) => {
+      const next = { ...prev };
+      if (prev[key] === value) delete next[key];
+      else next[key] = value;
+      return next;
+    });
+  }, []);
+  const archetypeActive = hasActiveArchetypeFilter(archetypeFilters);
+  const archetypeBlockedKeys = useMemo(() => {
+    if (!archetypeActive) return null;
+    const blocked = new Set<string>();
+    for (const t of Object.values(snapshot.techs)) {
+      if (!isTechAccessibleUnderArchetype(t.gate, archetypeFilters)) blocked.add(t.key);
+    }
+    return blocked;
+  }, [archetypeFilters, archetypeActive, snapshot]);
 
   // Mobile/touch detection: a coarse pointer OR a narrow viewport. Tracked as
   // state (updated on media-query change) so orientation/resize flips it live.
@@ -1080,6 +1124,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     [techByKey, state, viewMode, pushHistory, panToNode, cancelHoverHide],
   );
 
+  // Expose the jump for callers outside the tree (What's-new panel rows).
+  useImperativeHandle(ref, () => ({ jumpToTech: onJumpToTech }), [onJumpToTech]);
+
   // Clicking empty viewport background (not a card) clears the selection. A real
   // drag is suppressed via movedRef so panning doesn't reset. EXCEPTION: in the
   // Explore focus view, an empty-space tap is inert — it must NOT act as "back"
@@ -1752,6 +1799,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
             expanded={explore && !focused ? node.expanded : undefined}
             onToggleExpand={explore && !focused ? onToggleExpand : undefined}
             bucket={empireOn ? bucketMap?.get(node.key) : undefined}
+            archetypeBlocked={!explore ? archetypeBlockedKeys?.has(node.tech!.key) : undefined}
           />
         ),
       ),
@@ -1774,6 +1822,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     onBucketToggle,
     empireOn,
     bucketMap,
+    archetypeBlockedKeys,
     cullTick,
   ]);
 
@@ -1799,6 +1848,8 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
             onToggleArea={onToggleArea}
             onIsolateArea={onIsolateArea}
             onShowAll={onShowAll}
+            archetypeFilters={archetypeFilters}
+            onSetArchetype={onSetArchetype}
           />
         ))}
 
@@ -1841,6 +1892,7 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
             selectedKey={highlightKey}
             hoverKey={hover?.tech.key ?? null}
             bucketMap={empireOn ? bucketMap : undefined}
+            archetypeBlockedKeys={archetypeBlockedKeys}
           />
         )}
 
@@ -2049,4 +2101,4 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       )}
     </div>
   );
-}
+});

@@ -42,6 +42,9 @@ interface Props {
   /** Saved Empire coloring (tech key → bucket) — mirrors the DOM cards'
    *  data-bucket styling so a loaded .sav reads while zoomed out too. */
   bucketMap?: Map<string, Bucket> | null;
+  /** Empire-archetype filter (tech key → blocked) — mirrors the DOM cards'
+   *  data-archetype-blocked greying so it reads while zoomed out too. */
+  archetypeBlockedKeys?: Set<string> | null;
 }
 
 /** Icon cache shared across draws (the browser already has these decoded from
@@ -49,7 +52,17 @@ interface Props {
 const iconCache = new Map<string, HTMLImageElement>();
 
 export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
-  { nodes, edges, iconBase, viewportRef, transformRef, selectedKey, hoverKey, bucketMap },
+  {
+    nodes,
+    edges,
+    iconBase,
+    viewportRef,
+    transformRef,
+    selectedKey,
+    hoverKey,
+    bucketMap,
+    archetypeBlockedKeys,
+  },
   ref,
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -187,7 +200,12 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
       const col = areaColor(n.tech?.area);
       const iconSize = Math.min(h, w);
       const bucket = bucketMap?.get(n.key);
-      const tileAlpha = bucket === "never" ? 0.22 : bucket === "reachable" ? 0.45 : 1;
+      const archBlocked = !!(n.tech && archetypeBlockedKeys?.has(n.tech.key));
+      // Composes multiplicatively with Saved Empire bucket dimming (both can
+      // apply at once — e.g. a "reachable" tech that's also archetype-blocked
+      // reads as doubly unlikely, not one overriding the other).
+      const tileAlpha =
+        (bucket === "never" ? 0.22 : bucket === "reachable" ? 0.45 : 1) * (archBlocked ? 0.35 : 1);
 
       ctx.globalAlpha = tileAlpha;
       ctx.fillStyle = C.panel;
@@ -224,7 +242,19 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
       ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
       ctx.globalAlpha = 1;
     }
-  }, [nodes, edges, iconBase, viewportRef, transformRef, selectedKey, hoverKey, bucketMap, getIcon, areaColor]);
+  }, [
+    nodes,
+    edges,
+    iconBase,
+    viewportRef,
+    transformRef,
+    selectedKey,
+    hoverKey,
+    bucketMap,
+    archetypeBlockedKeys,
+    getIcon,
+    areaColor,
+  ]);
 
   drawRef.current = draw;
   useImperativeHandle(ref, () => ({ draw }), [draw]);

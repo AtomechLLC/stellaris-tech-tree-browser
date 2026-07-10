@@ -7,7 +7,14 @@
 .app-shell {
   display: flex;
   flex-direction: column;
+  /* 100vh on mobile Safari/Chrome measures the LARGEST possible viewport (as
+     if the collapsible address/toolbar were hidden), so bottom-anchored
+     controls (touch-controls, zoom-controls) end up positioned behind the
+     toolbar when it's showing — exactly the "buttons off-screen" bug. 100dvh
+     tracks the CURRENT visible viewport instead; vh stays first as a fallback
+     for browsers that don't support dvh. */
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   overflow: hidden;
 }
@@ -135,6 +142,37 @@
   font-size: 12px;
 }
 
+/* Clickable Added/Changed row → jumps the view to that tech. Reset button,
+   inline with the row, gold hover + trailing affordance (mirrors the tooltip's
+   Required Technologies/Leads To jump rows for a consistent interaction). */
+.whats-new__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 1px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.whats-new__item:hover,
+.whats-new__item:focus-visible {
+  background: color-mix(in srgb, var(--color-select) 18%, transparent);
+  color: var(--color-select);
+  outline: none;
+}
+.whats-new__go {
+  opacity: 0;
+  font-size: 11px;
+}
+.whats-new__item:hover .whats-new__go,
+.whats-new__item:focus-visible .whats-new__go {
+  opacity: 0.9;
+}
+
 .app-header__discord {
   margin-left: auto;
   flex: 0 0 auto;
@@ -259,6 +297,52 @@
 }
 .category-nav__hotkey-action {
   opacity: 0.8;
+}
+
+/* Empire-archetype filter bar (map only, no save required) — one compact row
+   of icon-only toggles (three exclusive pairs + standalone Fauna). Icons carry
+   the meaning alone (title/aria-label for a11y, no spelled-out text in the
+   UI): greyscale + dim when off, full color + gold ring when pressed. */
+.archetype-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--tree-border);
+}
+.archetype-toggles__btn {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.archetype-toggles__btn img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: grayscale(1) brightness(0.75);
+  opacity: 0.6;
+}
+.archetype-toggles__btn:hover {
+  border-color: var(--tree-border);
+}
+.archetype-toggles__btn:hover img {
+  opacity: 0.85;
+}
+.archetype-toggles__btn[data-active] {
+  border-color: var(--color-select);
+  background: color-mix(in srgb, var(--color-select) 16%, transparent);
+}
+.archetype-toggles__btn[data-active] img {
+  filter: none;
+  opacity: 1;
 }
 
 .category-nav__all {
@@ -1924,6 +2008,20 @@
 }
 /* Selection outline still wins visually when a colored card is targeted. */
 .tech-card[data-bucket][data-selected] {
+  filter: none;
+  opacity: 1;
+}
+
+/* Empire-archetype filter (map only) — same grey-out language as the Saved
+   Empire "never" bucket, since it means the same thing: unreachable given the
+   current constraints. Independent data attribute so it composes if a save is
+   ALSO loaded (both dim → reads as "doubly unlikely", not one overriding the
+   other — see the equivalent LodCanvas multiplicative alpha). */
+.tech-card[data-archetype-blocked] {
+  filter: grayscale(1) brightness(0.72);
+  opacity: 0.5;
+}
+.tech-card[data-archetype-blocked][data-selected] {
   filter: none;
   opacity: 1;
 }
