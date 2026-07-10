@@ -6,7 +6,8 @@
   "description": "Build-time data pipeline: parses the local Stellaris install into a versioned tech.json snapshot for the frontend.",
   "scripts": {
     "build:data": "tsx src/assemble.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "diff-data": "tsx src/diff.ts"
   },
   "dependencies": {
     "jomini": "0.10.0",
