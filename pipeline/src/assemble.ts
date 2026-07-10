@@ -300,6 +300,30 @@ export async function runAssemble(): Promise<string> {
     }
   }
 
+  // Empire-archetype filter icons (app: ArchetypeToggles) — 3 exclusive pairs
+  // (Landed/Nomad, Machine/Biological, Alloy Ship/Bioship) + standalone Fauna.
+  // Not tied to any specific tech; static UI chrome like the perk/source icons.
+  const archetypeIcons: Array<[relPath: string, out: string]> = [
+    ["gfx/interface/icons/planet.dds", "_arch_landed"],
+    ["gfx/interface/icons/governments/nomad_toggle.dds", "_arch_nomad"],
+    ["gfx/interface/icons/governments/authorities/auth_machine_intelligence.dds", "_arch_machine"],
+    ["gfx/interface/icons/ascension_perks/ap_engineered_evolution.dds", "_arch_biological"],
+    ["gfx/interface/icons/technologies/tech_battleships.dds", "_arch_alloy_ship"],
+    ["gfx/interface/icons/technologies/tech_cosmogenesis_mauler.dds", "_arch_bioship"],
+    ["gfx/interface/icons/origins/origins_wilderness.dds", "_arch_fauna"],
+  ];
+  for (const [relPath, out] of archetypeIcons) {
+    try {
+      await convertDdsToWebp(
+        join(gameRoot, ...relPath.split("/")),
+        join(iconsOutDir, `${out}.tmp.png`),
+        join(iconsOutDir, `${out}.webp`),
+      );
+    } catch (err) {
+      console.warn(`[assemble] archetype icon ${out} conversion failed (${err}) — toggle will be iconless`);
+    }
+  }
+
   // D-16: strict-fail on any tech with an unresolved name.
   if (missingNames.length > 0) {
     throw new Error(
