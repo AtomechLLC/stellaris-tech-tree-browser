@@ -82,6 +82,24 @@
   color: var(--tree-text);
 }
 
+/* Narrow screens: the full header (ethic + title + version chip + Discord)
+   overflows and clips the right side. Shed the decorations — Discord goes
+   icon-only, the version chip hides, and the title ellipsizes. */
+@media (max-width: 767px) {
+  .app-header__title {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .app-header__version {
+    display: none;
+  }
+  .app-header__discord-text {
+    display: none;
+  }
+}
+
 /* ── DOM tech tree (quick 260708-0mk): one CSS-transformed canvas holding
    absolutely-positioned DOM cards + an SVG edge layer. Pan/zoom is a single
    transform on `.tree-canvas` — no per-frame sync, no projection, no camera.
@@ -531,6 +549,19 @@
 
 .zoom-controls button:hover {
   background: var(--tree-border);
+}
+
+/* Touch devices: 32px misses the ~44px comfortable-tap guideline (the touch
+   nav buttons are already 44px — match them). */
+@media (pointer: coarse) {
+  .zoom-controls button {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+  }
+  .zoom-readout {
+    width: 44px;
+  }
 }
 
 /* Zoom % readout under the zoom buttons — quiet chrome, updated imperatively. */
@@ -1272,6 +1303,97 @@
 .tech-tooltip__prereq--more {
   padding-left: 34px;
   opacity: 0.7;
+}
+
+/* ── Pinned detail panel — the SELECTED tech's info, docked so it survives the
+   pointer leaving (and is reachable at all on touch). Same section styles as
+   the tooltip (it renders the same TechInfoBody). Desktop: docked top-right,
+   under the Re-pack button, clear of the map scrollbar. ─────────────────── */
+.tech-detail {
+  position: fixed;
+  right: 16px;
+  top: 104px;
+  z-index: 20; /* above map chrome (≤12), below the transient tooltip (30) */
+  width: 320px;
+  max-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  background: var(--tree-panel);
+  border: 1px solid var(--tree-border);
+  border-left: 3px solid var(--tree-border); /* area-colored below */
+  border-radius: 8px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
+  font-family: var(--font-sans);
+  color: var(--tree-text);
+}
+.tech-detail[data-area="physics"] { border-left-color: var(--area-physics); }
+.tech-detail[data-area="society"] { border-left-color: var(--area-society); }
+.tech-detail[data-area="engineering"] { border-left-color: var(--area-engineering); }
+
+.tech-detail__header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 6px 12px;
+}
+.tech-detail__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: var(--font-weight-heading);
+  line-height: 1.3;
+}
+.tech-detail__close {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--tree-border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--tree-text);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tech-detail__close:hover {
+  background: var(--tree-border);
+}
+.tech-detail__explore {
+  flex: 0 0 auto;
+  margin: 0 12px 6px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--color-select) 55%, var(--tree-border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-select) 12%, transparent);
+  color: var(--tree-text);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: var(--font-weight-heading);
+  cursor: pointer;
+}
+.tech-detail__explore:hover {
+  background: color-mix(in srgb, var(--color-select) 24%, transparent);
+}
+.tech-detail__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+}
+
+/* Touch / narrow screens: bottom sheet instead of a right dock — the 320px
+   panel would cover most of a phone map, and thumbs live at the bottom. */
+@media (max-width: 767px), (pointer: coarse) and (max-width: 1023px) {
+  .tech-detail {
+    left: 8px;
+    right: 8px;
+    top: auto;
+    bottom: 8px;
+    width: auto;
+    max-height: 46vh;
+  }
 }
 
 /* ── Hidden-ancestry drill-down panel (quick 260708-4io) ──────────────────

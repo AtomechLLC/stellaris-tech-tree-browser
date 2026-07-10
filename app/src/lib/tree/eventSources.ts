@@ -27,12 +27,15 @@ function sourceKey(source: NonNullable<Tech["source"]>): string {
   return `${SOURCE_PREFIX}${source.type}:${source.id}`;
 }
 
-/** A source pseudo-tech — carries the source icon + name; everything else neutral. */
-function makeSourceTech(source: NonNullable<Tech["source"]>): Tech {
+/** A source pseudo-tech — carries the source icon + name; everything else
+ *  neutral EXCEPT area/category, inherited from the granted tech so the source
+ *  parent buckets where a player would look for its tech (e.g. a dig site that
+ *  grants an archaeostudies tech belongs under [Archaeology], not [Event]). */
+function makeSourceTech(source: NonNullable<Tech["source"]>, grantedTech: Tech): Tech {
   return {
     key: sourceKey(source),
-    area: "physics",
-    category: [],
+    area: grantedTech.area,
+    category: [...grantedTech.category],
     tier: 0,
     cost: 0,
     weight: 0,
@@ -61,17 +64,21 @@ function makeSourceTech(source: NonNullable<Tech["source"]>): Tech {
  */
 export function augmentSnapshotWithEventSources(snapshot: TechSnapshot): TechSnapshot {
   const techs: Record<string, Tech> = {};
-  const sourcesUsed = new Map<string, NonNullable<Tech["source"]>>();
+  // Source key → { source, first granted tech } (the first grantee's area /
+  // category classify the source parent — see makeSourceTech).
+  const sourcesUsed = new Map<string, { source: NonNullable<Tech["source"]>; grantedTech: Tech }>();
   for (const [key, tech] of Object.entries(snapshot.techs)) {
     if (tech.source) {
       const sk = sourceKey(tech.source);
-      sourcesUsed.set(sk, tech.source);
+      if (!sourcesUsed.has(sk)) sourcesUsed.set(sk, { source: tech.source, grantedTech: tech });
       techs[key] = { ...tech, prerequisites: [sk, ...tech.prerequisites] };
     } else {
       techs[key] = tech;
     }
   }
   if (sourcesUsed.size === 0) return snapshot;
-  for (const [sk, source] of sourcesUsed) techs[sk] = makeSourceTech(source);
+  for (const [sk, { source, grantedTech }] of sourcesUsed) {
+    techs[sk] = makeSourceTech(source, grantedTech);
+  }
   return { ...snapshot, techs };
 }

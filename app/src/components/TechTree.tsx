@@ -25,6 +25,7 @@ import { CategoryNav } from "./CategoryNav";
 import { EmpirePanel } from "./EmpirePanel";
 import type { Bucket } from "../lib/empire/classify";
 import { TechTooltip } from "./TechTooltip";
+import { TechDetailPanel } from "./TechDetailPanel";
 import { FindOverlay, type FindEntry } from "./FindOverlay";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { ErrorOverlay } from "./ErrorOverlay";
@@ -214,6 +215,10 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
     () => urlInit.active ?? new Set<string>(CATEGORY_ORDER),
   );
   const [hover, setHover] = useState<{ tech: Tech; rect: DOMRect } | null>(null);
+  // Pinned detail panel dismissal: hides the panel for ONE tech key without
+  // clearing the selection; reset when the selection moves on (so re-selecting
+  // later shows the panel again). See <TechDetailPanel>.
+  const [detailHiddenFor, setDetailHiddenFor] = useState<string | null>(null);
   // Click-selected ("targeted") tech key, or null. Selection highlights the
   // card, thickens its prereq/child edges, and (when it has filter-hidden
   // ancestors) opens the ancestry drill-down panel.
@@ -614,6 +619,15 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // Write the full nav state + current framing to the URL (replaceState — no
   // history spam). Kept in a ref so the imperative pan/zoom debounce always calls
   // the latest closure without re-subscribing.
+  // The URL's MAJOR-navigation signature (view mode / focus / selection). A
+  // change here gets a real history entry (pushState) so the browser Back
+  // button walks in-app navigation instead of leaving the site; pan/zoom
+  // framing and filter churn keep updating the current entry (replaceState).
+  const lastNavSigRef = useRef<string | null>(null);
+  const navSigOf = (qs: string): string => {
+    const p = new URLSearchParams(qs);
+    return `${p.get("v") ?? ""}|${p.get("f") ?? ""}|${p.get("s") ?? ""}`;
+  };
   const syncUrl = useCallback(() => {
     // Before the canvas mounts (loading) currentFraming is null — keep the URL's
     // incoming framing so a shared link isn't wiped before setCanvas applies it.
@@ -629,12 +643,51 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
       expandedKeys,
       framing,
     });
-    window.history.replaceState(null, "", window.location.pathname + qs + window.location.hash);
+    const url = window.location.pathname + qs + window.location.hash;
+    const sig = navSigOf(qs);
+    if (lastNavSigRef.current !== null && sig !== lastNavSigRef.current) {
+      window.history.pushState(null, "", url);
+    } else {
+      window.history.replaceState(null, "", url);
+    }
+    lastNavSigRef.current = sig;
   }, [viewMode, active, selectedKey, focusKey, focusExpanded, expandedKeys, currentFraming]);
   useEffect(() => {
     syncUrlRef.current = syncUrl;
     syncUrl(); // also fire immediately on any nav-state change
   }, [syncUrl]);
+
+  // Browser Back/Forward: re-parse the URL the browser landed on and restore
+  // that view (mode, focus, selection, filters, framing) — mirroring onBack's
+  // restore. lastNavSigRef is updated FIRST so the syncUrl fired by these state
+  // changes replaces (not re-pushes) the entry we just navigated to.
+  useEffect(() => {
+    const onPop = () => {
+      const parsed = parseUrlNav(snapshot);
+      lastNavSigRef.current = navSigOf(window.location.search);
+      fitFocusRef.current = parsed.focusKey ?? null; // don't auto-refit over the restored frame
+      setViewMode(parsed.viewMode ?? "map");
+      setSelectedKey(parsed.selectedKey ?? null);
+      setFocusKey(parsed.focusKey ?? null);
+      setFocusExpanded(parsed.focusExpanded ?? new Set());
+      setExpandedKeys(parsed.expandedKeys ?? new Set());
+      setActive(parsed.active ?? new Set(CATEGORY_ORDER));
+      const fr = parsed.framing;
+      const rect = viewportRef.current?.getBoundingClientRect();
+      if (fr && rect) {
+        const bw = Math.max(1, fr.x1 - fr.x0);
+        const bh = Math.max(1, fr.y1 - fr.y0);
+        const scale = clampZoom(Math.min(rect.width / bw, rect.height / bh));
+        applyTransform({
+          scale,
+          x: (rect.width - bw * scale) / 2 - fr.x0 * scale,
+          y: (rect.height - bh * scale) / 2 - fr.y0 * scale,
+        });
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [snapshot, applyTransform]);
 
   // Auto-frame the focus neighborhood ONLY when the focus tech CHANGES (entering
   // focus, or a double-click re-focus) — "zoom in on this". A single-click
@@ -1545,6 +1598,16 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
   // The card + edges to highlight gold: the focus tech in the focus view, else
   // the single-click selection.
   const highlightKey = focused ? focusKey : selectedKey;
+
+  // Pinned detail panel: the selected/focused tech's info stays docked until
+  // deselected or dismissed — hover is transient (and nonexistent on touch),
+  // so selection needs a persistent surface. Dismissal is per-selection: moving
+  // the selection to another tech re-arms the panel.
+  const detailTech = highlightKey ? techByKey.get(highlightKey) ?? null : null;
+  useEffect(() => {
+    setDetailHiddenFor((h) => (h && h !== highlightKey ? null : h));
+  }, [highlightKey]);
+  const detailVisible = !!detailTech && detailTech.key !== detailHiddenFor;
   const content = useMemo(() => {
     if (!layoutReady) return null;
     // Cull: render only cards intersecting the committed viewport-plus-margin rect
@@ -1850,7 +1913,9 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
         </div>
       </div>
 
-      {hover && (
+      {/* Hover tooltip — suppressed for the tech already pinned in the detail
+          panel (identical content twice would just occlude the map). */}
+      {hover && !(detailVisible && hover.tech.key === detailTech!.key) && (
         <TechTooltip
           tech={hover.tech}
           techByKey={techByKey}
@@ -1859,6 +1924,28 @@ export function TechTree({ snapshot }: { snapshot: TechSnapshot }) {
           onJump={onJumpToTech}
           onPointerEnter={onTooltipEnter}
           onPointerLeave={onTooltipLeave}
+        />
+      )}
+
+      {detailVisible && (
+        <TechDetailPanel
+          tech={detailTech!}
+          techByKey={techByKey}
+          iconBase={iconBase}
+          onJump={onJumpToTech}
+          onClose={() => setDetailHiddenFor(detailTech!.key)}
+          onExplore={
+            explore && focusKey === detailTech!.key
+              ? undefined
+              : () => {
+                  // Same as double-click "activate", minus the drag guard (a
+                  // panel button click is never a drag).
+                  pushHistory();
+                  setViewMode("explore");
+                  setFocusKey(detailTech!.key);
+                  setFocusExpanded(new Set([detailTech!.key]));
+                }
+          }
         />
       )}
 

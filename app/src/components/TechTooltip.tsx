@@ -3,16 +3,19 @@ import { categoryLabel } from "../lib/graph/categories";
 import { describeWeightModifiers } from "../lib/graph/weight";
 
 /**
- * Hover tooltip — the reference tool's detail popover: name + meta, then
- * sectioned Description / Required Technologies (with icons) / Unlocks / Leads
- * To, with colored section headers. Positioned `fixed` beside the hovered card
- * (flips left if there's no room). All text plain (React children, never
- * innerHTML — D-05). Clausewitz markup (§colour codes, £sprites£, literal \n,
- * unresolved $KEY$) is stripped so raw formatting never leaks into the UI.
+ * Tech info UI, in two skins sharing one body:
+ *  • `TechTooltip` — the transient hover popover, positioned `fixed` beside the
+ *    hovered card (flips left if there's no room).
+ *  • `TechInfoBody` — the sectioned content (meta / badges / Research Weight /
+ *    Description / Required Technologies / Unlocks / Leads To), also rendered
+ *    inside the persistent `TechDetailPanel` for the SELECTED tech.
+ * All text plain (React children, never innerHTML — D-05). Clausewitz markup
+ * (§colour codes, £sprites£, literal \n, unresolved $KEY$) is stripped so raw
+ * formatting never leaks into the UI.
  */
 
 const TOOLTIP_W = 320;
-const LEADS_TO_MAX = 10;
+const TOOLTIP_LEADS_TO_MAX = 10;
 
 /** Strip Clausewitz/Jomini formatting so only readable text remains. */
 function clean(s: string): string {
@@ -37,23 +40,24 @@ interface Ref {
   area?: string;
 }
 
-export function TechTooltip({
+/**
+ * The sectioned tech info content — everything below the title. Shared by the
+ * hover tooltip and the pinned detail panel so both always say the same thing.
+ */
+export function TechInfoBody({
   tech,
   techByKey,
   iconBase,
-  anchor,
   onJump,
-  onPointerEnter,
-  onPointerLeave,
+  leadsToMax = Infinity,
 }: {
   tech: Tech;
   techByKey: Map<string, Tech>;
   iconBase: string;
-  anchor: DOMRect;
   /** Jump the map/explore view to the clicked Required / Leads-To tech. */
   onJump?: (key: string) => void;
-  onPointerEnter?: () => void;
-  onPointerLeave?: () => void;
+  /** Cap on Leads-To rows (the tooltip truncates; the panel shows all). */
+  leadsToMax?: number;
 }) {
   const category = tech.category[0] ?? "";
   const resolve = (key: string): Ref => {
@@ -69,7 +73,7 @@ export function TechTooltip({
   const leadsTo = tech.unlocks.leadsTo.map(resolve);
 
   // A Required / Leads-To row. Clickable (jumps the view to that tech) whenever
-  // it resolves to a REAL tech — synthetic parents (perk:/event:) and unknown
+  // it resolves to a REAL tech — synthetic parents (perk:/src:) and unknown
   // keys stay static. Uses a <button> for keyboard access; CSS makes it look
   // like the row. Icon/name are plain text/children (never innerHTML — D-05).
   const renderRef = (p: Ref) => {
@@ -113,28 +117,8 @@ export function TechTooltip({
   // weight_modifier block (has_technology names resolved via techByKey).
   const weightMods = describeWeightModifiers(tech.weightModifierRaw, techByKey);
 
-  // Place to the right of the card if it fits, otherwise to its left.
-  const placeRight = anchor.right + 12 + TOOLTIP_W <= window.innerWidth;
-  const left = placeRight ? anchor.right + 12 : anchor.left - 12 - TOOLTIP_W;
-  // Anchor near the card's top, but never start lower than ~1/3 down the
-  // viewport — that guarantees a tall tooltip has most of the screen height to
-  // grow into, instead of being starved (and forced to scroll) when the hovered
-  // card sits low. `maxHeight` then fills from `top` to the viewport bottom, so
-  // the tooltip grows as tall as its content needs. "If it can't fit, make it
-  // bigger" — it only scrolls when content exceeds nearly the whole viewport.
-  const top = Math.max(8, Math.min(anchor.top, Math.round(window.innerHeight * 0.34)));
-  const maxHeight = window.innerHeight - top - 8;
-
   return (
-    <div
-      className="tech-tooltip"
-      data-area={tech.area}
-      style={{ left: `${left}px`, top: `${top}px`, width: `${TOOLTIP_W}px`, maxHeight: `${maxHeight}px` }}
-      role="tooltip"
-      onMouseEnter={onPointerEnter}
-      onMouseLeave={onPointerLeave}
-    >
-      <div className="tech-tooltip__title">{tech.name}</div>
+    <>
       <div className="tech-tooltip__meta">
         {categoryLabel(category)} ·{" "}
         <span className="tier-num" data-tier={tech.tier}>Tier {tech.tier}</span> · Cost{" "}
@@ -196,15 +180,66 @@ export function TechTooltip({
         <section className="tech-tooltip__sec">
           <div className="tech-tooltip__sec-title">Leads To</div>
           <ul className="tech-tooltip__prereqs">
-            {leadsTo.slice(0, LEADS_TO_MAX).map(renderRef)}
-            {leadsTo.length > LEADS_TO_MAX && (
+            {leadsTo.slice(0, leadsToMax).map(renderRef)}
+            {leadsTo.length > leadsToMax && (
               <li className="tech-tooltip__prereq tech-tooltip__prereq--more">
-                +{leadsTo.length - LEADS_TO_MAX} more
+                +{leadsTo.length - leadsToMax} more
               </li>
             )}
           </ul>
         </section>
       )}
+    </>
+  );
+}
+
+export function TechTooltip({
+  tech,
+  techByKey,
+  iconBase,
+  anchor,
+  onJump,
+  onPointerEnter,
+  onPointerLeave,
+}: {
+  tech: Tech;
+  techByKey: Map<string, Tech>;
+  iconBase: string;
+  anchor: DOMRect;
+  /** Jump the map/explore view to the clicked Required / Leads-To tech. */
+  onJump?: (key: string) => void;
+  onPointerEnter?: () => void;
+  onPointerLeave?: () => void;
+}) {
+  // Place to the right of the card if it fits, otherwise to its left.
+  const placeRight = anchor.right + 12 + TOOLTIP_W <= window.innerWidth;
+  const left = placeRight ? anchor.right + 12 : anchor.left - 12 - TOOLTIP_W;
+  // Anchor near the card's top, but never start lower than ~1/3 down the
+  // viewport — that guarantees a tall tooltip has most of the screen height to
+  // grow into, instead of being starved (and forced to scroll) when the hovered
+  // card sits low. `maxHeight` then fills from `top` to the viewport bottom, so
+  // the tooltip grows as tall as its content needs. "If it can't fit, make it
+  // bigger" — it only scrolls when content exceeds nearly the whole viewport.
+  const top = Math.max(8, Math.min(anchor.top, Math.round(window.innerHeight * 0.34)));
+  const maxHeight = window.innerHeight - top - 8;
+
+  return (
+    <div
+      className="tech-tooltip"
+      data-area={tech.area}
+      style={{ left: `${left}px`, top: `${top}px`, width: `${TOOLTIP_W}px`, maxHeight: `${maxHeight}px` }}
+      role="tooltip"
+      onMouseEnter={onPointerEnter}
+      onMouseLeave={onPointerLeave}
+    >
+      <div className="tech-tooltip__title">{tech.name}</div>
+      <TechInfoBody
+        tech={tech}
+        techByKey={techByKey}
+        iconBase={iconBase}
+        onJump={onJump}
+        leadsToMax={TOOLTIP_LEADS_TO_MAX}
+      />
     </div>
   );
 }
