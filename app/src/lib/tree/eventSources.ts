@@ -54,6 +54,7 @@ function makeSourceTech(source: NonNullable<Tech["source"]>, grantedTech: Tech):
     icon: source.type === "site" ? "_source_site.webp" : "_source_event.webp",
     gate: null,
     source: null,
+    archetypeIcons: [],
   };
 }
 

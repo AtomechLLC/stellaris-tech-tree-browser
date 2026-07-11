@@ -28,6 +28,7 @@ function tech(key: string, name: string): Tech {
     icon: null,
     gate: null,
     source: null,
+    archetypeIcons: [],
   };
 }
 

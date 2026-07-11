@@ -45,6 +45,9 @@ interface Props {
   /** Empire-archetype filter (tech key → blocked) — mirrors the DOM cards'
    *  data-archetype-blocked greying so it reads while zoomed out too. */
   archetypeBlockedKeys?: Set<string> | null;
+  /** Empire-archetype icon reskins (tech key → override icon filename) —
+   *  mirrors the DOM cards' swapped `image` src so it reads while zoomed out too. */
+  archetypeIconOverrides?: Map<string, string> | null;
 }
 
 /** Icon cache shared across draws (the browser already has these decoded from
@@ -62,6 +65,7 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
     hoverKey,
     bucketMap,
     archetypeBlockedKeys,
+    archetypeIconOverrides,
   },
   ref,
 ) {
@@ -211,7 +215,8 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
       ctx.fillStyle = C.panel;
       ctx.fillRect(x, y, w, h);
 
-      const icon = n.tech?.icon ? getIcon(`${iconBase}/${n.tech.icon}`) : null;
+      const iconName = (n.tech && archetypeIconOverrides?.get(n.tech.key)) || n.tech?.icon;
+      const icon = iconName ? getIcon(`${iconBase}/${iconName}`) : null;
       if (icon && icon.complete && icon.naturalWidth > 0) {
         ctx.drawImage(icon, x, y, iconSize, h);
       } else {
@@ -252,6 +257,7 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
     hoverKey,
     bucketMap,
     archetypeBlockedKeys,
+    archetypeIconOverrides,
     getIcon,
     areaColor,
   ]);

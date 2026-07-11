@@ -121,8 +121,8 @@ describe("layoutTree: category swimlane bands + tier-aligned columns", () => {
 
     const layout = await layoutTree(snapshot, CARD_W, CARD_H);
 
-    // 613 prerequisite edges across the full corpus (all endpoints exist).
-    expect(layout.edges.length).toBe(613);
+    // 615 prerequisite edges across the full corpus (all endpoints exist).
+    expect(layout.edges.length).toBe(615);
     const keys = new Set(layout.nodes.map((n) => n.key));
     for (const edge of layout.edges) {
       expect(keys.has(edge.from)).toBe(true);

@@ -107,3 +107,28 @@ export function isTechAccessibleUnderArchetype(gate: GateNode | null, filters: A
   if (!gate || !hasActiveArchetypeFilter(filters)) return true;
   return walk(gate, filters).canBeTrue;
 }
+
+/** A tech's `technology_swap` icon variant tagged to one archetype toggle
+ *  (pipeline: icons/archetype-swap.ts). Mirrors the schema's archetypeIcons. */
+export interface ArchetypeIcon {
+  key: keyof ArchetypeFilters;
+  value: boolean;
+  icon: string;
+}
+
+/**
+ * Picks the tech's archetype-specific icon reskin for the currently pressed
+ * filters, or null if none of its swap variants match (or it has none). At
+ * most one entry is expected to match since the filter keys are set one at a
+ * time; the first match wins if that assumption is ever violated.
+ */
+export function archetypeIconFor(
+  archetypeIcons: ArchetypeIcon[] | undefined,
+  filters: ArchetypeFilters,
+): string | null {
+  if (!archetypeIcons) return null;
+  for (const a of archetypeIcons) {
+    if (filters[a.key] === a.value) return a.icon;
+  }
+  return null;
+}

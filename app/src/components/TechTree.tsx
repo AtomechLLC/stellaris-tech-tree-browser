@@ -35,6 +35,7 @@ import { computeDrawEstimates } from "../lib/empire/draw";
 import {
   isTechAccessibleUnderArchetype,
   hasActiveArchetypeFilter,
+  archetypeIconFor,
   type ArchetypeFilters,
 } from "../lib/empire/archetype";
 import { ArchetypeToggles } from "./ArchetypeToggles";
@@ -357,6 +358,18 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
       if (!isTechAccessibleUnderArchetype(t.gate, archetypeFilters)) blocked.add(t.key);
     }
     return blocked;
+  }, [archetypeFilters, archetypeActive, snapshot]);
+  // technology_swap icon reskins (e.g. Alloys 1 shows Wilderness art when
+  // Fauna is pressed) — tech key -> override icon filename, for the subset
+  // of techs that ship a swap variant matching the pressed toggle.
+  const archetypeIconOverrides = useMemo(() => {
+    if (!archetypeActive) return null;
+    const overrides = new Map<string, string>();
+    for (const t of Object.values(snapshot.techs)) {
+      const icon = archetypeIconFor(t.archetypeIcons, archetypeFilters);
+      if (icon) overrides.set(t.key, icon);
+    }
+    return overrides;
   }, [archetypeFilters, archetypeActive, snapshot]);
 
   // Mobile/touch detection: a coarse pointer OR a narrow viewport. Tracked as
@@ -1337,15 +1350,28 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
     }
   }, [flushTransform]);
 
-  // ── Zoom toward the cursor (wheel — imperative) ───────────────────────────
+  // ── Wheel (imperative): behavior depends on view mode ─────────────────────
+  // Map mode SCROLLS (pans like a normal scrollable page) — the map is a big
+  // static poster you move around. Explore mode ZOOMS toward the cursor — it's
+  // a focused neighborhood you drill into, where zoom is the primary gesture.
   const onWheel = useCallback(
     (e: ReactWheelEvent<HTMLDivElement>) => {
       e.preventDefault();
+      const t = transformRef.current;
+      if (viewMode !== "explore") {
+        // Scroll (map): pan opposite the wheel motion, exactly like scrolling a
+        // page (scroll down reveals content below → content moves up). Shift
+        // swaps the axes — the usual browser convention for turning a
+        // vertical-only wheel into horizontal scroll.
+        const dx = e.shiftKey ? e.deltaY : e.deltaX;
+        const dy = e.shiftKey ? 0 : e.deltaY;
+        applyTransform({ scale: t.scale, x: t.x - dx, y: t.y - dy });
+        return;
+      }
       const rect = viewportRef.current?.getBoundingClientRect();
       if (!rect) return;
       const cursorX = e.clientX - rect.left;
       const cursorY = e.clientY - rect.top;
-      const t = transformRef.current;
       const factor = e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
       const nextScale = clampZoom(t.scale * factor);
       const ratio = nextScale / t.scale;
@@ -1355,7 +1381,7 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
         y: cursorY - (cursorY - t.y) * ratio,
       });
     },
-    [applyTransform],
+    [applyTransform, viewMode],
   );
 
   const zoomBy = useCallback(
@@ -1773,7 +1799,13 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
             tech={node.tech!}
             perk={isPerkKey(node.tech!.key)}
             sourceKind={isSourceKey(node.tech!.key) ? sourceKindOf(node.tech!.key) ?? undefined : undefined}
-            image={node.tech!.icon ? `${iconBase}/${node.tech!.icon}` : undefined}
+            image={
+              node.tech!.icon
+                ? `${iconBase}/${
+                    (!explore && archetypeIconOverrides?.get(node.tech!.key)) || node.tech!.icon
+                  }`
+                : undefined
+            }
             costIcon={
               isPerkKey(node.tech!.key) || isSourceKey(node.tech!.key)
                 ? undefined
@@ -1823,6 +1855,7 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
     empireOn,
     bucketMap,
     archetypeBlockedKeys,
+    archetypeIconOverrides,
     cullTick,
   ]);
 
@@ -1893,6 +1926,7 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
             hoverKey={hover?.tech.key ?? null}
             bucketMap={empireOn ? bucketMap : undefined}
             archetypeBlockedKeys={archetypeBlockedKeys}
+            archetypeIconOverrides={archetypeIconOverrides}
           />
         )}
 

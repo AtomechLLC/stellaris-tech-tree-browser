@@ -42,6 +42,7 @@ function tech(
     icon: null,
     gate: null,
     source: null,
+    archetypeIcons: [],
   };
 }
 

@@ -28,6 +28,7 @@ function tech(key: string, weight: number, weightModifierRaw?: unknown, area = "
     icon: null,
     gate: null,
     source: null,
+    archetypeIcons: [],
     weightModifierRaw,
   } as Tech;
 }

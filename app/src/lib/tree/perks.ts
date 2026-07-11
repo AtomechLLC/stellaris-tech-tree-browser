@@ -93,6 +93,7 @@ function makePerkTech(perkId: string): Tech {
     icon: `_perk_${perkId}.webp`,
     gate: null,
     source: null,
+    archetypeIcons: [],
   };
 }
 

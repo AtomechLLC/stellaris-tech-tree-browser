@@ -45,6 +45,14 @@ const UnlocksSchema = z.object({
   leadsTo: z.array(z.string()),
 });
 
+/** `technology_swap` icon variant tagged to an empire-archetype filter key.
+ *  KEEP IN SYNC with the pipeline schema. */
+const ArchetypeIconSchema = z.object({
+  key: z.enum(["nomadic", "machine", "bioShips", "fauna"]),
+  value: z.boolean(),
+  icon: z.string(),
+});
+
 const FlagsSchema = z.object({
   isRare: z.boolean(),
   isDangerous: z.boolean(),
@@ -81,6 +89,9 @@ export const TechSchema = z.object({
     })
     .nullable()
     .default(null),
+  /** `technology_swap` icon variants tagged to a known empire-archetype
+   *  filter. KEEP IN SYNC with the pipeline schema. */
+  archetypeIcons: z.array(ArchetypeIconSchema).default([]),
 });
 
 export const TechSnapshotSchema = z.object({
