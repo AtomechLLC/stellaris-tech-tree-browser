@@ -42,6 +42,7 @@ import { classifyDlc } from "./dlc/dlc-classifier.js";
 import { buildAndValidateGraph } from "./graph/build-dag.js";
 import { scanAllLocalisation, resolveTechText } from "./localisation/loc-scanner.js";
 import { resolveIconSource, type TechSwap } from "./icons/resolve.js";
+import { archetypeSwapTag } from "./icons/archetype-swap.js";
 import { convertDdsToWebp, PLACEHOLDER_ICON_NAME } from "./icons/convert.js";
 import { buildUnlocks } from "./unlocks.js";
 import { normalizePotential } from "./gates.js";
@@ -188,7 +189,16 @@ export async function runAssemble(): Promise<string> {
       console.warn(`[assemble] no icon source resolved for "${key}" — using placeholder`);
     }
 
+    // Archetype-tagged swap icons (D-10 + empire-archetype filter): a swap
+    // whose trigger maps to one of the app's 4 toggle keys drives an icon
+    // reskin when that toggle is pressed. Tagged BEFORE the skip-check below
+    // so a swap that reuses another tech's own extracted key still tags
+    // correctly (its file still exists — that tech's own pass produced it).
+    const archetypeIcons: Tech["archetypeIcons"] = [];
     for (const swap of iconSource.swaps) {
+      const tag = archetypeSwapTag(swap.trigger);
+      if (tag) archetypeIcons.push({ ...tag, icon: `${swap.name}.webp` });
+
       // Skip swaps whose name is a real extracted tech key — that tech's own
       // pass produces {name}.webp (see extractedKeySet note above).
       if (extractedKeySet.has(swap.name)) continue;
@@ -218,6 +228,7 @@ export async function runAssemble(): Promise<string> {
       // Attach the event/dig-site source only to eligible (event/archaeology)
       // techs — never decorate a normally-researched node.
       source: isSourceEligible(techFields) ? techSources.get(key) ?? null : null,
+      archetypeIcons,
     };
   }
 

@@ -62,6 +62,9 @@ export interface IconResolvableTech {
 export interface ResolvedSwapIcon {
   name: string;
   path: string;
+  /** The swap's raw `trigger` block, carried through so the caller can tag
+   *  which empire archetype (if any) this icon variant belongs to. */
+  trigger?: unknown;
 }
 
 export interface ResolvedIconSource {
@@ -98,7 +101,7 @@ export function resolveIconSource(tech: IconResolvableTech, gameRoot: string): R
     // deliberately has no icon file of its own — nothing to resolve here.
     if (swap.inherit_icon === true || swap.inherit_icon === undefined) continue;
     const swapPath = resolveIfExists(gameRoot, swap.name);
-    if (swapPath) swaps.push({ name: swap.name, path: swapPath });
+    if (swapPath) swaps.push({ name: swap.name, path: swapPath, trigger: swap.trigger });
   }
 
   return { base, swaps };

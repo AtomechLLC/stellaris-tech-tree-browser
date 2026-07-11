@@ -50,6 +50,19 @@ const UnlocksSchema = z.object({
   leadsTo: z.array(z.string()),
 });
 
+/**
+ * A `technology_swap` icon variant that reskins THIS tech's card when a
+ * given empire-archetype filter (app's `ArchetypeFilters`) is pressed — same
+ * slot/effects, different art (e.g. Alloys 1 shows a driftwood-and-vine icon
+ * for Wilderness empires instead of the default). `key`/`value` mirror the
+ * app's toggle keys; `icon` is the swap's own webp filename.
+ */
+const ArchetypeIconSchema = z.object({
+  key: z.enum(["nomadic", "machine", "bioShips", "fauna"]),
+  value: z.boolean(),
+  icon: z.string(),
+});
+
 const FlagsSchema = z.object({
   isRare: z.boolean(),
   isDangerous: z.boolean(),
@@ -113,6 +126,12 @@ export const TechSchema = z.object({
     })
     .nullable()
     .default(null),
+  /**
+   * `technology_swap` icon variants tagged to a known empire-archetype
+   * filter (see `icons/archetype-swap.ts`). Usually empty or one entry;
+   * drives the app's icon reskin when the matching toggle is pressed.
+   */
+  archetypeIcons: z.array(ArchetypeIconSchema).default([]),
 });
 
 export const TechSnapshotSchema = z.object({
