@@ -2120,12 +2120,31 @@
   gap: 4px;
 }
 .empire-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
   padding: 2px 7px;
   border-radius: 999px;
   border: 1px solid var(--tree-border);
   color: color-mix(in srgb, var(--tree-text) 75%, transparent);
   white-space: nowrap;
+}
+/* Civic / ascension-perk icon inside a chip (empire-settings window). */
+.empire-chip img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+/* Icon-only chip (ethics): bigger glyph, no pill chrome — reads at a glance. */
+.empire-chip[data-icon-only] {
+  padding: 2px;
+  border: none;
+}
+.empire-chip[data-icon-only] img {
+  width: 22px;
+  height: 22px;
 }
 .empire-legend {
   display: flex;

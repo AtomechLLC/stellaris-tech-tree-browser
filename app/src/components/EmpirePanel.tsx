@@ -4,6 +4,7 @@ import type { SavedEmpire, SavGalaxy } from "../lib/empire/savLoad";
 import { buildTechLite, classifyEmpire, type Bucket } from "../lib/empire/classifyEmpire";
 import { GalaxyMinimap } from "./GalaxyMinimap";
 import { dataUrl } from "../lib/data/paths";
+import { parsePdxText, stripPdxCodes } from "../lib/pdxText";
 
 /**
  * Saved Empire tab (spike 005) — left panel. Loads a `.sav` client-side, lists
@@ -151,7 +152,7 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
                 <optgroup label="Players">
                   {players.map((e) => (
                     <option key={e.id} value={e.id}>
-                      {e.name} ({e.researchedCount})
+                      {stripPdxCodes(e.name)} ({e.researchedCount})
                     </option>
                   ))}
                 </optgroup>
@@ -159,7 +160,7 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
                   <optgroup label="Other empires">
                     {others.map((e) => (
                       <option key={e.id} value={e.id}>
-                        {e.name} ({e.researchedCount})
+                        {stripPdxCodes(e.name)} ({e.researchedCount})
                       </option>
                     ))}
                   </optgroup>
@@ -214,7 +215,11 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
           its position is independent of this aside's DOM location. Reads the
           currently-selected empire, so swapping empires updates it live. */}
       {showSettings && selected && (
-        <EmpireSettingsPanel empire={selected} onClose={() => setShowSettings(false)} />
+        <EmpireSettingsPanel
+          empire={selected}
+          iconBase={dataUrl(`${version}/icons`)}
+          onClose={() => setShowSettings(false)}
+        />
       )}
     </aside>
   );
@@ -231,19 +236,84 @@ function humanize(id: string): string {
     .trim();
 }
 
+/** Renders save text with Paradox color codes as colored spans (e.g. a
+ *  rainbow multiplayer nickname); plain text passes through untouched. */
+function PdxName({ raw }: { raw: string }) {
+  const segments = parsePdxText(raw);
+  return (
+    <>
+      {segments.map((s, i) =>
+        s.color ? (
+          <span key={i} style={{ color: s.color }}>
+            {s.text}
+          </span>
+        ) : (
+          s.text
+        ),
+      )}
+    </>
+  );
+}
+
+/** One settings chip: game icon + name. `iconOnly` (ethics) drops the text —
+ *  players read these at a glance — keeping it as the tooltip; if the icon
+ *  fails to load the text comes back so the chip is never empty. */
+function SettingsChip({
+  id,
+  text,
+  iconBase,
+  iconOnly = false,
+}: {
+  id: string | null;
+  text: string;
+  iconBase: string;
+  iconOnly?: boolean;
+}) {
+  const [iconFailed, setIconFailed] = useState(false);
+  const showIcon = id !== null && !iconFailed;
+  return (
+    <span className="empire-chip" data-icon-only={iconOnly && showIcon ? "" : undefined} title={text}>
+      {showIcon && (
+        <img src={`${iconBase}/_${id}.webp`} alt={text} loading="lazy" onError={() => setIconFailed(true)} />
+      )}
+      {(!iconOnly || !showIcon) && text}
+    </span>
+  );
+}
+
 /** Right-docked window listing every setting of the selected empire. */
-function EmpireSettingsPanel({ empire, onClose }: { empire: SavedEmpire; onClose: () => void }) {
-  const rows: { label: string; values: string[] }[] = [
-    { label: "Authority", values: empire.authority ? [humanize(empire.authority)] : [] },
-    { label: "Origin", values: empire.origin ? [humanize(empire.origin)] : [] },
-    { label: "Ethics", values: empire.ethics.map(humanize) },
-    { label: "Civics", values: empire.civics.map(humanize) },
-    { label: "Ascension Perks", values: (empire.perks ?? []).map(humanize) },
+function EmpireSettingsPanel({
+  empire,
+  iconBase,
+  onClose,
+}: {
+  empire: SavedEmpire;
+  iconBase: string;
+  onClose: () => void;
+}) {
+  // Chips carry the raw id so they can show the game's icon — the pipeline
+  // emits `_<id>.webp` for civic_* / ap_* / auth_* / origin_* / ethic_*.
+  // Ethics render icon-only (name in the tooltip): players know these well.
+  const rows: {
+    label: string;
+    iconOnly?: boolean;
+    items: { id: string | null; text: string }[];
+  }[] = [
+    {
+      label: "Authority",
+      items: empire.authority ? [{ id: empire.authority, text: humanize(empire.authority) }] : [],
+    },
+    { label: "Origin", items: empire.origin ? [{ id: empire.origin, text: humanize(empire.origin) }] : [] },
+    { label: "Ethics", iconOnly: true, items: empire.ethics.map((e) => ({ id: e, text: humanize(e) })) },
+    { label: "Civics", items: empire.civics.map((c) => ({ id: c, text: humanize(c) })) },
+    { label: "Ascension Perks", items: (empire.perks ?? []).map((p) => ({ id: p, text: humanize(p) })) },
   ];
   return (
-    <aside className="empire-settings" aria-label={`${empire.name} settings`}>
+    <aside className="empire-settings" aria-label={`${stripPdxCodes(empire.name)} settings`}>
       <header className="empire-settings__header">
-        <span className="empire-settings__title">{empire.name}</span>
+        <span className="empire-settings__title">
+          <PdxName raw={empire.name} />
+        </span>
         <button
           type="button"
           className="empire-settings__close"
@@ -256,17 +326,23 @@ function EmpireSettingsPanel({ empire, onClose }: { empire: SavedEmpire; onClose
       </header>
       <div className="empire-settings__body">
         {empire.playerName && (
-          <div className="empire-settings__player">Player: {empire.playerName}</div>
+          <div className="empire-settings__player">
+            Player: <PdxName raw={empire.playerName} />
+          </div>
         )}
         {rows.map((r) => (
           <div key={r.label} className="empire-settings__row">
             <div className="empire-settings__label">{r.label}</div>
             <div className="empire-settings__values">
-              {r.values.length > 0 ? (
-                r.values.map((v) => (
-                  <span key={v} className="empire-chip">
-                    {v}
-                  </span>
+              {r.items.length > 0 ? (
+                r.items.map((it) => (
+                  <SettingsChip
+                    key={it.text}
+                    id={it.id}
+                    text={it.text}
+                    iconBase={iconBase}
+                    iconOnly={r.iconOnly}
+                  />
                 ))
               ) : (
                 <span className="empire-settings__none">None</span>

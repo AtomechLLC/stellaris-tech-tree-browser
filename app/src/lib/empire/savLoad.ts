@@ -86,6 +86,60 @@ export async function loadEmpiresFromSav(savBytes: Uint8Array): Promise<SavLoadR
     }
   }
 
+  // Pop-group ethics fallback (Stellaris 4.x pop rework): some saves carry no
+  // `country.ethos` — pop ETHICS live on pop groups instead, keyed by species
+  // (`pop_group.key = { species, ethos = { ethic } }`). Aggregate per country:
+  // planet owner → pop groups on that planet → per-species ethic totals. The
+  // empire's "first species" = its largest population; its ethics stand in
+  // for the missing governing ethos.
+  const planetOwner = new Map<number, number>();
+  const planetsTable = isObj(root.planets) ? (root.planets as Record<string, any>).planet : null;
+  if (isObj(planetsTable)) {
+    for (const [pid, p] of Object.entries(planetsTable)) {
+      if (/^\d+$/.test(pid) && isObj(p) && typeof (p as Record<string, any>).owner === "number") {
+        planetOwner.set(Number(pid), (p as Record<string, any>).owner);
+      }
+    }
+  }
+  /** country → species → { size, per-ethic sizes } */
+  const popEthics = new Map<number, Map<number, { size: number; ethics: Map<string, number> }>>();
+  if (isObj(root.pop_groups)) {
+    for (const g of Object.values(root.pop_groups as Record<string, any>)) {
+      if (!isObj(g) || typeof g.planet !== "number") continue;
+      const owner = planetOwner.get(g.planet);
+      if (owner === undefined) continue;
+      const key = (g as Record<string, any>).key;
+      if (!isObj(key) || typeof key.species !== "number") continue;
+      const size = typeof g.size === "number" ? g.size : 0;
+      const ethics = isObj(key.ethos)
+        ? toArr((key.ethos as Record<string, any>).ethic).filter((e): e is string => typeof e === "string")
+        : [];
+      let bySpecies = popEthics.get(owner);
+      if (!bySpecies) popEthics.set(owner, (bySpecies = new Map()));
+      let entry = bySpecies.get(key.species);
+      if (!entry) bySpecies.set(key.species, (entry = { size: 0, ethics: new Map() }));
+      entry.size += size;
+      for (const e of ethics) entry.ethics.set(e, (entry.ethics.get(e) ?? 0) + size);
+    }
+  }
+  /** Ethics of a country's "first" species — the FOUNDER species when its id
+   *  is known (country.founder_species_ref indexes species_db as-is), else the
+   *  largest ethic-carrying population. Largest pop shares first. */
+  const speciesEthicsFor = (countryId: number, founderRef: number | null): string[] => {
+    const bySpecies = popEthics.get(countryId);
+    if (!bySpecies) return [];
+    let entry = founderRef !== null ? bySpecies.get(founderRef) : undefined;
+    if (!entry || entry.ethics.size === 0) {
+      let top: { size: number; ethics: Map<string, number> } | null = null;
+      for (const e of bySpecies.values()) {
+        if (e.ethics.size > 0 && (!top || e.size > top.size)) top = e;
+      }
+      entry = top ?? undefined;
+    }
+    if (!entry) return [];
+    return [...entry.ethics.entries()].sort((a, b) => b[1] - a[1]).map(([e]) => e);
+  };
+
   const countries = root.country;
   const empires: SavedEmpire[] = [];
   if (isObj(countries)) {
@@ -103,18 +157,24 @@ export async function loadEmpiresFromSav(savBytes: Uint8Array): Promise<SavLoadR
       }
       if (researched.length === 0) continue; // skip empty/degenerate country entries
 
+      const idNum = Number(key);
       const gov = isObj(c.government) ? (c.government as Record<string, any>) : {};
       // Ethics live under `ethos = { ethic = "ethic_x" ethic = "ethic_y" }` —
       // the key is `ethic` (singular, repeated → jomini array), NOT `ethics`.
       // (Reading the wrong key silently emptied every empire's ethics, which
       // also broke has_ethic gate evaluation.)
-      const ethics: string[] = [];
+      let ethics: string[] = [];
       if (isObj(c.ethos)) for (const e of toArr(c.ethos.ethic)) if (typeof e === "string") ethics.push(e);
+      // No governing ethos in this save → fall back to the ethics of the
+      // empire's first (founder) species from its pop groups.
+      if (ethics.length === 0) {
+        const founderRef = typeof c.founder_species_ref === "number" ? c.founder_species_ref : null;
+        ethics = speciesEthicsFor(idNum, founderRef);
+      }
       // Ascension perks — a flat list of `ap_*` ids on the country. Drives the
       // gate check `has_ascension_perk` (e.g. Cosmogenesis crisis techs).
       const perks = toArr(c.ascension_perks).filter((x): x is string => typeof x === "string");
 
-      const idNum = Number(key);
       const literal = isObj(c.name) && (c.name.literal === "yes" || c.name.literal === true);
       const rawKey = isObj(c.name) ? (typeof c.name.key === "string" ? c.name.key : null) : null;
       const playerName = playerByCountry.get(idNum) ?? null;
