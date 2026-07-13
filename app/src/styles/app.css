@@ -2173,6 +2173,25 @@
   font-weight: 600;
 }
 
+/* Galaxy minimap — where the selected empire sits in the galaxy. */
+.empire-minimap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.empire-minimap__canvas {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--tree-border);
+  border-radius: 8px;
+  background: #0a0e16;
+}
+.empire-minimap__caption {
+  font-size: 10px;
+  text-align: center;
+  opacity: 0.55;
+}
+
 /* "View all settings" toggle in the Saved Empire sidebar. */
 .empire-panel__settings-btn {
   padding: 7px 10px;

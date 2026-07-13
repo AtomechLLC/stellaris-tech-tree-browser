@@ -21,8 +21,37 @@ export interface SavedEmpire extends RawEmpire {
   researchedCount: number;
 }
 
+/** One star system on the galaxy minimap. Coordinates are the save's raw
+ *  values — the renderer flips x (in-game map convention, same as stellarmaps). */
+export interface GalaxySystem {
+  x: number;
+  y: number;
+  /** Owning country id (matches SavedEmpire.id), or null if unclaimed. */
+  ownerId: number | null;
+}
+
+/** A nomad structure on the minimap — waystations and arc ships are starbases
+ *  (`starbase_level_waystation_*` / `starbase_level_*arkship_*`) that can sit
+ *  in systems the empire does NOT own, so they get their own markers. */
+export interface GalaxyMarker {
+  x: number;
+  y: number;
+  ownerId: number;
+  kind: "waystation" | "arcship";
+}
+
+export interface SavGalaxy {
+  systems: GalaxySystem[];
+  /** Hyperlanes as index pairs into `systems` (deduped, one entry per lane). */
+  lanes: Array<[number, number]>;
+  /** Nomad waystation / arc-ship locations (empty for saves without nomads). */
+  markers: GalaxyMarker[];
+}
+
 export interface SavLoadResult {
   empires: SavedEmpire[];
+  /** Galaxy map data for the minimap, or null if the save had none. */
+  galaxy: SavGalaxy | null;
   parseMs: number;
 }
 
@@ -110,5 +139,142 @@ export async function loadEmpiresFromSav(savBytes: Uint8Array): Promise<SavLoadR
     return b.researchedCount - a.researchedCount;
   });
 
-  return { empires, parseMs: performance.now() - t0 };
+  return { empires, galaxy: extractGalaxy(root), parseMs: performance.now() - t0 };
+}
+
+/**
+ * Galaxy minimap data: every system's position + owning country.
+ *
+ * Ownership follows the chain stellarmaps uses (processSystemOwnership.ts):
+ * a system's first starbase → its `station` SHIP → that ship's fleet → the
+ * country whose `fleets_manager.owned_fleets` lists the fleet. (Starbases
+ * carry no `owner` field themselves.)
+ */
+function extractGalaxy(root: Record<string, any>): SavGalaxy | null {
+  const objects = root.galactic_object;
+  if (!isObj(objects)) return null;
+
+  const fleetToCountry = new Map<number, number>();
+  if (isObj(root.country)) {
+    for (const [cid, c] of Object.entries(root.country)) {
+      if (!/^\d+$/.test(cid) || !isObj(c)) continue;
+      const mgr = (c as Record<string, any>).fleets_manager;
+      if (!isObj(mgr)) continue;
+      for (const of of toArr(mgr.owned_fleets)) {
+        if (isObj(of) && typeof of.fleet === "number") fleetToCountry.set(of.fleet, Number(cid));
+      }
+    }
+  }
+
+  const starbases = isObj(root.starbase_mgr) ? (root.starbase_mgr as Record<string, any>).starbases : null;
+  const ships = root.ships;
+
+  /** Resolve a starbase entry's owning country via station ship → fleet. */
+  const starbaseOwner = (sb: unknown): number | null => {
+    const ship =
+      isObj(sb) && typeof (sb as Record<string, any>).station === "number" && isObj(ships)
+        ? (ships as Record<string, any>)[(sb as Record<string, any>).station]
+        : null;
+    return isObj(ship) && typeof ship.fleet === "number" ? fleetToCountry.get(ship.fleet) ?? null : null;
+  };
+
+  // One pass over the starbase table: which ids are nomad structures, and who
+  // owns them. Waystations sit in systems their owner does NOT control (they
+  // appear in that system's `starbases` list); arc ships are MOBILE and never
+  // appear in any system's list — their position comes from the station
+  // ship's coordinate instead (resolved after the system pass below).
+  const nomadById = new Map<number, { kind: GalaxyMarker["kind"]; ownerId: number }>();
+  const arcships: Array<{ ownerId: number; origin: number | null; x: number | null; y: number | null }> = [];
+  if (isObj(starbases)) {
+    for (const [sbKey, sb] of Object.entries(starbases)) {
+      if (!/^\d+$/.test(sbKey) || !isObj(sb)) continue;
+      const level = (sb as Record<string, any>).level;
+      if (typeof level !== "string") continue;
+      const kind = /waystation/i.test(level) ? "waystation" : /arkship/i.test(level) ? "arcship" : null;
+      if (!kind) continue;
+      const ownerId = starbaseOwner(sb);
+      if (ownerId === null) continue;
+      nomadById.set(Number(sbKey), { kind, ownerId });
+      if (kind === "arcship") {
+        const ship =
+          typeof (sb as Record<string, any>).station === "number" && isObj(ships)
+            ? (ships as Record<string, any>)[(sb as Record<string, any>).station]
+            : null;
+        const coord = isObj(ship) ? (ship as Record<string, any>).coordinate : null;
+        arcships.push({
+          ownerId,
+          // 4294967295 (u32 "none") = in deep space between systems.
+          origin:
+            isObj(coord) && typeof coord.origin === "number" && coord.origin !== 4294967295
+              ? coord.origin
+              : null,
+          x: isObj(coord) && typeof coord.x === "number" ? coord.x : null,
+          y: isObj(coord) && typeof coord.y === "number" ? coord.y : null,
+        });
+      }
+    }
+  }
+
+  const systems: GalaxySystem[] = [];
+  const markers: GalaxyMarker[] = [];
+  const indexById = new Map<number, number>();
+  // Raw hyperlane endpoints (system ids), converted to indexes after the pass.
+  const rawLanes: Array<[number, number]> = [];
+
+  for (const [key, val] of Object.entries(objects)) {
+    if (!/^\d+$/.test(key) || !isObj(val)) continue;
+    const sys = val as Record<string, any>;
+    const coord = sys.coordinate;
+    if (!isObj(coord) || typeof coord.x !== "number" || typeof coord.y !== "number") continue;
+    const id = Number(key);
+    const sysStarbases = toArr(sys.starbases).filter((v): v is number => typeof v === "number");
+
+    // System ownership: the FIRST starbase only (stellarmaps' rule) — extra
+    // starbases in the list are guest structures, not claims. A nomad
+    // structure as starbases[0] claims nothing either (nomads are landless).
+    let ownerId: number | null = null;
+    const sb0 = sysStarbases[0];
+    if (sb0 !== undefined && !nomadById.has(sb0) && isObj(starbases)) {
+      ownerId = starbaseOwner((starbases as Record<string, any>)[sb0]);
+    }
+
+    // Waystation markers: ANY starbase in the system's list that's one. (Arc
+    // ships are handled after this loop — they're never in these lists.)
+    for (const sbId of sysStarbases) {
+      const nomad = nomadById.get(sbId);
+      if (nomad && nomad.kind === "waystation") {
+        markers.push({ x: coord.x, y: coord.y, ownerId: nomad.ownerId, kind: nomad.kind });
+      }
+    }
+
+    indexById.set(id, systems.length);
+    systems.push({ x: coord.x, y: coord.y, ownerId });
+
+    for (const lane of toArr(sys.hyperlane)) {
+      // Keep each lane once (each side lists the other): only the id < to side.
+      if (isObj(lane) && typeof lane.to === "number" && id < lane.to) rawLanes.push([id, lane.to]);
+    }
+  }
+  if (systems.length === 0) return null;
+
+  const lanes: Array<[number, number]> = [];
+  for (const [a, b] of rawLanes) {
+    const ia = indexById.get(a);
+    const ib = indexById.get(b);
+    if (ia !== undefined && ib !== undefined) lanes.push([ia, ib]);
+  }
+
+  // Arc ships: in a system (origin = system id) → that system's coordinate;
+  // in deep space (no origin) → the ship's own coordinate IS galactic.
+  for (const arc of arcships) {
+    const sysIdx = arc.origin !== null ? indexById.get(arc.origin) : undefined;
+    if (sysIdx !== undefined) {
+      const s = systems[sysIdx]!;
+      markers.push({ x: s.x, y: s.y, ownerId: arc.ownerId, kind: "arcship" });
+    } else if (arc.x !== null && arc.y !== null) {
+      markers.push({ x: arc.x, y: arc.y, ownerId: arc.ownerId, kind: "arcship" });
+    }
+  }
+
+  return { systems, lanes, markers };
 }

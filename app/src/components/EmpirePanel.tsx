@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TechSnapshot } from "../types/tech-snapshot";
-import type { SavedEmpire } from "../lib/empire/savLoad";
+import type { SavedEmpire, SavGalaxy } from "../lib/empire/savLoad";
 import { buildTechLite, classifyEmpire, type Bucket } from "../lib/empire/classifyEmpire";
+import { GalaxyMinimap } from "./GalaxyMinimap";
 import { dataUrl } from "../lib/data/paths";
 
 /**
@@ -31,6 +32,7 @@ interface EmpirePanelProps {
 export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
   const version = snapshot.meta.gameVersion;
   const [empires, setEmpires] = useState<SavedEmpire[] | null>(null);
+  const [galaxy, setGalaxy] = useState<SavGalaxy | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,13 +55,15 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
       // Lazy-load the parser (jomini + fflate) only when a save is actually
       // loaded, so they're a separate chunk — not in the main bundle.
       const { loadEmpiresFromSav } = await import("../lib/empire/savLoad");
-      const { empires: emp } = await loadEmpiresFromSav(bytes);
+      const { empires: emp, galaxy: gal } = await loadEmpiresFromSav(bytes);
       setEmpires(emp);
+      setGalaxy(gal);
       const firstPlayer = emp.find((e) => e.playerName) ?? emp[0];
       setSelectedId(firstPlayer ? firstPlayer.id : null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setEmpires(null);
+      setGalaxy(null);
     } finally {
       setLoading(false);
     }
@@ -171,6 +175,10 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
               {selected.ethics.map((x) => chip(x.replace("ethic_", "")))}
             </div>
           )}
+
+          {/* Galaxy minimap — where the selected empire's territory sits.
+              Swapping empires re-highlights (ownerId drives the redraw). */}
+          {galaxy && selected && <GalaxyMinimap galaxy={galaxy} ownerId={selected.id} />}
 
           {selected && (
             <button
