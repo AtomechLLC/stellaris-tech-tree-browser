@@ -2172,3 +2172,123 @@
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
+
+/* "View all settings" toggle in the Saved Empire sidebar. */
+.empire-panel__settings-btn {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--tree-border);
+  background: var(--tree-panel);
+  color: var(--tree-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.empire-panel__settings-btn:hover {
+  background: var(--tree-border);
+}
+.empire-panel__settings-btn[aria-pressed="true"] {
+  border-color: var(--color-select);
+  background: color-mix(in srgb, var(--color-select) 16%, transparent);
+}
+
+/* Docked "all settings" window — right edge of the viewport, mirroring the
+   .tech-detail dock. z-index above .tech-detail (20) so this user-invoked
+   window sits on top when a tech's detail panel is also open. */
+.empire-settings {
+  position: fixed;
+  right: 16px;
+  top: 104px;
+  z-index: 21;
+  width: 300px;
+  max-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  background: var(--tree-panel);
+  border: 1px solid var(--tree-border);
+  border-left: 3px solid var(--color-select);
+  border-radius: 8px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
+  font-family: var(--font-sans);
+  color: var(--tree-text);
+}
+.empire-settings__header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 8px 12px;
+  border-bottom: 1px solid var(--tree-border);
+}
+.empire-settings__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: var(--font-weight-heading);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.empire-settings__close {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--tree-border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--tree-text);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.empire-settings__close:hover {
+  background: var(--tree-border);
+}
+.empire-settings__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.empire-settings__player {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.empire-settings__row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.empire-settings__label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
+}
+.empire-settings__values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 12px;
+}
+.empire-settings__none {
+  font-size: 12px;
+  opacity: 0.45;
+  font-style: italic;
+}
+
+/* Touch/narrow: bottom sheet instead of a right dock (mirrors .tech-detail). */
+@media (max-width: 640px) {
+  .empire-settings {
+    right: 8px;
+    left: 8px;
+    top: auto;
+    bottom: 8px;
+    width: auto;
+    max-height: 55vh;
+  }
+}

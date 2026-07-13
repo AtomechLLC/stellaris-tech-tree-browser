@@ -34,6 +34,9 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Whether the docked "all settings" window (right side) is open. Persists
+  // across empire swaps — the panel just re-reads the newly-selected empire.
+  const [showSettings, setShowSettings] = useState(false);
   const [result, setResult] = useState<{ counts: Record<Bucket, number>; falseNever: number; total: number } | null>(
     null,
   );
@@ -169,6 +172,17 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
             </div>
           )}
 
+          {selected && (
+            <button
+              type="button"
+              className="empire-panel__settings-btn"
+              aria-pressed={showSettings}
+              onClick={() => setShowSettings((v) => !v)}
+            >
+              {showSettings ? "Hide all settings" : "View all settings"}
+            </button>
+          )}
+
           <div className="empire-legend">
             {BUCKETS.map((b) => (
               <div key={b.key} className="empire-legend__row" data-bucket={b.key}>
@@ -187,6 +201,78 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
             </div>
           )}
       </>
+
+      {/* Docked "all settings" window — fixed to the viewport's right edge, so
+          its position is independent of this aside's DOM location. Reads the
+          currently-selected empire, so swapping empires updates it live. */}
+      {showSettings && selected && (
+        <EmpireSettingsPanel empire={selected} onClose={() => setShowSettings(false)} />
+      )}
+    </aside>
+  );
+}
+
+/** Strips a known id prefix, unslugs, and Title-Cases a raw Stellaris id
+ *  (e.g. `ethic_fanatic_militarist` → "Fanatic Militarist"). No localisation
+ *  for these lives in the snapshot, so this humanizes the raw key. */
+function humanize(id: string): string {
+  return id
+    .replace(/^(auth_|origin_|ethic_|civic_|ap_|sp_)/, "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+}
+
+/** Right-docked window listing every setting of the selected empire. */
+function EmpireSettingsPanel({ empire, onClose }: { empire: SavedEmpire; onClose: () => void }) {
+  const rows: { label: string; values: string[] }[] = [
+    { label: "Authority", values: empire.authority ? [humanize(empire.authority)] : [] },
+    { label: "Origin", values: empire.origin ? [humanize(empire.origin)] : [] },
+    { label: "Ethics", values: empire.ethics.map(humanize) },
+    { label: "Civics", values: empire.civics.map(humanize) },
+    { label: "Ascension Perks", values: (empire.perks ?? []).map(humanize) },
+  ];
+  return (
+    <aside className="empire-settings" aria-label={`${empire.name} settings`}>
+      <header className="empire-settings__header">
+        <span className="empire-settings__title">{empire.name}</span>
+        <button
+          type="button"
+          className="empire-settings__close"
+          onClick={onClose}
+          aria-label="Close settings"
+          title="Close"
+        >
+          ✕
+        </button>
+      </header>
+      <div className="empire-settings__body">
+        {empire.playerName && (
+          <div className="empire-settings__player">Player: {empire.playerName}</div>
+        )}
+        {rows.map((r) => (
+          <div key={r.label} className="empire-settings__row">
+            <div className="empire-settings__label">{r.label}</div>
+            <div className="empire-settings__values">
+              {r.values.length > 0 ? (
+                r.values.map((v) => (
+                  <span key={v} className="empire-chip">
+                    {v}
+                  </span>
+                ))
+              ) : (
+                <span className="empire-settings__none">None</span>
+              )}
+            </div>
+          </div>
+        ))}
+        <div className="empire-settings__row">
+          <div className="empire-settings__label">Researched</div>
+          <div className="empire-settings__values">
+            {empire.researchedCount} technolog{empire.researchedCount === 1 ? "y" : "ies"}
+          </div>
+        </div>
+      </div>
     </aside>
   );
 }
