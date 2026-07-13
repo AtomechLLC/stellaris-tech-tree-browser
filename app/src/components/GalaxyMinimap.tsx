@@ -24,23 +24,39 @@ function ownerHue(id: number): number {
 }
 
 /**
- * Path a 4-point star: a diamond whose edges curve INWARD (astroid/sparkle).
- * Points sit at distance r on the axes; each edge is a quadratic curve whose
- * control point is pulled toward the center (q << r), bowing the edge in.
+ * Path a 4-point star: a diamond whose edges curve INWARD (astroid/sparkle),
+ * with the BOTTOM point stretched into one long spike (the nomad signature —
+ * differentiates these from any round territory blob at a glance). Points sit
+ * at distance r on the axes (bottom at ~1.9r); each edge is a quadratic curve
+ * whose control point is pulled toward the center (q << r), bowing it in.
+ * `outline` strokes the shape in white — used for the selected empire only.
  */
-function star4(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, rotDeg = 0) {
+function star4(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  rotDeg = 0,
+  outline = false,
+) {
   const q = r * 0.2;
+  const bottom = r * 1.9; // the long spike
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate((rotDeg * Math.PI) / 180);
   ctx.beginPath();
   ctx.moveTo(0, -r);
   ctx.quadraticCurveTo(q, -q, r, 0);
-  ctx.quadraticCurveTo(q, q, 0, r);
+  ctx.quadraticCurveTo(q, q, 0, bottom);
   ctx.quadraticCurveTo(-q, q, -r, 0);
   ctx.quadraticCurveTo(-q, -q, 0, -r);
   ctx.closePath();
   ctx.fill();
+  if (outline) {
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -51,12 +67,13 @@ function drawMarker(
   x: number,
   y: number,
   kind: "waystation" | "arcship",
+  outline = false,
 ) {
   if (kind === "waystation") {
-    star4(ctx, x, y, 4.5);
+    star4(ctx, x, y, 4.5, 0, outline);
   } else {
-    star4(ctx, x, y, 5.5);
-    star4(ctx, x, y, 3.9, 45);
+    star4(ctx, x, y, 5.5, 0, outline);
+    star4(ctx, x, y, 3.9, 45, outline);
   }
 }
 
@@ -126,10 +143,11 @@ export function GalaxyMinimap({ galaxy, ownerId }: { galaxy: SavGalaxy; ownerId:
       ctx.fillRect(X(s) - 0.5, Y(s) - 0.5, 1, 1);
     }
 
-    // Nomad markers, other empires: their hue, soft — visible but not loud.
+    // Nomad markers, other empires: faded into the background exactly like
+    // the territory mosaic — they only light up when their nomad is selected.
     for (const m of markers) {
       if (m.ownerId === ownerId) continue;
-      ctx.fillStyle = `hsla(${ownerHue(m.ownerId)}, 65%, 60%, 0.45)`;
+      ctx.fillStyle = `hsla(${ownerHue(m.ownerId)}, 60%, 55%, 0.16)`;
       drawMarker(ctx, X(m), Y(m), m.kind);
     }
 
@@ -149,9 +167,10 @@ export function GalaxyMinimap({ galaxy, ownerId }: { galaxy: SavGalaxy; ownerId:
         ctx.arc(X(s), Y(s), 1.6, 0, Math.PI * 2);
         ctx.fill();
       }
-      // Selected empire's nomad structures — full gold, drawn last (on top).
+      // Selected empire's nomad structures — full gold with a white outline,
+      // drawn last (on top).
       for (const m of markers) {
-        if (m.ownerId === ownerId) drawMarker(ctx, X(m), Y(m), m.kind);
+        if (m.ownerId === ownerId) drawMarker(ctx, X(m), Y(m), m.kind, true);
       }
     }
   }, [galaxy, ownerId]);
