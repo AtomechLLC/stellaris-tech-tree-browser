@@ -35,6 +35,7 @@ import { pathToFileURL } from "node:url";
 import { resolveConfig } from "./config.js";
 import { detectGameVersion, detectVersionLabel } from "./version/detect.js";
 import { extractTechSources } from "./parser/event-grants.js";
+import { parseClausewitzFile } from "./parser/clausewitz.js";
 import { loadScriptedVariables } from "./parser/scripted-variables.js";
 import { extractAllTechsWithStats, listTechFiles } from "./parser/tech-extractor.js";
 import { loadDlcRegistry } from "./dlc/dlc-registry.js";
@@ -332,6 +333,98 @@ export async function runAssemble(): Promise<string> {
       );
     } catch (err) {
       console.warn(`[assemble] archetype icon ${out} conversion failed (${err}) — toggle will be iconless`);
+    }
+  }
+
+  // Civic / origin / authority / ascension-perk icons — shown in the app's
+  // empire-settings window (Saved Empire). Emitted as `_<save id>.webp` so the
+  // app maps an id to its icon with one rule.
+  //
+  // Civics/origins/authorities are DEFINITION-driven: each def may carry an
+  // explicit `icon = "gfx/....dds"` path (variant origins like origin_scion
+  // point at another origin's art — filename convention alone misses ~26 of
+  // them); a def without one falls back to the conventional same-named file.
+  // Ascension perks have no icon field — their files match ids 1:1, so a
+  // directory scan covers them. Supplementary (D-13): failures warn and skip.
+  const isPlain = (v: unknown): v is Record<string, unknown> =>
+    typeof v === "object" && v !== null && !Array.isArray(v);
+  const govDefSources: Array<{ defDir: string; idPattern: RegExp; fallbackDir: string }> = [
+    {
+      defDir: "common/governments/civics",
+      idPattern: /^(civic_|origin_)/,
+      fallbackDir: "gfx/interface/icons/governments/civics",
+    },
+    {
+      defDir: "common/governments/authorities",
+      idPattern: /^auth_/,
+      fallbackDir: "gfx/interface/icons/governments/authorities",
+    },
+  ];
+  const govDone = new Set<string>();
+  for (const { defDir, idPattern, fallbackDir } of govDefSources) {
+    const dir = join(gameRoot, ...defDir.split("/"));
+    let defFiles: string[] = [];
+    try {
+      defFiles = readdirSync(dir).filter((f) => f.endsWith(".txt"));
+    } catch (err) {
+      console.warn(`[assemble] could not read gov def dir ${dir} (${err})`);
+      continue;
+    }
+    for (const file of defFiles) {
+      let raw: Record<string, unknown>;
+      try {
+        raw = await parseClausewitzFile(join(dir, file));
+      } catch (err) {
+        console.warn(`[assemble] could not parse gov defs ${file} (${err}) — skipping`);
+        continue;
+      }
+      for (const [id, val] of Object.entries(raw)) {
+        if (!idPattern.test(id) || !SAFE_NAME.test(id) || govDone.has(id)) continue;
+        const block = Array.isArray(val) ? val.find(isPlain) : val;
+        if (!isPlain(block)) continue;
+        // Def-declared icon path wins; else the conventional <id>.dds.
+        const declared = typeof block.icon === "string" && /\.dds$/i.test(block.icon) ? block.icon : null;
+        const srcPath = declared
+          ? join(gameRoot, ...declared.split("/"))
+          : join(gameRoot, ...fallbackDir.split("/"), `${id}.dds`);
+        if (!existsSync(srcPath)) continue;
+        govDone.add(id);
+        try {
+          await convertDdsToWebp(
+            srcPath,
+            join(iconsOutDir, `_${id}.tmp.png`),
+            join(iconsOutDir, `_${id}.webp`),
+          );
+        } catch (err) {
+          console.warn(`[assemble] gov icon conversion failed for "${id}" (${err}) — skipping`);
+        }
+      }
+    }
+  }
+  // Ascension perks + ethics: filename == id, plain directory scans.
+  const govScanDirs: Array<[relDir: string, pattern: RegExp]> = [
+    ["gfx/interface/icons/ascension_perks", /^ap_.+\.dds$/i],
+    ["gfx/interface/icons/ethics", /^ethic_.+\.dds$/i],
+  ];
+  for (const [relDir, pattern] of govScanDirs) {
+    const dir = join(gameRoot, ...relDir.split("/"));
+    try {
+      for (const file of readdirSync(dir)) {
+        if (!pattern.test(file)) continue;
+        const id = file.replace(/\.dds$/i, "");
+        if (!SAFE_NAME.test(id)) continue;
+        try {
+          await convertDdsToWebp(
+            join(dir, file),
+            join(iconsOutDir, `_${id}.tmp.png`),
+            join(iconsOutDir, `_${id}.webp`),
+          );
+        } catch (err) {
+          console.warn(`[assemble] gov icon conversion failed for "${file}" (${err}) — skipping`);
+        }
+      }
+    } catch (err) {
+      console.warn(`[assemble] could not read gov icon dir ${dir} (${err})`);
     }
   }
 
