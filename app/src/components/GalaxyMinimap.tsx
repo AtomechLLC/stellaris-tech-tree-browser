@@ -24,12 +24,12 @@ function ownerHue(id: number): number {
 }
 
 /**
- * Path a 4-point star: a diamond whose edges curve INWARD (astroid/sparkle),
- * with the BOTTOM point stretched into one long spike (the nomad signature —
- * differentiates these from any round territory blob at a glance). Points sit
- * at distance r on the axes (bottom at ~1.9r); each edge is a quadratic curve
- * whose control point is pulled toward the center (q << r), bowing it in.
- * `outline` strokes the shape in white — used for the selected empire only.
+ * Path a 4-point star: a diamond whose edges curve INWARD (astroid/sparkle).
+ * Points sit at distance r on the axes; each edge is a quadratic curve whose
+ * control point is pulled toward the center (q << r), bowing it in.
+ * `longBottom` stretches the bottom point into one long spike (~1.9r) — the
+ * ARC SHIP signature only; waystations stay symmetric. `outline` strokes the
+ * shape in white — used for the selected empire only.
  */
 function star4(
   ctx: CanvasRenderingContext2D,
@@ -38,9 +38,10 @@ function star4(
   r: number,
   rotDeg = 0,
   outline = false,
+  longBottom = false,
 ) {
   const q = r * 0.2;
-  const bottom = r * 1.9; // the long spike
+  const bottom = longBottom ? r * 1.9 : r;
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate((rotDeg * Math.PI) / 180);
@@ -60,8 +61,8 @@ function star4(
   ctx.restore();
 }
 
-/** Draw one nomad marker: waystation = single star; arc ship = the same star
- *  twice — the second copy rotated 45° and slightly smaller (8-point look). */
+/** Draw one nomad marker: waystation = small symmetric star; arc ship = the
+ *  long-spiked star twice — second copy rotated 45° and slightly smaller. */
 function drawMarker(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -70,10 +71,10 @@ function drawMarker(
   outline = false,
 ) {
   if (kind === "waystation") {
-    star4(ctx, x, y, 4.5, 0, outline);
+    star4(ctx, x, y, 3.5, 0, outline);
   } else {
-    star4(ctx, x, y, 5.5, 0, outline);
-    star4(ctx, x, y, 3.9, 45, outline);
+    star4(ctx, x, y, 5.5, 0, outline, true);
+    star4(ctx, x, y, 3.9, 45, outline, true);
   }
 }
 
