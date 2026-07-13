@@ -75,8 +75,12 @@ export async function loadEmpiresFromSav(savBytes: Uint8Array): Promise<SavLoadR
       if (researched.length === 0) continue; // skip empty/degenerate country entries
 
       const gov = isObj(c.government) ? (c.government as Record<string, any>) : {};
+      // Ethics live under `ethos = { ethic = "ethic_x" ethic = "ethic_y" }` —
+      // the key is `ethic` (singular, repeated → jomini array), NOT `ethics`.
+      // (Reading the wrong key silently emptied every empire's ethics, which
+      // also broke has_ethic gate evaluation.)
       const ethics: string[] = [];
-      if (isObj(c.ethos)) for (const e of toArr(c.ethos.ethics)) if (typeof e === "string") ethics.push(e);
+      if (isObj(c.ethos)) for (const e of toArr(c.ethos.ethic)) if (typeof e === "string") ethics.push(e);
       // Ascension perks — a flat list of `ap_*` ids on the country. Drives the
       // gate check `has_ascension_perk` (e.g. Cosmogenesis crisis techs).
       const perks = toArr(c.ascension_perks).filter((x): x is string => typeof x === "string");
