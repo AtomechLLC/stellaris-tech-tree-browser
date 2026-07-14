@@ -1057,9 +1057,14 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
   // F opens the find overlay. Ignore it when typing in a form field (so 'f'
   // inside the find box or any input types a letter, not a re-open) and when
   // the overlay is already open, and require no modifier keys.
+  // Matched by PHYSICAL key (e.code "KeyF") as well as the produced character:
+  // on a non-Latin layout (e.g. Russian, where that key types "а") e.key never
+  // equals "f", so code-matching keeps the shortcut on the same key in every
+  // layout — while the e.key match still serves layouts like Dvorak whose F
+  // lives on a different physical key.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "f" && e.key !== "F") return;
+      if (e.code !== "KeyF" && e.key !== "f" && e.key !== "F") return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (findOpen) return;
       const target = e.target as HTMLElement | null;
@@ -1580,9 +1585,11 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
 
   // C opens / Shift+C collapses the selected/focused tech's forward subtree.
   // Ignored while typing in a form field or with Ctrl/Meta/Alt held.
+  // Physical-key match (e.code) + character match — see the F handler above
+  // for why (non-Latin keyboard layouts).
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "c" && e.key !== "C") return;
+      if (e.code !== "KeyC" && e.key !== "c" && e.key !== "C") return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
