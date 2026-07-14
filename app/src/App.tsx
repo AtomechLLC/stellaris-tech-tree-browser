@@ -35,17 +35,22 @@ export function App() {
     setRetryToken((t) => t + 1);
   }, []);
 
-  // Version selector: persist the choice, then hard-reload. A full reload
-  // (rather than re-fetch + re-layout in place) keeps every downstream
+  // Version selector: persist the choice (returning users keep it; first-time
+  // visitors default to latest), stamp it into the URL (`?ver=` — shareable,
+  // and it wins over the stored preference on load), then hard-reload. A full
+  // reload (rather than re-fetch + re-layout in place) keeps every downstream
   // consumer of the snapshot — layout, URL restore, Saved Empire state —
   // trivially consistent, and switching versions is a rare, deliberate act.
   const onSelectVersion = useCallback((dir: string) => {
     try {
       localStorage.setItem(VERSION_PREF_KEY, dir);
     } catch {
-      /* storage unavailable — the reload will just land on the default */
+      /* storage unavailable — the URL param below still carries the choice */
     }
-    window.location.reload();
+    const url = new URL(window.location.href);
+    url.searchParams.set("ver", dir);
+    if (url.href === window.location.href) window.location.reload();
+    else window.location.href = url.href;
   }, []);
 
   useEffect(() => {

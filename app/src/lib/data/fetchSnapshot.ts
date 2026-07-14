@@ -34,20 +34,28 @@ export async function fetchVersionManifest(): Promise<VersionsManifest | null> {
 }
 
 /**
- * The data version to load: the user's saved preference when it's still an
- * available version, else the manifest's latest. Preference lives in
- * localStorage (not the URL — the tree's own URL sync rebuilds the query
- * string and would drop foreign params).
+ * The data version to load, in precedence order:
+ *   1. URL `?ver=` (shared links / direct picks — accepts "v4.4.6" or "4.4.6")
+ *   2. localStorage preference (set by the version selector — returning users
+ *      keep the version they last chose)
+ *   3. the manifest's latest (first-time visitors always get the newest data)
+ * Each candidate must still be an available version.
  */
 export function resolveDataVersion(manifest: VersionsManifest | null): string {
-  const fallback = manifest?.latest ?? "v4.5.0";
+  const isAvailable = (dir: string) => manifest?.versions.some((v) => v.dir === dir) ?? false;
+
+  const raw = new URLSearchParams(window.location.search).get("ver");
+  if (raw) {
+    const urlVer = raw.startsWith("v") ? raw : `v${raw}`;
+    if (isAvailable(urlVer)) return urlVer;
+  }
   try {
     const pref = localStorage.getItem(VERSION_PREF_KEY);
-    if (pref && manifest?.versions.some((v) => v.dir === pref)) return pref;
+    if (pref && isAvailable(pref)) return pref;
   } catch {
-    /* storage unavailable — use the fallback */
+    /* storage unavailable — fall through to latest */
   }
-  return fallback;
+  return manifest?.latest ?? "v4.5.0";
 }
 
 /**

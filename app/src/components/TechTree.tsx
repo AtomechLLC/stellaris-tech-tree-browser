@@ -202,8 +202,14 @@ function parseUrlNav(snapshot: TechSnapshot): Partial<UrlNavState> {
 }
 
 /** Serialize nav state into a query string ("?…" or "") for replaceState. */
-function serializeUrlNav(s: UrlNavState): string {
+function serializeUrlNav(s: UrlNavState, dataVersion?: string): string {
   const p = new URLSearchParams();
+  // Data-version pin (owned by App's version selector, not by this nav state):
+  // always stamp the LOADED version so every synced/copied URL reproduces the
+  // exact data the viewer is seeing — and this rebuild would otherwise drop an
+  // incoming `?ver=` on the first sync.
+  const ver = dataVersion ?? new URLSearchParams(window.location.search).get("ver");
+  if (ver) p.set("ver", ver);
   if (s.viewMode === "explore") {
     p.set("v", "e");
     if (s.focusKey) p.set("f", s.focusKey);
@@ -240,15 +246,24 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
   if (urlInitRef.current === null) {
     // Return-visit restore: a BARE url (no shared link) adopts the last
     // session's saved view before parsing, so a returning visitor lands where
-    // they left off. Shared links (any query string) always win.
-    if (!window.location.search) {
+    // they left off. Shared links (any NAV query string) always win. A url
+    // whose only param is `ver` (the data-version pick, e.g. right after
+    // switching versions) still counts as bare — restore the saved view but
+    // keep the CURRENT version param, not the one saved with the old view.
+    const current = new URLSearchParams(window.location.search);
+    if ([...current.keys()].every((k) => k === "ver")) {
       try {
         const saved = localStorage.getItem(LAST_VIEW_KEY);
         if (saved) {
+          const restored = new URLSearchParams(saved);
+          const ver = current.get("ver");
+          if (ver) restored.set("ver", ver);
+          else restored.delete("ver");
+          const qs = restored.toString();
           window.history.replaceState(
             null,
             "",
-            window.location.pathname + saved + window.location.hash,
+            window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash,
           );
         }
       } catch {
@@ -749,15 +764,18 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
     const framing =
       currentFraming() ??
       (framingAppliedRef.current ? null : urlInitRef.current?.framing ?? null);
-    const qs = serializeUrlNav({
-      viewMode,
-      active,
-      selectedKey,
-      focusKey,
-      focusExpanded,
-      expandedKeys,
-      framing,
-    });
+    const qs = serializeUrlNav(
+      {
+        viewMode,
+        active,
+        selectedKey,
+        focusKey,
+        focusExpanded,
+        expandedKeys,
+        framing,
+      },
+      snapshot.meta.gameVersion,
+    );
     const url = window.location.pathname + qs + window.location.hash;
     const sig = navSigOf(qs);
     if (lastNavSigRef.current !== null && sig !== lastNavSigRef.current) {
@@ -774,7 +792,7 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
         /* storage unavailable — restore just won't happen */
       }
     }
-  }, [viewMode, active, selectedKey, focusKey, focusExpanded, expandedKeys, currentFraming]);
+  }, [viewMode, active, selectedKey, focusKey, focusExpanded, expandedKeys, currentFraming, snapshot]);
   useEffect(() => {
     syncUrlRef.current = syncUrl;
     syncUrl(); // also fire immediately on any nav-state change
