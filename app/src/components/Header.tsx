@@ -6,6 +6,7 @@
  */
 
 import { dataUrl } from "../lib/data/paths";
+import type { VersionEntry } from "../lib/data/fetchSnapshot";
 import { WhatsNew } from "./WhatsNew";
 
 // Fixed version path — the header renders before the snapshot loads, and the
@@ -15,22 +16,45 @@ const XENOPHILE_ICON = dataUrl("v4.5.0/icons/_ethic_xenophile.webp");
 export function Header({
   version,
   dataVersion,
+  versions = [],
+  onSelectVersion,
   onJumpToTech,
 }: {
   version?: string;
   /** Snapshot data version ("v4.5.0") — drives the What's-new diff lookup. */
   dataVersion?: string;
+  /** Available data versions (manifest) — >1 turns the chip into a picker. */
+  versions?: VersionEntry[];
+  /** Switch the loaded data version (persists the choice + reloads). */
+  onSelectVersion?: (dir: string) => void;
   /** Jump the map/explore view to a tech clicked in the What's-new panel. */
   onJumpToTech?: (key: string) => void;
 }) {
+  const selectable = versions.length > 1 && !!onSelectVersion && !!dataVersion;
   return (
     <header className="app-header">
       <img className="app-header__ethic" src={XENOPHILE_ICON} alt="" aria-hidden />
       <h1 className="app-header__title">Xelnath's Stellaris Tech Finder</h1>
-      {version && (
-        <span className="app-header__version" title="Game version and data checksum">
-          {version}
-        </span>
+      {selectable ? (
+        <select
+          className="app-header__version app-header__version--select"
+          value={dataVersion}
+          onChange={(e) => onSelectVersion?.(e.target.value)}
+          title="Switch game data version"
+          aria-label="Game data version"
+        >
+          {versions.map((v) => (
+            <option key={v.dir} value={v.dir}>
+              {v.label}
+            </option>
+          ))}
+        </select>
+      ) : (
+        version && (
+          <span className="app-header__version" title="Game version and data checksum">
+            {version}
+          </span>
+        )
       )}
       {dataVersion && <WhatsNew version={dataVersion} onJump={onJumpToTech} />}
       <a

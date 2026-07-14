@@ -64,6 +64,15 @@
   white-space: nowrap;
 }
 
+/* Version picker variant — same chip look, but interactive. */
+.app-header__version--select {
+  cursor: pointer;
+  appearance: auto;
+}
+.app-header__version--select:hover {
+  border-color: var(--color-select);
+}
+
 /* "What's new" — header chip + patch-diff overlay (renders only when the
    pipeline shipped a diff.json, i.e. a prior version snapshot existed). */
 .whats-new__chip {

@@ -1,6 +1,55 @@
 import { TechSnapshotSchema, type TechSnapshot } from "../../types/tech-snapshot";
 import { dataUrl } from "./paths";
 
+/** localStorage key for the user's chosen data version (version selector). */
+export const VERSION_PREF_KEY = "stellaris-tech:data-version";
+
+export interface VersionEntry {
+  /** Data directory name, e.g. "v4.5.0". */
+  dir: string;
+  /** Display label, e.g. "Cygnus v4.5.0 (aa56)". */
+  label: string;
+}
+
+export interface VersionsManifest {
+  latest: string;
+  versions: VersionEntry[];
+}
+
+/**
+ * Fetches the versions manifest written by copy-data. Returns null on ANY
+ * failure (older deploys have no manifest) — the caller falls back to the
+ * hardcoded default version, exactly the pre-selector behavior.
+ */
+export async function fetchVersionManifest(): Promise<VersionsManifest | null> {
+  try {
+    const res = await fetch(dataUrl("versions.json"), { cache: "no-cache" });
+    if (!res.ok || (res.headers.get("content-type") ?? "").includes("text/html")) return null;
+    const json = (await res.json()) as VersionsManifest;
+    if (typeof json?.latest !== "string" || !Array.isArray(json?.versions)) return null;
+    return json;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The data version to load: the user's saved preference when it's still an
+ * available version, else the manifest's latest. Preference lives in
+ * localStorage (not the URL — the tree's own URL sync rebuilds the query
+ * string and would drop foreign params).
+ */
+export function resolveDataVersion(manifest: VersionsManifest | null): string {
+  const fallback = manifest?.latest ?? "v4.5.0";
+  try {
+    const pref = localStorage.getItem(VERSION_PREF_KEY);
+    if (pref && manifest?.versions.some((v) => v.dir === pref)) return pref;
+  } catch {
+    /* storage unavailable — use the fallback */
+  }
+  return fallback;
+}
+
 /**
  * Fetches and shape-validates the tech.json snapshot (D-03).
  *

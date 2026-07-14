@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TechSnapshot } from "./types/tech-snapshot";
-import { fetchSnapshot } from "./lib/data/fetchSnapshot";
+import {
+  fetchSnapshot,
+  fetchVersionManifest,
+  resolveDataVersion,
+  VERSION_PREF_KEY,
+  type VersionEntry,
+} from "./lib/data/fetchSnapshot";
 import { TechTree, type TechTreeHandle } from "./components/TechTree";
 import { Header } from "./components/Header";
 import { LoadingOverlay } from "./components/LoadingOverlay";
@@ -15,6 +21,7 @@ type LoadState =
 
 export function App() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [versions, setVersions] = useState<VersionEntry[]>([]);
   const [retryToken, setRetryToken] = useState(0);
   // TechTree lives outside Header in the tree, but the header's What's-new
   // panel needs to trigger a jump — imperative handle bridges the two siblings.
@@ -28,11 +35,29 @@ export function App() {
     setRetryToken((t) => t + 1);
   }, []);
 
+  // Version selector: persist the choice, then hard-reload. A full reload
+  // (rather than re-fetch + re-layout in place) keeps every downstream
+  // consumer of the snapshot — layout, URL restore, Saved Empire state —
+  // trivially consistent, and switching versions is a rare, deliberate act.
+  const onSelectVersion = useCallback((dir: string) => {
+    try {
+      localStorage.setItem(VERSION_PREF_KEY, dir);
+    } catch {
+      /* storage unavailable — the reload will just land on the default */
+    }
+    window.location.reload();
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
-    fetchSnapshot()
-      .then((snapshot) => {
+    (async () => {
+      try {
+        // Discover available versions, then load the preferred/latest one.
+        const manifest = await fetchVersionManifest();
+        if (cancelled) return;
+        if (manifest) setVersions(manifest.versions);
+        const snapshot = await fetchSnapshot(resolveDataVersion(manifest));
         if (cancelled) return;
         // The one-shot ELK layout now runs inside <TechTree> (in its own
         // loading state) — App only fetches + shape-validates the snapshot and
@@ -43,12 +68,12 @@ export function App() {
           snapshot,
           techCount: Object.keys(snapshot.techs).length,
         });
-      })
-      .catch((err: unknown) => {
+      } catch (err: unknown) {
         if (cancelled) return;
         const message = err instanceof Error ? err.message : String(err);
         setState({ status: "error", message });
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
@@ -65,6 +90,8 @@ export function App() {
       <Header
         version={version}
         dataVersion={state.status === "ready" ? state.snapshot.meta.gameVersion : undefined}
+        versions={versions}
+        onSelectVersion={onSelectVersion}
         onJumpToTech={state.status === "ready" ? onJumpToTech : undefined}
       />
       {state.status === "loading" && <LoadingOverlay />}
