@@ -79,12 +79,15 @@ interface BucketDef {
 }
 
 /**
- * The explore buckets, in DISPLAY order. ASSIGNMENT is by first-match in the
- * order listed here, so a tech matching several (e.g. a starting tech that's
- * also rare) lands in the first — [Empire Starting Techs] wins for any start
- * tech, then the more specific signals, then [Standard] catches everything that
- * still appears in the normal research pool (weight > 0), and [Event] is the
- * final catch-all (weight 0 — only handed out by events / special conditions).
+ * The explore buckets, in ASSIGNMENT order (first-match), so a tech matching
+ * several (e.g. a starting tech that's also rare) lands in the first —
+ * [Empire Starting Techs] wins for any start tech, then the more specific
+ * signals, then [Standard] catches everything that still appears in the normal
+ * research pool (weight > 0), and [Event] is the final catch-all (weight 0 —
+ * only handed out by events / special conditions). DISPLAY order is separate
+ * (EXPLORE_BUCKETS_DISPLAY below) — [Standard] must sit near the end HERE or
+ * its weight>0 rule would swallow the specific buckets, but it displays right
+ * under [Empire Starting Techs].
  *
  * [Repeatable] is special: it collects EVERY repeatable-upgrade tech (weapon /
  * armor / shield / economy), root or not — handled directly in
@@ -150,6 +153,18 @@ export const EXPLORE_BUCKETS: BucketDef[] = [
     match: () => true, // catch-all — must be last
   },
 ];
+
+/** Bucket cards in DISPLAY order: the two everyone reads first ([Empire
+ *  Starting Techs], [Standard]) on top, the rest as assigned. Ids not listed
+ *  keep their EXPLORE_BUCKETS order after the listed ones (stable sort). */
+const BUCKET_DISPLAY_ORDER: BucketId[] = ["starting", "standard"];
+export const EXPLORE_BUCKETS_DISPLAY: BucketDef[] = [...EXPLORE_BUCKETS].sort((a, b) => {
+  const rank = (d: BucketDef) => {
+    const i = BUCKET_DISPLAY_ORDER.indexOf(d.id);
+    return i === -1 ? BUCKET_DISPLAY_ORDER.length : i;
+  };
+  return rank(a) - rank(b);
+});
 
 /**
  * First-match TREE bucket id for a root (no-prerequisite) tech (never null).
@@ -402,12 +417,12 @@ export function layoutExplore(
     }
   };
 
-  // The six synthetic bucket root cards (in EXPLORE_BUCKETS display order), each
+  // The synthetic bucket root cards (in EXPLORE_BUCKETS_DISPLAY order), each
   // grouping its shown-eligible roots — including [Empire Starting Techs]. A
   // bucket carries no `tech`; the renderer branches on `bucket` to draw a
   // BucketCard. When expanded, its grouped roots are revealed one column to the
   // right (depth 1) and walk normally into their own unlocks.
-  for (const def of EXPLORE_BUCKETS) {
+  for (const def of EXPLORE_BUCKETS_DISPLAY) {
     const source = def.overlay ? overlayMembers.get(def.id) : bucketRoots.get(def.id);
     const assigned = (source ?? []).filter((t) => isShown(t, active));
     const key = bucketKey(def.id);

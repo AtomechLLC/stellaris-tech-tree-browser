@@ -7,6 +7,7 @@ import {
   layoutExplore,
   layoutFocus,
   EXPLORE_BUCKETS,
+  EXPLORE_BUCKETS_DISPLAY,
   bucketKey,
 } from "../lib/tree/exploreLayout";
 
@@ -58,13 +59,14 @@ describe("layoutExplore: collapsible forward tech tree with bucket roots", () =>
       expect(node.h).toBe(CARD_H);
     });
 
-    // Every collapsed node is a bucket, in EXPLORE_BUCKETS display order
-    // ([Empire Starting Techs] first).
+    // Every collapsed node is a bucket, in EXPLORE_BUCKETS_DISPLAY order —
+    // [Empire Starting Techs] first, [Standard] promoted right under it.
     expect(layout.nodes.every((n) => n.bucket)).toBe(true);
     expect(layout.nodes.map((n) => n.bucket!.id)).toEqual(
-      EXPLORE_BUCKETS.map((b) => b.id),
+      EXPLORE_BUCKETS_DISPLAY.map((b) => b.id),
     );
     expect(layout.nodes[0].bucket!.id).toBe("starting");
+    expect(layout.nodes[1].bucket!.id).toBe("standard");
   });
 
   it("buckets group every root + all repeatables; starting → [Empire Starting Techs], repeatables → [Repeatable]", () => {
