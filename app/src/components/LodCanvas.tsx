@@ -177,8 +177,20 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
           const a = nodeByKey.current.get(e.from);
           const b = nodeByKey.current.get(e.to);
           if (!a || !b) continue;
-          ctx.moveTo((a.x + a.w) * t.scale + t.x, (a.y + a.h / 2) * t.scale + t.y);
-          ctx.lineTo(b.x * t.scale + t.x, (b.y + b.h / 2) * t.scale + t.y);
+          // Elbow routing (same shape as the DOM EdgeLayer's fallback path):
+          // out of the source horizontally, vertical run in the gutter between
+          // the two columns, then horizontally into the target. A straight
+          // diagonal slices across every card between the endpoints and reads
+          // as connections to cards it merely passes.
+          const x0 = (a.x + a.w) * t.scale + t.x;
+          const y0 = (a.y + a.h / 2) * t.scale + t.y;
+          const x1 = b.x * t.scale + t.x;
+          const y1 = (b.y + b.h / 2) * t.scale + t.y;
+          const midX = (x0 + x1) / 2;
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(midX, y0);
+          ctx.lineTo(midX, y1);
+          ctx.lineTo(x1, y1);
         }
         ctx.stroke();
       };
