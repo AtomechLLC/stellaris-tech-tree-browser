@@ -1,5 +1,5 @@
 import { memo, useMemo } from "react";
-import type { LayoutEdge, LayoutNode } from "../lib/tree/layoutTree";
+import { COL_EXTRA, type LayoutEdge, type LayoutNode } from "../lib/tree/layoutTree";
 
 /**
  * SVG connector layer drawn inside `.tree-canvas` (so it pans/zooms with the
@@ -36,17 +36,25 @@ function pointsToPath(points: { x: number; y: number }[]): string {
   );
 }
 
-/** Fallback elbow: source right-center → target left-center via a mid bend. */
+/**
+ * Fallback elbow — same routing rule as the LOD canvas: the vertical run sits
+ * in the GUTTER immediately left of the target column, 3/4 of the way across
+ * it, so it's always real gutter and never mid-column (a midpoint channel
+ * lands INSIDE the shared column for same-tier edges and slices through every
+ * card in that tier). When the channel sits left of the source (same-tier
+ * prerequisite), exit the source's LEFT edge and drop down that same gutter.
+ */
 function fallbackPath(from: LayoutNode, to: LayoutNode): string {
-  const sx = from.x + from.w;
   const sy = from.y + from.h / 2;
   const tx = to.x;
   const ty = to.y + to.h / 2;
-  const midX = (sx + tx) / 2;
+  const chX = tx - 0.25 * COL_EXTRA;
+  const srcRight = from.x + from.w;
+  const sx = chX >= srcRight ? srcRight : from.x;
   return pointsToPath([
     { x: sx, y: sy },
-    { x: midX, y: sy },
-    { x: midX, y: ty },
+    { x: chX, y: sy },
+    { x: chX, y: ty },
     { x: tx, y: ty },
   ]);
 }
@@ -64,7 +72,9 @@ function routeAvoiding(from: LayoutNode, to: LayoutNode, nodes: LayoutNode[]): s
   const syc = from.y + from.h / 2;
   const tx = to.x;
   const tyc = to.y + to.h / 2;
-  const GUT = 24; // step into the column gutter on each side of the crossing
+  const GUT = COL_EXTRA / 4; // step into the column gutter on each side of the
+  // crossing — the target-side vertical then sits 3/4 across its gutter,
+  // matching fallbackPath and the LOD canvas channel.
 
   // Backward / same-or-adjacent column with no room for a channel → simple elbow.
   const x1 = sx + GUT;
