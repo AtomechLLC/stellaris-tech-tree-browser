@@ -1182,9 +1182,21 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
     return null;
   }, []);
 
+  // Clicks on viewport CHROME (zoom/touch controls, export button,
+  // scrollbars, tier ruler — all absolutely positioned INSIDE the viewport)
+  // bubble into the viewport handlers too. They must never select, deselect,
+  // or activate: in LOD mode the coordinate hit-test would even "click" a
+  // tile hidden UNDER the button. Allowlist the real map surface — the
+  // viewport background itself, the DOM card canvas, or the LOD canvas.
+  const isMapSurfaceClick = useCallback((e: ReactMouseEvent<HTMLDivElement>): boolean => {
+    const t = e.target as HTMLElement;
+    return t === viewportRef.current || !!t.closest(".tree-canvas, .lod-canvas");
+  }, []);
+
   const onViewportClick = useCallback(
     (e: ReactMouseEvent<HTMLDivElement>) => {
       if (movedRef.current) return;
+      if (!isMapSurfaceClick(e)) return;
       // LOD canvas mode: a click on a drawn tile selects that tech (toggle),
       // exactly like clicking its DOM card — a miss falls through to deselect.
       if (lodActiveRef.current) {
@@ -1202,7 +1214,7 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
       setFocusKey(null);
       setFocusExpanded(new Set());
     },
-    [pushHistory, viewMode, focusKey, hitTestLod],
+    [pushHistory, viewMode, focusKey, hitTestLod, isMapSurfaceClick],
   );
 
   // LOD canvas mode: double-click a drawn tile → same "activate" as a DOM card
@@ -1211,10 +1223,11 @@ export const TechTree = forwardRef<TechTreeHandle, { snapshot: TechSnapshot }>(f
   const onViewportDoubleClick = useCallback(
     (e: ReactMouseEvent<HTMLDivElement>) => {
       if (!lodActiveRef.current || movedRef.current) return;
+      if (!isMapSurfaceClick(e)) return; // chrome dblclick must not activate a hidden tile
       const node = hitTestLod(e.clientX, e.clientY);
       if (node?.tech) onActivate(node.tech.key);
     },
-    [hitTestLod, onActivate],
+    [hitTestLod, onActivate, isMapSurfaceClick],
   );
 
   // ── Pan (imperative — no re-render) ───────────────────────────────────────
