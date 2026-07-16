@@ -1,6 +1,6 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import type { RefObject } from "react";
-import type { LayoutNode, LayoutEdge } from "../lib/tree/layoutTree";
+import { COL_EXTRA, type LayoutNode, type LayoutEdge } from "../lib/tree/layoutTree";
 import type { Bucket } from "../lib/empire/classify";
 
 /**
@@ -177,19 +177,24 @@ export const LodCanvas = forwardRef<LodCanvasHandle, Props>(function LodCanvas(
           const a = nodeByKey.current.get(e.from);
           const b = nodeByKey.current.get(e.to);
           if (!a || !b) continue;
-          // Elbow routing (same shape as the DOM EdgeLayer's fallback path):
-          // out of the source horizontally, vertical run in the gutter between
-          // the two columns, then horizontally into the target. A straight
-          // diagonal slices across every card between the endpoints and reads
-          // as connections to cards it merely passes.
-          const x0 = (a.x + a.w) * t.scale + t.x;
+          // Elbow routing: horizontal out of the source, vertical run in the
+          // GUTTER immediately left of the target column (3/4 of the way
+          // across it, so it hugs the target side), horizontal into the
+          // target. Always a real gutter — never mid-column — so the vertical
+          // never slices through cards: a straight diagonal (or a mid-span
+          // channel) reads as connections to cards it merely passes. When the
+          // channel sits LEFT of the source (same-tier prerequisite, whose
+          // target shares the source's column), exit the source's LEFT edge
+          // and drop down that same gutter.
           const y0 = (a.y + a.h / 2) * t.scale + t.y;
           const x1 = b.x * t.scale + t.x;
           const y1 = (b.y + b.h / 2) * t.scale + t.y;
-          const midX = (x0 + x1) / 2;
+          const chX = x1 - 0.25 * COL_EXTRA * t.scale;
+          const srcRight = (a.x + a.w) * t.scale + t.x;
+          const x0 = chX >= srcRight ? srcRight : a.x * t.scale + t.x;
           ctx.moveTo(x0, y0);
-          ctx.lineTo(midX, y0);
-          ctx.lineTo(midX, y1);
+          ctx.lineTo(chX, y0);
+          ctx.lineTo(chX, y1);
           ctx.lineTo(x1, y1);
         }
         ctx.stroke();
