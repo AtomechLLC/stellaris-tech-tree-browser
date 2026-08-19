@@ -13,7 +13,7 @@
 import { unzipSync } from "fflate";
 import { Jomini } from "jomini";
 import type { RawEmpire } from "./gates";
-import { extractDesignFromCountry } from "./designFromSav";
+import { extractDesignFromCountry, readEthos } from "./designFromSav";
 import type { DesignEntry } from "./designSchema";
 
 export interface SavedEmpire extends RawEmpire {
@@ -116,9 +116,8 @@ export async function loadEmpiresFromSav(savBytes: Uint8Array): Promise<SavLoadR
       const key = (g as Record<string, any>).key;
       if (!isObj(key) || typeof key.species !== "number") continue;
       const size = typeof g.size === "number" ? g.size : 0;
-      const ethics = isObj(key.ethos)
-        ? toArr((key.ethos as Record<string, any>).ethic).filter((e): e is string => typeof e === "string")
-        : [];
+      // Same singular/plural key split as country.ethos — see readEthos.
+      const ethics = readEthos(key.ethos);
       let bySpecies = popEthics.get(owner);
       if (!bySpecies) popEthics.set(owner, (bySpecies = new Map()));
       let entry = bySpecies.get(key.species);
@@ -164,12 +163,12 @@ export async function loadEmpiresFromSav(savBytes: Uint8Array): Promise<SavLoadR
 
       const idNum = Number(key);
       const gov = isObj(c.government) ? (c.government as Record<string, any>) : {};
-      // Ethics live under `ethos = { ethic = "ethic_x" ethic = "ethic_y" }` —
-      // the key is `ethic` (singular, repeated → jomini array), NOT `ethics`.
-      // (Reading the wrong key silently emptied every empire's ethics, which
-      // also broke has_ethic gate evaluation.)
-      let ethics: string[] = [];
-      if (isObj(c.ethos)) for (const e of toArr(c.ethos.ethic)) if (typeof e === "string") ethics.push(e);
+      // Ethics live under `ethos`, whose key is SINGULAR-repeated (`ethic=`)
+      // in older saves and PLURAL-list (`ethics={}`) in current ones — reading
+      // only one shape silently emptied every empire's ethics (and broke
+      // has_ethic gate evaluation). `readEthos` reads both; see its doc for
+      // the per-save measurements.
+      let ethics: string[] = readEthos(c.ethos);
       // No governing ethos in this save → fall back to the ethics of the
       // empire's first (founder) species from its pop groups.
       if (ethics.length === 0) {

@@ -23,6 +23,114 @@ function isYes(v: unknown): boolean {
   return v === true || v === "yes";
 }
 
+/**
+ * Ethos shape varies BY SAVE VERSION — measured, not guessed:
+ *   - Pegasus v4.4.6 (`app/public/data/v4.5.0/sample.sav`):
+ *     `ethos = { ethic = "ethic_x" ethic = "ethic_y" }` (SINGULAR, repeated
+ *     key -> jomini array). 132/132 countries.
+ *   - The user's current saves (`mpcubecubecubecube5` 2246.05.04,
+ *     `mpcubecubecubecube16` 2344.12.07): `ethos = { ethics = { "ethic_x" } }`
+ *     (PLURAL key, bracketed list). 72/72 and 62/62 countries respectively;
+ *     ZERO countries carry the singular key.
+ *
+ * Reading only `ethic` therefore silently emptied every empire's ethics on
+ * every current save — which is exactly how a gestalt empire's design came out
+ * missing `ethic_gestalt_consciousness` and was rejected by the empire editor.
+ * Always read BOTH keys. Used for `country.ethos` and for pop-group
+ * `key.ethos` alike (savLoad.ts imports this).
+ */
+export function readEthos(ethos: unknown): string[] {
+  if (!isObj(ethos)) return [];
+  const out: string[] = [];
+  for (const key of ["ethic", "ethics"] as const) {
+    for (const e of toArr((ethos as Record<string, unknown>)[key] as unknown)) {
+      if (typeof e === "string" && !out.includes(e)) out.push(e);
+    }
+  }
+  return out;
+}
+
+/** Authorities whose designs must carry `ethic_gestalt_consciousness` and
+ *  nothing else (`common/governments/authorities/00_authorities.txt`). */
+const GESTALT_AUTHORITIES = new Set(["auth_hive_mind", "auth_machine_intelligence", "auth_ancient_machine_intelligence"]);
+
+const ETHIC_GESTALT = "ethic_gestalt_consciousness";
+
+/**
+ * The empire editor accepts exactly one ethics shape per authority: a gestalt
+ * authority carries `ethic_gestalt_consciousness` ALONE, and a non-gestalt
+ * authority must not carry it at all. Runtime countries violate both halves —
+ * a hive empire's pop-group fallback can surface an assimilated species'
+ * regular ethics, and a save can hand back an empty list entirely.
+ */
+export function normalizeEthics(authority: string, ethics: readonly string[]): string[] {
+  if (GESTALT_AUTHORITIES.has(authority)) return [ETHIC_GESTALT];
+  const stripped = ethics.filter((e) => e !== ETHIC_GESTALT);
+  return [...new Set(stripped)];
+}
+
+/**
+ * Origins that exist on runtime countries but are NOT selectable in the empire
+ * designer — verbatim from
+ * `common/governments/civics/01_origins_non_playable.txt` (v4.5.0). Emitting
+ * one of these (or an empty string, which `country.government` also yields for
+ * some countries) produces exactly the "invalid design" the empire editor
+ * reports. Values map to their closest PLAYABLE analogue where one exists
+ * (all mapped targets verified present in `00_origins.txt`); everything else
+ * falls through to the inference in `resolveOrigin`.
+ */
+const NON_PLAYABLE_ORIGINS = new Map<string, string | null>([
+  ["origin_default_pre_ftl", "origin_default"],
+  ["origin_enlightened", "origin_default"],
+  ["origin_separatists", "origin_default"],
+  ["origin_liberated", "origin_default"],
+  ["origin_khan_successor", "origin_default"],
+  ["origin_slavers", "origin_default"],
+  ["origin_demonic_incursion", "origin_default"],
+  ["origin_fallen_empire", "origin_default"],
+  ["origin_fallen_empire_hive", "origin_default"],
+  ["origin_life_seeded_ai_only", "origin_life_seeded"],
+  ["origin_common_ground_npc", "origin_common_ground"],
+  ["origin_hegemon_npc", "origin_hegemon"],
+  ["origin_imperial_vassal_overlord", "origin_imperial_vassal"],
+  ["origin_nomadic_purger", null],
+  ["origin_nomadic_settled", null],
+  ["origin_nomadic_subject", null],
+]);
+
+/**
+ * Never emit `origin=""` and never emit a runtime-only origin (see
+ * `NON_PLAYABLE_ORIGINS`). When the save's value is unusable, infer: a
+ * Wilderness empire is recognisable from its government type / room / species
+ * traits even when its country block carries no wilderness origin at all
+ * (measured: `mpcubecubecubecube16` has 0 occurrences of `origin_wilderness`
+ * in any country block); everything else falls back to `origin_default`, which
+ * IS a selectable origin (17 uses in the user's own designs file).
+ *
+ * NOTE: a `galaxy.design` match bypasses this function entirely — the stored
+ * design block's origin is the empire's ORIGINAL designer-selected origin and
+ * is playable by construction.
+ */
+export function resolveOrigin(
+  rawOrigin: unknown,
+  country: Record<string, any>,
+  gov: Record<string, any>,
+  speciesTraits: readonly string[],
+): string {
+  const raw = typeof rawOrigin === "string" ? rawOrigin : "";
+  if (raw.length > 0 && !NON_PLAYABLE_ORIGINS.has(raw)) return raw;
+
+  const mapped = raw.length > 0 ? NON_PLAYABLE_ORIGINS.get(raw) : undefined;
+  if (typeof mapped === "string") return mapped;
+
+  const wilderness =
+    gov.type === "gov_wilderness" ||
+    country.room === "wilderness_room" ||
+    speciesTraits.includes("trait_wilderness") ||
+    toArr(gov.civics).some((c) => typeof c === "string" && c.includes("wilderness"));
+  return wilderness ? "origin_wilderness" : "origin_default";
+}
+
 /** `home_planet.reference` uses the u32 "none" sentinel when a species has no
  *  recorded home planet — never resolve a planet lookup against it. */
 const HOME_PLANET_NONE = 4294967295;
@@ -266,23 +374,24 @@ export function extractDesignFromCountry(
   const planet_class = resolvePlanetClass(root, species, country);
   const { planet_name, system_name } = resolveCapitalNames(root, country);
 
-  // Ethics live under `ethos = { ethic = "x" ethic = "y" }` (singular,
-  // repeated key), matching savLoad.ts's own gotcha comment. Fall back to the
-  // caller's already-resolved (pop-group-aware) ethics list when absent —
-  // do not re-implement that aggregation here.
-  let ethics: string[] = [];
-  if (isObj(country.ethos)) {
-    ethics = toArr((country.ethos as Record<string, any>).ethic).filter((e): e is string => typeof e === "string");
-  }
+  // Ethics live under `ethos` — see `readEthos` for the measured singular vs
+  // plural key split across save versions. Fall back to the caller's
+  // already-resolved (pop-group-aware) ethics list when absent — do not
+  // re-implement that aggregation here.
+  const authority = typeof gov.authority === "string" ? gov.authority : "";
+  let ethics = readEthos(country.ethos);
   if (ethics.length === 0) ethics = opts.ethics;
+  ethics = normalizeEthics(authority, ethics);
+
+  const speciesBlock = buildSpecies(species);
 
   const design: DesignEntry = {
     key: opts.displayName,
     ship_prefix: locNameOrKey(country.ship_prefix, "ISS"),
-    species: buildSpecies(species),
+    species: speciesBlock,
     name: locNameOrKey(country.name, opts.displayName),
     adjective: locNameOrKey(country.adjective, opts.displayName),
-    authority: typeof gov.authority === "string" ? gov.authority : "",
+    authority,
     government: typeof gov.type === "string" ? gov.type : "",
     is_nomadic: isYes(country.is_nomadic),
     planet_name,
@@ -300,7 +409,7 @@ export function extractDesignFromCountry(
     spawn_enabled: true,
     ethics,
     civics: toArr(gov.civics).filter((c): c is string => typeof c === "string"),
-    origin: typeof gov.origin === "string" ? gov.origin : "",
+    origin: resolveOrigin(gov.origin, country, gov, speciesBlock.traits),
   };
 
   // advisor_voice_type is present on only a minority of countries — omit the

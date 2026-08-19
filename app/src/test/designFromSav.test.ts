@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractDesignFromCountry } from "../lib/empire/designFromSav";
+import { extractDesignFromCountry, readEthos } from "../lib/empire/designFromSav";
 
 /**
  * Fixture-object coverage of designFromSav.ts's extractDesignFromCountry
@@ -246,6 +246,136 @@ describe("extractDesignFromCountry — ethics fallback", () => {
     const root = buildRoot({ country: { ethos: undefined } });
     const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
     expect(design.ethics).toEqual(["ethic_materialist"]);
+  });
+});
+
+/**
+ * Ethos shape varies by save version (measured, see readEthos' doc): older
+ * saves write `ethos={ ethic="x" }` (singular, repeated), current saves write
+ * `ethos={ ethics={ "x" } }` (plural list). Reading only the singular key
+ * emptied ethics on EVERY current save.
+ */
+describe("extractDesignFromCountry — ethos key shape (singular vs plural)", () => {
+  it("reads the PLURAL ethos.ethics list shape used by current saves", () => {
+    const root = buildRoot({
+      country: { ethos: { ethics: ["ethic_fanatic_militarist", "ethic_authoritarian"] } },
+    });
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.ethics).toEqual(["ethic_fanatic_militarist", "ethic_authoritarian"]);
+  });
+
+  it("reads a plural single-value ethos (parser collapses a 1-element list to a scalar)", () => {
+    const root = buildRoot({ country: { ethos: { ethics: "ethic_pacifist" } } });
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.ethics).toEqual(["ethic_pacifist"]);
+  });
+
+  it("merges and de-duplicates when a save carries BOTH keys", () => {
+    const root = buildRoot({
+      country: { ethos: { ethic: "ethic_xenophile", ethics: ["ethic_xenophile", "ethic_egalitarian"] } },
+    });
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.ethics).toEqual(["ethic_xenophile", "ethic_egalitarian"]);
+  });
+
+  it("readEthos returns [] for a missing/degenerate ethos block", () => {
+    expect(readEthos(undefined)).toEqual([]);
+    expect(readEthos({})).toEqual([]);
+    expect(readEthos({ ethic: 7 })).toEqual([]);
+  });
+});
+
+describe("extractDesignFromCountry — gestalt ethic guarantee", () => {
+  for (const authority of ["auth_hive_mind", "auth_machine_intelligence"]) {
+    it(`${authority} with an EMPTY ethos still emits ethic_gestalt_consciousness`, () => {
+      const root = buildRoot({
+        country: { government: { authority, type: "gov_hive_mind", civics: [], origin: "origin_default" }, ethos: {} },
+      });
+      const design = extractDesignFromCountry(root, COUNTRY_ID, { displayName: "Hive", ethics: [] })!;
+      expect(design.ethics).toEqual(["ethic_gestalt_consciousness"]);
+    });
+  }
+
+  it("a gestalt country never emits stray non-gestalt ethics leaked in by the pop-group fallback", () => {
+    const root = buildRoot({
+      country: {
+        government: { authority: "auth_hive_mind", type: "gov_hive_mind", civics: [], origin: "origin_default" },
+        ethos: undefined,
+      },
+    });
+    const design = extractDesignFromCountry(root, COUNTRY_ID, {
+      displayName: "Hive",
+      ethics: ["ethic_fanatic_authoritarian", "ethic_militarist"],
+    })!;
+    expect(design.ethics).toEqual(["ethic_gestalt_consciousness"]);
+  });
+
+  it("a NON-gestalt authority never emits ethic_gestalt_consciousness", () => {
+    const root = buildRoot({ country: { ethos: { ethics: ["ethic_gestalt_consciousness", "ethic_militarist"] } } });
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.ethics).toEqual(["ethic_militarist"]);
+  });
+});
+
+/**
+ * `origin=""` and runtime-only origins (01_origins_non_playable.txt) are the
+ * exact values the empire editor rejects as an invalid design.
+ */
+describe("extractDesignFromCountry — origin safety", () => {
+  const gov = (origin: unknown, extra: Record<string, any> = {}) => ({
+    government: { authority: "auth_hive_mind", type: "gov_hive_mind", civics: [], origin, ...extra },
+  });
+
+  it("passes a playable origin through untouched", () => {
+    const design = extractDesignFromCountry(buildRoot(), COUNTRY_ID, OPTS)!;
+    expect(design.origin).toBe("origin_prosperous_unification");
+  });
+
+  it("maps the runtime-only origin_default_pre_ftl to origin_default", () => {
+    const root = buildRoot({ country: gov("origin_default_pre_ftl") });
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.origin).toBe("origin_default");
+  });
+
+  it("maps other non-playable origins to their playable analogue", () => {
+    const cases: Array<[string, string]> = [
+      ["origin_fallen_empire", "origin_default"],
+      ["origin_fallen_empire_hive", "origin_default"],
+      ["origin_enlightened", "origin_default"],
+      ["origin_separatists", "origin_default"],
+      ["origin_life_seeded_ai_only", "origin_life_seeded"],
+      ["origin_common_ground_npc", "origin_common_ground"],
+      ["origin_hegemon_npc", "origin_hegemon"],
+      ["origin_imperial_vassal_overlord", "origin_imperial_vassal"],
+    ];
+    for (const [runtime, expected] of cases) {
+      const design = extractDesignFromCountry(buildRoot({ country: gov(runtime) }), COUNTRY_ID, OPTS)!;
+      expect(design.origin).toBe(expected);
+    }
+  });
+
+  it("never emits an empty origin when the save's government block has none", () => {
+    const design = extractDesignFromCountry(buildRoot({ country: gov(undefined) }), COUNTRY_ID, OPTS)!;
+    expect(design.origin).not.toBe("");
+    expect(design.origin).toBe("origin_default");
+  });
+
+  it("infers origin_wilderness from gov_wilderness when the country carries no usable origin", () => {
+    const root = buildRoot({ country: gov(undefined, { type: "gov_wilderness" }) });
+    expect(extractDesignFromCountry(root, COUNTRY_ID, OPTS)!.origin).toBe("origin_wilderness");
+  });
+
+  it("infers origin_wilderness from the species' trait_wilderness", () => {
+    const root = buildRoot({
+      country: gov(""),
+      species: { traits: { trait: ["trait_organic", "trait_wilderness", "trait_rooted"] } },
+    });
+    expect(extractDesignFromCountry(root, COUNTRY_ID, OPTS)!.origin).toBe("origin_wilderness");
+  });
+
+  it("infers origin_wilderness from the wilderness_room country field", () => {
+    const root = buildRoot({ country: { ...gov(undefined), room: "wilderness_room" } });
+    expect(extractDesignFromCountry(root, COUNTRY_ID, OPTS)!.origin).toBe("origin_wilderness");
   });
 });
 
