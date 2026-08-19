@@ -4,12 +4,17 @@ import { supportsFsAccess } from "../lib/fsAccess";
 import { PdxName } from "./PdxName";
 
 /**
- * Empire Designs manager dialog (04-05). Upload → list → stage-removal flow
- * only: writing files back (splice + download/write-back) is 04-06, and
- * adding empires from a loaded save is 04-07. This component never imports
- * a parser module statically — every parse call goes through `session`'s
- * actions, which lazy-load `designsText.ts` themselves.
+ * Empire Designs manager dialog (04-05, extended 04-06 with the save/
+ * discard/replace confirmation flow and result banners). Adding empires from
+ * a loaded save is 04-07. This component never imports a parser module
+ * statically — every parse call goes through `session`'s actions, which
+ * lazy-load `designsText.ts` themselves.
  */
+
+/** Inline confirmation state — replaces the footer's action row (save,
+ *  discard) or sits under the upload section (replace), never a nested
+ *  modal-on-modal (app's no-nested-dialogs convention). */
+type Confirm = null | "save" | "discard" | { kind: "replace"; file: File | null; viaPicker: boolean };
 
 /** Strips a known id prefix, unslugs, and Title-Cases a raw Stellaris id
  *  (e.g. `auth_hive_mind` → "Hive Mind"). Mirrors `EmpirePanel.tsx`'s
@@ -81,12 +86,41 @@ export function EmpireManagerPanel({
 }) {
   const [showArchive, setShowArchive] = useState(false);
   const [filter, setFilter] = useState("");
+  const [confirm, setConfirm] = useState<Confirm>(null);
   const designsInputRef = useRef<HTMLInputElement>(null);
   const archiveInputRef = useRef<HTMLInputElement>(null);
 
+  // Closing the dialog is one of the two triggers that clears a lingering
+  // success banner (the other is staging a new change — see toggleRemove
+  // below). Staged adds/removes are NOT cleared here (Dialog Close Behavior).
+  const closeDialog = () => {
+    session.clearLastSave();
+    onClose();
+  };
+
   const openDesignsPicker = () => {
+    // Replacing the loaded designs file resets staged adds/removes
+    // (loadDesignsFile/loadDesignsViaPicker both clear them) — confirm first
+    // whenever anything is staged (UI-SPEC replace-file confirmation).
+    if (session.pendingCount > 0) {
+      setConfirm({ kind: "replace", file: null, viaPicker: supportsFsAccess() });
+      return;
+    }
     if (supportsFsAccess()) {
       void session.loadDesignsViaPicker();
+    } else {
+      designsInputRef.current?.click();
+    }
+  };
+
+  const onReplaceConfirm = async () => {
+    if (!confirm || confirm === "save" || confirm === "discard") return;
+    const target = confirm;
+    setConfirm(null);
+    if (target.file) {
+      await session.loadDesignsFile(target.file);
+    } else if (target.viaPicker) {
+      await session.loadDesignsViaPicker();
     } else {
       designsInputRef.current?.click();
     }
@@ -99,6 +133,31 @@ export function EmpireManagerPanel({
     if (f) void session.loadArchiveFile(f);
   };
 
+  const onToggleRemove = (index: number) => {
+    session.clearLastSave();
+    session.toggleRemove(index);
+  };
+
+  const onSaveClick = () => {
+    // Any removal or an in-place write is confirmed first (destructive-
+    // confirmation copy); an adds-only download-path save needs no prompt.
+    if (session.removed.size > 0 || session.canWriteInPlace) {
+      setConfirm("save");
+    } else {
+      void session.save();
+    }
+  };
+
+  const onDiscardClick = () => {
+    // Discarding staged removals is confirmed; adds-only discards are not
+    // (nothing external is affected).
+    if (session.removed.size > 0) {
+      setConfirm("discard");
+    } else {
+      session.discard();
+    }
+  };
+
   const entries = session.designs?.entries ?? [];
   const filteredIndexed = entries
     .map((entry, index) => ({ entry, index }))
@@ -106,12 +165,13 @@ export function EmpireManagerPanel({
 
   const addedCount = session.adds.length;
   const removedCount = session.removed.size;
+  const pendingLabel = `${session.pendingCount} pending change${session.pendingCount === 1 ? "" : "s"}`;
 
   return (
     <div
       className="empire-manager__backdrop"
       onPointerDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) closeDialog();
       }}
     >
       <div className="empire-manager" role="dialog" aria-label="Empire Designs">
@@ -122,7 +182,7 @@ export function EmpireManagerPanel({
               <span className="empire-manager__filename">{session.designs.filename}</span>
             )}
           </div>
-          <button type="button" className="empire-manager__close" onClick={onClose} aria-label="Close">
+          <button type="button" className="empire-manager__close" onClick={closeDialog} aria-label="Close">
             ✕
           </button>
         </header>
@@ -169,9 +229,28 @@ export function EmpireManagerPanel({
             onChange={(e) => onDesignsFile(e.target.files?.[0] ?? undefined)}
           />
 
-          {session.error && <div className="empire-panel__error">{session.error}</div>}
+          {session.error && <div className="empire-manager__error">{session.error}</div>}
           {!session.error && session.warning && (
             <div className="empire-manager__warning">{session.warning}</div>
+          )}
+
+          {/* Replace-file confirmation — sits directly under the upload
+              section, never a nested modal (UI-SPEC replace-file confirmation). */}
+          {confirm !== null && typeof confirm === "object" && confirm.kind === "replace" && (
+            <div className="empire-manager__confirm">
+              <div>
+                Loading a new file will clear your {session.pendingCount} staged change
+                {session.pendingCount === 1 ? "" : "s"} in this session. Continue?
+              </div>
+              <div className="empire-manager__confirm-actions">
+                <button type="button" className="empire-manager__discard" onClick={() => setConfirm(null)}>
+                  Keep current file
+                </button>
+                <button type="button" className="empire-manager__save" onClick={() => void onReplaceConfirm()}>
+                  Load anyway
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Section 2: optional archive upload, collapsed by default */}
@@ -259,7 +338,7 @@ export function EmpireManagerPanel({
                         <button
                           type="button"
                           className="empire-manager__row-action"
-                          onClick={() => session.toggleRemove(index)}
+                          onClick={() => onToggleRemove(index)}
                         >
                           {isRemoved ? "Undo" : "Remove"}
                         </button>
@@ -271,41 +350,102 @@ export function EmpireManagerPanel({
             </>
           )}
 
-          {/* Section 4: pending changes summary */}
-          {session.pendingCount > 0 && (
-            <div className="empire-manager__pending">
+          {/* Section 4: success banner (replaces the pending-changes summary
+              once a save has completed) or the pending-changes summary. */}
+          {session.lastSave ? (
+            <div className="empire-manager__success">
               <div>
-                {session.pendingCount} pending change{session.pendingCount === 1 ? "" : "s"}: {addedCount}{" "}
-                added, {removedCount} removed
+                Saved — {session.lastSave.added} added, {session.lastSave.removed} archived.
               </div>
-              {removedCount > 0 && (
+              {session.lastSave.backupName && (
                 <div className="empire-manager__pending-caption">
-                  Removed designs are archived, not deleted.
+                  Backup downloaded as{" "}
+                  <code className="empire-manager__filename">{session.lastSave.backupName}</code>.
                 </div>
               )}
             </div>
+          ) : (
+            session.pendingCount > 0 && (
+              <div className="empire-manager__pending">
+                <div>
+                  {session.pendingCount} pending change{session.pendingCount === 1 ? "" : "s"}: {addedCount}{" "}
+                  added, {removedCount} removed
+                </div>
+                {removedCount > 0 && (
+                  <div className="empire-manager__pending-caption">
+                    Removed designs are archived, not deleted.
+                  </div>
+                )}
+              </div>
+            )
           )}
         </div>
 
         <footer className="empire-manager__footer">
-          <span className="empire-manager__footer-count">
-            {session.pendingCount} pending change{session.pendingCount === 1 ? "" : "s"}
-          </span>
-          <div className="empire-manager__footer-actions">
-            <button type="button" className="empire-manager__discard" onClick={session.discard}>
-              Discard changes
-            </button>
-            <button
-              type="button"
-              className="empire-manager__save"
-              disabled={session.pendingCount === 0}
-              onClick={() => {
-                // TODO(04-06): wire splice + write-back/download save flow.
-              }}
-            >
-              Save changes
-            </button>
-          </div>
+          {confirm === "save" ? (
+            <div className="empire-manager__confirm">
+              <div>
+                Save changes: {addedCount} added, {removedCount} archived. Removed designs are never deleted —
+                find them in <code>user_empire_designs_archive.txt</code>.
+                {session.canWriteInPlace &&
+                  " A backup of the original file downloads automatically before saving."}
+              </div>
+              <div className="empire-manager__confirm-actions">
+                <button type="button" className="empire-manager__discard" onClick={() => setConfirm(null)}>
+                  Keep editing
+                </button>
+                <button
+                  type="button"
+                  className="empire-manager__save"
+                  onClick={() => {
+                    setConfirm(null);
+                    void session.save();
+                  }}
+                >
+                  Save & continue
+                </button>
+              </div>
+            </div>
+          ) : confirm === "discard" ? (
+            <div className="empire-manager__confirm">
+              <div>
+                Discard {session.pendingCount} staged change{session.pendingCount === 1 ? "" : "s"}?{" "}
+                Nothing on disk has been touched yet — this only clears what you've staged in this session.
+              </div>
+              <div className="empire-manager__confirm-actions">
+                <button type="button" className="empire-manager__discard" onClick={() => setConfirm(null)}>
+                  Keep editing
+                </button>
+                <button
+                  type="button"
+                  className="empire-manager__save"
+                  onClick={() => {
+                    setConfirm(null);
+                    session.discard();
+                  }}
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <span className="empire-manager__footer-count">{pendingLabel}</span>
+              <div className="empire-manager__footer-actions">
+                <button type="button" className="empire-manager__discard" onClick={onDiscardClick}>
+                  Discard changes
+                </button>
+                <button
+                  type="button"
+                  className="empire-manager__save"
+                  disabled={session.pendingCount === 0}
+                  onClick={onSaveClick}
+                >
+                  Save changes
+                </button>
+              </div>
+            </>
+          )}
         </footer>
       </div>
     </div>
