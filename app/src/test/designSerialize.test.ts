@@ -317,6 +317,59 @@ describe("serializeDesignEntry — injection guard", () => {
     const parsed = parser.parseText(serialized, { encoding: "utf8" }) as Record<string, unknown>;
     expect(Object.keys(parsed)).toHaveLength(1);
   });
+
+  /**
+   * Review CR-01: `gender` is emitted UNQUOTED, and both values are copied
+   * verbatim out of an untrusted uploaded `.sav` (a quoted save string may
+   * legally contain CR/LF, braces and `=`). Without a bare-token guard a
+   * crafted save splices whole fake top-level entries into the user's real
+   * designs file.
+   */
+  const GENDER_PAYLOAD = 'male\r\n}\r\n"Fake Entry"=\r\n{\r\n\tkey="pwned"\r\n}\r\n"x"={\ty=';
+
+  it("sanitizes an injected species.gender so exactly one span and one parsed key result", () => {
+    const entry: DesignEntry = { ...baseDesign(), species: { ...baseDesign().species, gender: GENDER_PAYLOAD } };
+    const serialized = serializeDesignEntry(entry);
+
+    // Everything structural is stripped; only identifier characters survive,
+    // collapsed into a single harmless bare token on one line.
+    expect(serialized).toContain("\t\tgender=maleFakeEntrykeypwnedxy\r\n");
+    expect(serialized).not.toContain('"Fake Entry"');
+    expect(findTopLevelSpans(`${serialized}\r\n`)).toHaveLength(1);
+    expect(Object.keys(parser.parseText(serialized, { encoding: "utf8" }) as Record<string, unknown>)).toHaveLength(1);
+  });
+
+  it("sanitizes an injected ruler.gender so exactly one span and one parsed key result", () => {
+    const entry: DesignEntry = { ...baseDesign(), ruler: { ...baseDesign().ruler, gender: GENDER_PAYLOAD } };
+    const serialized = serializeDesignEntry(entry);
+
+    expect(serialized).not.toContain('"Fake Entry"');
+    expect(findTopLevelSpans(`${serialized}\r\n`)).toHaveLength(1);
+    expect(Object.keys(parser.parseText(serialized, { encoding: "utf8" }) as Record<string, unknown>)).toHaveLength(1);
+  });
+
+  it("a gender that sanitizes away entirely falls back to not_set rather than emitting `gender=`", () => {
+    const entry: DesignEntry = { ...baseDesign(), species: { ...baseDesign().species, gender: '"" {}=' } };
+    const serialized = serializeDesignEntry(entry);
+    expect(serialized).toContain("\t\tgender=not_set\r\n");
+    expect(Object.keys(parser.parseText(serialized, { encoding: "utf8" }) as Record<string, unknown>)).toHaveLength(1);
+  });
+
+  it("keeps a legitimate (including mod-added) identifier gender intact", () => {
+    const entry: DesignEntry = { ...baseDesign(), species: { ...baseDesign().species, gender: "indeterminable" } };
+    expect(serializeDesignEntry(entry)).toContain("\t\tgender=indeterminable\r\n");
+  });
+
+  it("never emits a non-finite bare numeric for the ruler's sliders", () => {
+    const entry: DesignEntry = {
+      ...baseDesign(),
+      ruler: { ...baseDesign().ruler, texture: NaN, clothes: Infinity, attachment: -Infinity },
+    };
+    const serialized = serializeDesignEntry(entry);
+    expect(serialized).not.toMatch(/NaN|Infinity/);
+    expect(serialized).toContain("\t\ttexture=0\r\n");
+    expect(Object.keys(parser.parseText(serialized, { encoding: "utf8" }) as Record<string, unknown>)).toHaveLength(1);
+  });
 });
 
 describe("serializeDesignEntry — colour padding and truncation", () => {

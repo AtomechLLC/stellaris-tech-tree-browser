@@ -41,16 +41,57 @@ function indent(depth: number): string {
  * are NOT structural characters in this format and must pass through
  * untouched (they're part of the game's own name-rendering grammar).
  */
-function sanitize(value: string): string {
+export function sanitize(value: string): string {
   return value.split('"').join("").split("\r").join("").split("\n").join("");
+}
+
+/**
+ * The same guard applied to a top-level design KEY before it is used for
+ * D-09 collision resolution (`useDesignsSession.ts`). Collision resolution
+ * MUST run on the post-sanitization string, otherwise a save-derived name
+ * like `Alarian"Consciousness` passes the uniqueness check against an
+ * existing `AlarianConsciousness` entry and then serializes into a duplicate
+ * top-level key — the exact outcome D-09 exists to prevent.
+ */
+export const sanitizeDesignKey = sanitize;
+
+/**
+ * Injection guard for UNQUOTED (bare) values (T-04-08, review CR-01). A bare
+ * Clausewitz token is terminated by whitespace, so anything other than
+ * identifier characters can end the token and splice arbitrary structure into
+ * the user's real designs file. Verified against this project's jomini build:
+ * a quoted save string may legally contain CR/LF, `{`, `}`, `=` and quotes,
+ * and `species.gender` / `ruler.gender` are copied straight out of an
+ * untrusted uploaded `.sav` — so a crafted save could otherwise emit
+ * `gender=male\n}\ninjected=1` and add fake top-level entries.
+ */
+function sanitizeToken(value: string): string {
+  return value.replace(/[^A-Za-z0-9_]/g, "");
 }
 
 function quotedLine(depth: number, field: string, value: string, nl: string): string {
   return `${indent(depth)}${field}="${sanitize(value)}"${nl}`;
 }
 
+/** Low-level primitive. Callers MUST pass an already-validated token — use
+ *  `tokenLine` for any string that originated in a save file, `numberLine`
+ *  for numerics, `boolLine` for flags. */
 function bareLine(depth: number, field: string, value: string | number, nl: string): string {
   return `${indent(depth)}${field}=${value}${nl}`;
+}
+
+/** Bare enumeration-style field (only `gender` in this format). `fallback`
+ *  covers a value that sanitizes away to nothing — `field=` with an empty
+ *  right-hand side would itself be malformed. */
+function tokenLine(depth: number, field: string, value: string, nl: string, fallback: string): string {
+  const token = sanitizeToken(value);
+  return bareLine(depth, field, token.length > 0 ? token : fallback, nl);
+}
+
+/** Bare numeric field. A non-finite number would emit the bare tokens `NaN`
+ *  / `Infinity`, which the game's parser does not accept for these slots. */
+function numberLine(depth: number, field: string, value: number, nl: string): string {
+  return bareLine(depth, field, Number.isFinite(value) ? value : 0, nl);
 }
 
 function boolLine(depth: number, field: string, value: boolean, nl: string): string {
@@ -138,7 +179,7 @@ function serializeSpecies(
   out += serializeLocName(species.species_plural, "species_plural", d, nl);
   out += serializeLocName(species.species_adjective, "species_adjective", d, nl);
   out += quotedLine(d, "name_list", species.name_list, nl);
-  out += bareLine(d, "gender", species.gender, nl);
+  out += tokenLine(d, "gender", species.gender, nl, "not_set");
   for (const trait of species.traits) {
     out += quotedLine(d, "trait", trait, nl);
   }
@@ -161,13 +202,13 @@ function serializeRulerName(name: DesignRulerName, depth: number, nl: string): s
 function serializeRuler(ruler: DesignRuler, depth: number, nl: string): string {
   const d = depth + 1;
   let out = blockOpen(depth, "ruler", nl);
-  out += bareLine(d, "gender", ruler.gender, nl);
+  out += tokenLine(d, "gender", ruler.gender, nl, "not_set");
   out += serializeRulerName(ruler.name, d, nl);
   out += quotedLine(d, "portrait", ruler.portrait, nl);
-  out += bareLine(d, "texture", ruler.texture, nl);
-  out += bareLine(d, "evolution_mask", ruler.evolution_mask, nl);
-  out += bareLine(d, "attachment", ruler.attachment, nl);
-  out += bareLine(d, "clothes", ruler.clothes, nl);
+  out += numberLine(d, "texture", ruler.texture, nl);
+  out += numberLine(d, "evolution_mask", ruler.evolution_mask, nl);
+  out += numberLine(d, "attachment", ruler.attachment, nl);
+  out += numberLine(d, "clothes", ruler.clothes, nl);
   out += quotedLine(d, "trait", ruler.trait, nl);
   out += quotedLine(d, "leader_class", ruler.leader_class, nl);
   out += blockClose(depth, nl);

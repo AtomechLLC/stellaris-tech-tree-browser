@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { extractDesignFromCountry, readEthos } from "../lib/empire/designFromSav";
+import { serializeDesignEntry } from "../lib/empire/designSerialize";
+import { findTopLevelSpans } from "../lib/empire/designsText";
 
 /**
  * Fixture-object coverage of designFromSav.ts's extractDesignFromCountry
@@ -541,6 +543,29 @@ describe("extractDesignFromCountry — galaxy.design preference", () => {
       extractDesignFromCountry(rootWithDesigns([storedDesign({ spawn_enabled: "yes" })]), COUNTRY_ID, OPTS)!
         .spawn_enabled,
     ).toBe(true);
+  });
+});
+
+/**
+ * Review CR-01, extractor half: an untrusted `.sav` can carry CR/LF, braces
+ * and `=` inside any quoted string. The extractor copies `gender` through
+ * with only a `typeof` check (deliberately — mod-added genders must survive);
+ * the serializer's bare-token guard is what makes that safe. This test pins
+ * the end-to-end property: a hostile save cannot add a top-level entry.
+ */
+describe("extractDesignFromCountry — untrusted bare values reach the serializer safely", () => {
+  const PAYLOAD = 'male\r\n}\r\n"Fake Entry"=\r\n{\r\n\tkey="pwned"\r\n}\r\n"x"={\ty=';
+
+  it("a crafted species/ruler gender serializes to exactly one top-level entry", () => {
+    const root = buildRoot({ species: { gender: PAYLOAD }, leader: { gender: PAYLOAD } });
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.species.gender).toBe(PAYLOAD); // extractor copies verbatim
+    expect(design.ruler.gender).toBe(PAYLOAD);
+
+    const text = serializeDesignEntry(design);
+    expect(text).not.toContain('"Fake Entry"');
+    expect(text).not.toContain("\r\n}\r\n");
+    expect(findTopLevelSpans(`${text}\r\n`)).toHaveLength(1);
   });
 });
 
