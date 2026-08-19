@@ -122,22 +122,22 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Data Pipeline | 5/5 | Complete    | 2026-07-08 |
 | 2. Tech Tree Visualization | 3/3 | Complete    | 2026-07-08 |
 | 3. Navigation & Discovery | 0/TBD | Not started | - |
-| 4. Empire Manager | 0/8 | Planned | - |
+| 4. Empire Manager | 2/8 | In Progress|  |
 
 ### Phase 4: Empire Manager — upload user_empire_designs, add empires from a loaded .sav as playable custom empire designs, remove and archive entries, download updated files (File System Access write-back where supported)
 
 **Goal:** Players can manage their real Stellaris custom-empire designs from the app — upload the designs file, remove designs (always archived, never deleted), add any empire from a loaded `.sav` as a complete playable design, and get the updated files back (written in place where the browser allows it, always after a backup) — with every design they did not touch preserved byte-for-byte
 **Requirements**: D-01 … D-09 (CONTEXT.md decisions serve as this phase's requirement list — the phase was added post-roadmap by direct user request and maps to no `REQUIREMENTS.md` ID)
 **Depends on:** Phase 3
-**Plans:** 8 plans
+**Plans:** 2/8 plans executed
 **UI hint**: yes
 
 Plans:
 
 **Wave 1**
 
-- [ ] 04-01-PLAN.md — Designs-file text engine: shared `DesignEntry`/`LocName` contract, UTF-8 decode, top-level span scanner, jomini reconciliation, byte-preserving splice (D-08, D-09)
-- [ ] 04-02-PLAN.md — Browser file I/O: one shared `downloadBlob`, File System Access picker/permission wrapper, backup-before-in-place-write (D-01, D-02)
+- [x] 04-01-PLAN.md — Designs-file text engine: shared `DesignEntry`/`LocName` contract, UTF-8 decode, top-level span scanner, jomini reconciliation, byte-preserving splice (D-08, D-09)
+- [x] 04-02-PLAN.md — Browser file I/O: one shared `downloadBlob`, File System Access picker/permission wrapper, backup-before-in-place-write (D-01, D-02)
 
 **Wave 2** *(blocked on Wave 1)*
 
