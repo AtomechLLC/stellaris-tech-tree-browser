@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Data Pipeline** - Parse all Stellaris 4.5.0 tech data into an accurate, versioned, one-command-regenerable JSON snapshot (completed 2026-07-08)
 - [x] **Phase 2: Tech Tree Visualization** - Render the full tech tree as a true DAG with icons, readable layout, and smooth pan/zoom (completed 2026-07-08)
 - [ ] **Phase 3: Navigation & Discovery** - Find any tech and understand how to reach it — search, filters, prerequisite chains, detail panel, working links
+- [ ] **Phase 4: Empire Manager** - Manage the real `user_empire_designs` file from the app: upload, remove-and-archive, add empires from a loaded `.sav`, write the updated files back
 
 ## Phase Details
 
@@ -114,10 +115,44 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3
+Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Pipeline | 5/5 | Complete    | 2026-07-08 |
 | 2. Tech Tree Visualization | 3/3 | Complete    | 2026-07-08 |
 | 3. Navigation & Discovery | 0/TBD | Not started | - |
+| 4. Empire Manager | 0/8 | Planned | - |
+
+### Phase 4: Empire Manager — upload user_empire_designs, add empires from a loaded .sav as playable custom empire designs, remove and archive entries, download updated files (File System Access write-back where supported)
+
+**Goal:** Players can manage their real Stellaris custom-empire designs from the app — upload the designs file, remove designs (always archived, never deleted), add any empire from a loaded `.sav` as a complete playable design, and get the updated files back (written in place where the browser allows it, always after a backup) — with every design they did not touch preserved byte-for-byte
+**Requirements**: D-01 … D-09 (CONTEXT.md decisions serve as this phase's requirement list — the phase was added post-roadmap by direct user request and maps to no `REQUIREMENTS.md` ID)
+**Depends on:** Phase 3
+**Plans:** 8 plans
+**UI hint**: yes
+
+Plans:
+
+**Wave 1**
+
+- [ ] 04-01-PLAN.md — Designs-file text engine: shared `DesignEntry`/`LocName` contract, UTF-8 decode, top-level span scanner, jomini reconciliation, byte-preserving splice (D-08, D-09)
+- [ ] 04-02-PLAN.md — Browser file I/O: one shared `downloadBlob`, File System Access picker/permission wrapper, backup-before-in-place-write (D-01, D-02)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 04-03-PLAN.md — Hand-rolled tab-indented Clausewitz serializer for one design entry, with golden-text + jomini round-trip + injection tests (D-07)
+- [ ] 04-04-PLAN.md — Save→design extraction: `extractDesignFromCountry` (species/ruler/flag/planet-class resolution) wired onto every `SavedEmpire` (D-06, D-07)
+- [ ] 04-05-PLAN.md — Manager dialog: session state, upload (+ optional archive upload), filterable designs list, remove/undo staging, entry-point button and CSS (D-01, D-03, D-04)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 04-06-PLAN.md — Save outcome flow: designs + archive output construction, confirmations, downloads, in-place write with pre-write backup, result banners (D-02, D-04, D-05, D-08)
+
+**Wave 4** *(blocked on Wave 3)*
+
+- [ ] 04-07-PLAN.md — Add empires from a save: "Add to my empires" action, duplicate-name disambiguation, staged-add rows (D-06, D-07, D-09)
+
+**Wave 5** *(blocked on Wave 4)*
+
+- [ ] 04-08-PLAN.md — Verification: real-file/real-save integration test plus human checkpoints for the browser flow, the in-place write + backup, and loading the produced file in Stellaris
