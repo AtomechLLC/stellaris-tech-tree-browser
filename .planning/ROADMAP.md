@@ -122,14 +122,14 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Data Pipeline | 5/5 | Complete    | 2026-07-08 |
 | 2. Tech Tree Visualization | 3/3 | Complete    | 2026-07-08 |
 | 3. Navigation & Discovery | 0/TBD | Not started | - |
-| 4. Empire Manager | 6/8 | In Progress|  |
+| 4. Empire Manager | 7/8 | In Progress|  |
 
 ### Phase 4: Empire Manager — upload user_empire_designs, add empires from a loaded .sav as playable custom empire designs, remove and archive entries, download updated files (File System Access write-back where supported)
 
 **Goal:** Players can manage their real Stellaris custom-empire designs from the app — upload the designs file, remove designs (always archived, never deleted), add any empire from a loaded `.sav` as a complete playable design, and get the updated files back (written in place where the browser allows it, always after a backup) — with every design they did not touch preserved byte-for-byte
 **Requirements**: D-01 … D-09 (CONTEXT.md decisions serve as this phase's requirement list — the phase was added post-roadmap by direct user request and maps to no `REQUIREMENTS.md` ID)
 **Depends on:** Phase 3
-**Plans:** 6/8 plans executed
+**Plans:** 7/8 plans executed
 **UI hint**: yes
 
 Plans:
@@ -151,7 +151,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3)*
 
-- [ ] 04-07-PLAN.md — Add empires from a save: "Add to my empires" action, duplicate-name disambiguation, staged-add rows (D-06, D-07, D-09)
+- [x] 04-07-PLAN.md — Add empires from a save: "Add to my empires" action, duplicate-name disambiguation, staged-add rows (D-06, D-07, D-09)
 
 **Wave 5** *(blocked on Wave 4)*
 
