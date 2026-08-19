@@ -2339,3 +2339,335 @@
     max-height: 55vh;
   }
 }
+
+/* ══ Empire Manager dialog (04-05) ══════════════════════════════════════════
+   Upload -> archive -> filterable designs list -> stage/undo remove -> pending
+   summary. Structurally mirrors .find-overlay/.find-box (centered backdrop
+   dialog) with the header/footer chrome of .whats-new/.empire-settings. */
+.empire-manager__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.empire-manager {
+  width: min(720px, 92vw);
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  background: var(--tree-panel);
+  border: 1px solid var(--tree-border);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  font-family: var(--font-sans);
+  color: var(--tree-text);
+}
+
+.empire-manager__header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--tree-border);
+}
+.empire-manager__header-titles {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+.empire-manager__title {
+  font-size: var(--font-size-heading);
+  font-weight: var(--font-weight-heading);
+}
+/* Also reused (unchanged) inside the compact "loaded file" row. */
+.empire-manager__filename {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--tree-text) 70%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Same 26x26px bordered-square treatment as .empire-settings__close. */
+.empire-manager__close {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--tree-border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--tree-text);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.empire-manager__close:hover {
+  background: var(--tree-border);
+}
+
+.empire-manager__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* Compact "loaded file" row (primary upload once loaded; archive upload once
+   loaded, minus the badge). */
+.empire-manager__loaded-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--tree-border);
+  border-radius: 8px;
+  background: var(--tree-bg);
+}
+.empire-manager__change-file {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--tree-text);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.empire-manager__change-file:hover {
+  color: var(--color-select);
+}
+.empire-manager__change-file:disabled {
+  opacity: 0.5;
+  cursor: default;
+  text-decoration: none;
+}
+
+/* File-mode badge (also the "Added from save" pending-add badge, once 04-07
+   renders it) — pill built like .empire-chip but with the 4px-scale-compliant
+   4px/8px padding UI-SPEC mandates for new components in this phase. */
+.empire-manager__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--tree-border);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--tree-text) 75%, transparent);
+  white-space: nowrap;
+}
+.empire-manager__badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tree-border);
+}
+.empire-manager__badge[data-variant="good"]::before {
+  background: var(--color-good);
+}
+.empire-manager__badge[data-variant="neutral"]::before {
+  background: var(--tree-border);
+}
+.empire-manager__badge[data-variant="added"]::before {
+  background: var(--color-select);
+}
+
+/* Optional archive upload, collapsed behind a plain text toggle by default. */
+.empire-manager__archive {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.empire-manager__archive-toggle {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, var(--tree-text) 70%, transparent);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.empire-manager__archive-toggle:hover {
+  color: var(--color-select);
+}
+/* Reduced-padding variant of .empire-drop for the smaller archive zone. */
+.empire-drop--small {
+  padding: 8px 10px;
+}
+
+.empire-manager__empty {
+  font-size: 12px;
+  opacity: 0.6;
+  padding: var(--space-sm) 0;
+}
+.empire-manager__warning {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--tree-text) 70%, transparent);
+}
+
+/* Filter input: reuses .find-box__input, scoped focus-border override only
+   inside the manager dialog so .find-overlay's own input is untouched. */
+.empire-manager .find-box__input:focus {
+  border-bottom-color: var(--color-select);
+}
+
+.empire-manager__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  max-height: 40vh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+/* Rows reuse .find-box__result's shipped flex/padding/border-radius layout;
+   this rule only adds the manager-specific hover tint. */
+.empire-manager__row:hover {
+  background: var(--tree-border);
+}
+.empire-manager__row-icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+}
+.empire-manager__row-icon img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+.empire-manager__row-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.empire-manager__row-name {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.empire-manager__row-meta {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--tree-text) 70%, transparent);
+}
+.empire-manager__row-action {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border: 1px solid var(--tree-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--tree-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+/* Resting state is --tree-border only; hover/focus is the sole --color-danger
+   moment (subtle warning-on-hover, not alarming at rest). */
+.empire-manager__row-action:hover,
+.empire-manager__row-action:focus-visible {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+.empire-manager__row[data-removed] .empire-manager__row-name {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+.empire-manager__row[data-removed] .empire-manager__row-action {
+  border-color: var(--tree-border);
+  color: var(--color-select);
+}
+.empire-manager__row[data-removed] .empire-manager__row-action:hover {
+  border-color: var(--color-select);
+}
+
+.empire-manager__pending {
+  background: var(--tree-bg);
+  border-radius: 6px;
+  padding: var(--space-sm) var(--space-md);
+  font-size: 14px;
+}
+.empire-manager__pending-caption {
+  font-size: 12px;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+.empire-manager__footer {
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+  border-top: 1px solid var(--tree-border);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--tree-panel);
+}
+.empire-manager__footer-count {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.empire-manager__footer-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.empire-manager__discard {
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  background: transparent;
+  color: var(--tree-text);
+  font: inherit;
+  font-size: var(--font-size-label);
+  cursor: pointer;
+}
+.empire-manager__discard:hover {
+  color: var(--color-select);
+}
+/* Copies .overlay__retry-button's color contract exactly — the app's one
+   filled-primary-button precedent. */
+.empire-manager__save {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-accent);
+  color: var(--color-surface);
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-heading);
+  cursor: pointer;
+}
+.empire-manager__save:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Touch/narrow: near-fullscreen bottom sheet, same convention as
+   .empire-settings/.tech-detail — do not invent a different mobile pattern. */
+@media (max-width: 640px) {
+  .empire-manager {
+    position: fixed;
+    inset: 8px;
+    width: auto;
+    max-height: 92vh;
+  }
+}
