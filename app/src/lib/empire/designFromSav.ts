@@ -179,11 +179,53 @@ function resolveSpecies(root: Record<string, any>, ref: number): Record<string, 
   return isObj(entry) ? entry : null;
 }
 
+/**
+ * The one habitability trait whose id does NOT end in `_preference`
+ * (`common/traits/01_species_traits_habitability.txt:468`). It carries
+ * `species_potential_add = { always = no }` and `initial = no`, so it can only
+ * ever be acquired at runtime.
+ */
+const RUNTIME_TERRAFORM_TRAIT = "trait_pc_gaia_preference_terraforming";
+
+/**
+ * Drop traits a save's RUNTIME species carries but an empire DESIGN may never
+ * declare — habitability preference traits.
+ *
+ * This is the field that made a synthesized entry fail the empire designer's
+ * validation ("this design contains errors"). Evidence, all measured:
+ *  - `common/traits/01_species_traits_habitability.txt` defines 49 traits; 48
+ *    end in `_preference` and NONE of the 48 has a `cost` field, so none is a
+ *    selectable designer pick (every legal pick is costed). No trait defined
+ *    anywhere else in `common/traits/` ends in `_preference`.
+ *  - The user's real `user_empire_designs_v3.4.txt` (181 game-written entries,
+ *    135 distinct species traits) contains the substring `preference` ZERO
+ *    times.
+ *  - `sample.sav`'s stored `galaxy.design` blocks: 0 of 64 carry a
+ *    `_preference` trait, while 324 `species_db` entries in the same save do.
+ *
+ * So the game writes a preference trait on the runtime species but never on a
+ * design: a design expresses habitability solely through `planet_class`, and
+ * the game re-derives the trait when the design is instantiated. Copying
+ * `species_db` traits verbatim leaked exactly one illegal trait into every
+ * synthesized entry (e.g. `trait_pc_ocean_preference` alongside
+ * `planet_class="pc_ocean"`), which also pushed the entry over the designer's
+ * trait pick budget.
+ *
+ * Deliberately narrow: traits merely ABSENT from the user's file are not
+ * evidence of illegality, so cost-bearing runtime traits (ascension/cyborg/
+ * robot picks) are left alone — a wrong strip corrupts a legal design.
+ */
+export function designLegalTraits(traits: readonly string[]): string[] {
+  return traits.filter((t) => !t.endsWith("_preference") && t !== RUNTIME_TERRAFORM_TRAIT);
+}
+
 function buildSpecies(species: Record<string, any>): DesignSpecies {
   const traitsBlock = species.traits;
-  const traits = isObj(traitsBlock)
-    ? toArr((traitsBlock as Record<string, any>).trait).filter((t): t is string => typeof t === "string")
-    : [];
+  const traits = designLegalTraits(
+    isObj(traitsBlock)
+      ? toArr((traitsBlock as Record<string, any>).trait).filter((t): t is string => typeof t === "string")
+      : [],
+  );
   return {
     class: typeof species.class === "string" ? species.class : "",
     portrait: typeof species.portrait === "string" ? species.portrait : "",
@@ -429,7 +471,10 @@ function speciesFromDesignBlock(block: Record<string, any>): DesignSpecies {
     species_adjective: locNameOrEmpty(block.species_adjective),
     name_list: typeof block.name_list === "string" ? block.name_list : "",
     gender: typeof block.gender === "string" ? block.gender : "not_set",
-    traits: toArr(block.trait).filter((t): t is string => typeof t === "string"),
+    // A no-op for game-written blocks (measured: 0 of 64 stored designs in
+    // sample.sav carry one) — applied anyway so a hand-edited or modded save
+    // cannot reintroduce a designer-illegal trait through this path.
+    traits: designLegalTraits(toArr(block.trait).filter((t): t is string => typeof t === "string")),
   };
 }
 

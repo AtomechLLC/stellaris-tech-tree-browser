@@ -184,6 +184,10 @@ describe.skipIf(!(designsAvailable && savAvailable))("real-data integration: des
       for (const d of designs) {
         expect(d.origin).not.toBe("");
         expect(runtimeOnly.has(d.origin)).toBe(false);
+        // No habitability-preference trait may reach a design — the empire
+        // designer rejects the entry. The user's own 181-entry designs file
+        // contains the substring `preference` zero times.
+        expect(d.species.traits.filter((t) => t.endsWith("_preference"))).toEqual([]);
         if (gestaltAuthorities.has(d.authority)) {
           expect(d.ethics).toEqual(["ethic_gestalt_consciousness"]);
         } else {

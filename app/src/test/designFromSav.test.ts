@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractDesignFromCountry, readEthos } from "../lib/empire/designFromSav";
+import { extractDesignFromCountry, readEthos, designLegalTraits } from "../lib/empire/designFromSav";
 import { serializeDesignEntry } from "../lib/empire/designSerialize";
 import { findTopLevelSpans } from "../lib/empire/designsText";
 
@@ -126,6 +126,115 @@ describe("extractDesignFromCountry — species mapping", () => {
     const root = buildRoot({ species: { traits: {} } });
     const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
     expect(design.species.traits).toEqual([]);
+  });
+});
+
+/**
+ * The empire designer rejects a design whose species declares a habitability
+ * preference trait — a design expresses habitability through `planet_class`
+ * alone and the game re-derives the trait on instantiation. Measured against
+ * the game files and real data:
+ *  - all 48 `*_preference` traits live in
+ *    `common/traits/01_species_traits_habitability.txt` and NONE has a `cost`
+ *    (so none is a selectable pick); the 49th, `trait_pc_gaia_preference_
+ *    terraforming`, has `species_potential_add = { always = no }`;
+ *  - the substring `preference` appears 0 times in the user's 181 real
+ *    game-written design entries;
+ *  - 0 of 64 stored `galaxy.design` blocks in sample.sav carry one, while 324
+ *    runtime `species_db` entries in that same save do.
+ * This was the ONLY invalid field in the synthesized "Nexan Bloom" entry.
+ */
+describe("extractDesignFromCountry — runtime-only habitability traits are stripped", () => {
+  it("drops trait_pc_*_preference from a synthesized species", () => {
+    const root = buildRoot({
+      species: {
+        traits: {
+          trait: ["trait_organic", "trait_aquatic", "trait_pc_ocean_preference", "trait_agrarian"],
+        },
+      },
+    });
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.species.traits).toEqual(["trait_organic", "trait_aquatic", "trait_agrarian"]);
+  });
+
+  it("drops every habitability-preference naming variant the save can carry", () => {
+    const root = buildRoot({
+      species: {
+        traits: {
+          trait: [
+            "trait_organic",
+            "trait_pc_ocean_preference",
+            "trait_pc_ark_preference",
+            "trait_pc_shattered_ring_habitable_preference",
+            "trait_wet_planet_preference",
+            "trait_cold_planet_preference",
+            "trait_machine_habitat_planet_preference",
+            "trait_machine_pc_ringworld_habitable_preference",
+            "trait_auto_pc_gaia_preference",
+            "trait_pc_gaia_preference_terraforming",
+            "trait_intelligent",
+          ],
+        },
+      },
+    });
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.species.traits).toEqual(["trait_organic", "trait_intelligent"]);
+    expect(design.species.traits.some((t) => t.includes("preference"))).toBe(false);
+  });
+
+  it("keeps the cost-bearing runtime traits that ARE legal designer picks", () => {
+    // Every one of these appears in the user's real designs file or in a
+    // stored galaxy.design block — absence from a given file is not evidence
+    // of illegality, so the filter must not touch them.
+    const legal = [
+      "trait_organic",
+      "trait_hive_mind",
+      "trait_wilderness",
+      "trait_rooted",
+      "trait_repugnant",
+      "trait_aquatic",
+      "trait_agrarian",
+      "trait_quick_learners",
+      "trait_machine_unit",
+      "trait_auto_mod_robotic",
+      "trait_void_dweller_2",
+      "trait_tankbound",
+      "trait_cyborg_trading_algorithms",
+      "trait_robot_bulky",
+    ];
+    const root = buildRoot({ species: { traits: { trait: legal } } });
+    expect(extractDesignFromCountry(root, COUNTRY_ID, OPTS)!.species.traits).toEqual(legal);
+  });
+
+  it("designLegalTraits is a pure, order-preserving filter", () => {
+    expect(designLegalTraits([])).toEqual([]);
+    expect(designLegalTraits(["trait_pc_ocean_preference"])).toEqual([]);
+    expect(designLegalTraits(["a_preference", "b", "c_preference", "d"])).toEqual(["b", "d"]);
+  });
+
+  it("strips the trait from a stored galaxy.design block too (hand-edited/modded saves)", () => {
+    const root = {
+      ...buildRoot(),
+      galaxy: {
+        design: [
+          {
+            key: "Test Empire",
+            species: {
+              class: "HUM",
+              portrait: "hum01",
+              species_name: { key: "SPEC_Human" },
+              name_list: "HUM1",
+              trait: ["trait_organic", "trait_pc_ocean_preference"],
+            },
+            authority: "auth_democratic",
+            origin: "origin_shattered_ring",
+          },
+        ],
+      },
+    };
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.origin).toBe("origin_shattered_ring"); // confirms the stored block was used
+    expect(design.species.traits).toEqual(["trait_organic"]);
   });
 });
 
