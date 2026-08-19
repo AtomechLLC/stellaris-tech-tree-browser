@@ -13,12 +13,17 @@
 import { unzipSync } from "fflate";
 import { Jomini } from "jomini";
 import type { RawEmpire } from "./gates";
+import { extractDesignFromCountry } from "./designFromSav";
+import type { DesignEntry } from "./designSchema";
 
 export interface SavedEmpire extends RawEmpire {
   id: number;
   name: string;
   playerName: string | null;
   researchedCount: number;
+  /** Full custom-empire-design payload for the Empire Manager (D-07); null
+   *  when the country is too degenerate to describe. */
+  design: DesignEntry | null;
 }
 
 /** One star system on the galaxy minimap. Coordinates are the save's raw
@@ -178,10 +183,12 @@ export async function loadEmpiresFromSav(savBytes: Uint8Array): Promise<SavLoadR
       const literal = isObj(c.name) && (c.name.literal === "yes" || c.name.literal === true);
       const rawKey = isObj(c.name) ? (typeof c.name.key === "string" ? c.name.key : null) : null;
       const playerName = playerByCountry.get(idNum) ?? null;
+      const displayName = literal && rawKey ? rawKey : playerName ?? rawKey ?? `country_${key}`;
+      const design = extractDesignFromCountry(root, idNum, { displayName, ethics });
 
       empires.push({
         id: idNum,
-        name: literal && rawKey ? rawKey : playerName ?? rawKey ?? `country_${key}`,
+        name: displayName,
         playerName,
         authority: typeof gov.authority === "string" ? gov.authority : null,
         ethics,
@@ -190,6 +197,7 @@ export async function loadEmpiresFromSav(savBytes: Uint8Array): Promise<SavLoadR
         perks,
         researched,
         researchedCount: researched.length,
+        design,
       });
     }
   }
