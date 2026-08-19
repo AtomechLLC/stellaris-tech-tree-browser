@@ -50,6 +50,10 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
   const [result, setResult] = useState<{ counts: Record<Bucket, number>; falseNever: number; total: number } | null>(
     null,
   );
+  // "Add to my empires" (04-07): the duplicate-name notice shown directly
+  // under the panel action when staging resolved a collision. Cleared on
+  // undo and whenever the selected empire changes.
+  const [addCollision, setAddCollision] = useState<{ from: string; to: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Gates ship in the snapshot (tech.json `gate` field) — build the classifier
@@ -93,6 +97,14 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
       total: r.counts.researched + r.counts.available + r.counts.reachable + r.counts.never,
     });
   }, [techLite, selected, onBuckets]);
+
+  // The duplicate-name notice is specific to whichever empire is selected —
+  // never carry it over to a different empire's "Add to my empires" state.
+  useEffect(() => {
+    setAddCollision(null);
+  }, [selectedId]);
+
+  const stagedAdd = selected ? (designsSession.adds.find((a) => a.sourceEmpireId === selected.id) ?? null) : null;
 
   const onFile = (f: File | undefined) => {
     if (f) f.arrayBuffer().then((b) => handleBytes(new Uint8Array(b)));
@@ -182,6 +194,43 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
               {selected.origin ? chip(selected.origin.replace("origin_", "")) : null}
               {selected.ethics.map((x) => chip(x.replace("ethic_", "")))}
             </div>
+          )}
+
+          {/* "Add to my empires" (D-06/D-07/D-09): player and AI empires are
+              both addable — selected truthiness is the only gate, per the
+              UI-SPEC. */}
+          {selected && (
+            <>
+              <button
+                type="button"
+                className="empire-panel__settings-btn"
+                aria-pressed={stagedAdd !== null}
+                onClick={async () => {
+                  if (stagedAdd) {
+                    designsSession.undoAdd(stagedAdd.id);
+                    setAddCollision(null);
+                    return;
+                  }
+                  const outcome = await designsSession.stageAddFromEmpire(selected);
+                  if (outcome.needsFile) {
+                    // The dialog opening IS the explanation — no inert/greyed
+                    // button state, no tooltip, nothing staged (UI-SPEC).
+                    setShowManager(true);
+                    return;
+                  }
+                  setAddCollision(
+                    outcome.renamedFrom ? { from: outcome.renamedFrom, to: outcome.rawName ?? "" } : null,
+                  );
+                }}
+              >
+                {stagedAdd ? "Added ✓ — undo" : "Add to my empires"}
+              </button>
+              {stagedAdd && addCollision && (
+                <div className="empire-panel__add-note">
+                  '{addCollision.from}' already exists — will be saved as '{addCollision.to}'.
+                </div>
+              )}
+            </>
           )}
 
           {/* Galaxy minimap — where the selected empire's territory sits.
