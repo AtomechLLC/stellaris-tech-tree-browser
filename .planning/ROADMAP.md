@@ -122,14 +122,14 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Data Pipeline | 5/5 | Complete    | 2026-07-08 |
 | 2. Tech Tree Visualization | 3/3 | Complete    | 2026-07-08 |
 | 3. Navigation & Discovery | 0/TBD | Not started | - |
-| 4. Empire Manager | 2/8 | In Progress|  |
+| 4. Empire Manager | 5/8 | In Progress|  |
 
 ### Phase 4: Empire Manager — upload user_empire_designs, add empires from a loaded .sav as playable custom empire designs, remove and archive entries, download updated files (File System Access write-back where supported)
 
 **Goal:** Players can manage their real Stellaris custom-empire designs from the app — upload the designs file, remove designs (always archived, never deleted), add any empire from a loaded `.sav` as a complete playable design, and get the updated files back (written in place where the browser allows it, always after a backup) — with every design they did not touch preserved byte-for-byte
 **Requirements**: D-01 … D-09 (CONTEXT.md decisions serve as this phase's requirement list — the phase was added post-roadmap by direct user request and maps to no `REQUIREMENTS.md` ID)
 **Depends on:** Phase 3
-**Plans:** 2/8 plans executed
+**Plans:** 5/8 plans executed
 **UI hint**: yes
 
 Plans:
@@ -141,9 +141,9 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 04-03-PLAN.md — Hand-rolled tab-indented Clausewitz serializer for one design entry, with golden-text + jomini round-trip + injection tests (D-07)
-- [ ] 04-04-PLAN.md — Save→design extraction: `extractDesignFromCountry` (species/ruler/flag/planet-class resolution) wired onto every `SavedEmpire` (D-06, D-07)
-- [ ] 04-05-PLAN.md — Manager dialog: session state, upload (+ optional archive upload), filterable designs list, remove/undo staging, entry-point button and CSS (D-01, D-03, D-04)
+- [x] 04-03-PLAN.md — Hand-rolled tab-indented Clausewitz serializer for one design entry, with golden-text + jomini round-trip + injection tests (D-07)
+- [x] 04-04-PLAN.md — Save→design extraction: `extractDesignFromCountry` (species/ruler/flag/planet-class resolution) wired onto every `SavedEmpire` (D-06, D-07)
+- [x] 04-05-PLAN.md — Manager dialog: session state, upload (+ optional archive upload), filterable designs list, remove/undo staging, entry-point button and CSS (D-01, D-03, D-04)
 
 **Wave 3** *(blocked on Wave 2)*
 
