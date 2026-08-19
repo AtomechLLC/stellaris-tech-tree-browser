@@ -284,7 +284,15 @@ export function useDesignsSession(): DesignsSession {
       }
 
       const designPayload: DesignEntry = empire.design;
-      const desiredKey = designPayload.key;
+      // D-09 collision resolution MUST run on the SANITIZED key, because that
+      // is what `serializeDesignEntry` actually writes as the top-level key.
+      // Resolving the raw key would let a save-derived name like
+      // `Alarian"Consciousness` pass the uniqueness check against an existing
+      // `AlarianConsciousness` entry and then serialize into a duplicate — the
+      // exact outcome D-09 exists to prevent — while also desynchronizing
+      // `rawName`/`takenNames` from the bytes on disk (review WR-02).
+      const { sanitizeDesignKey, serializeDesignEntry } = await import("./designSerialize");
+      const desiredKey = sanitizeDesignKey(designPayload.key);
 
       // Resolve against everything currently "in" the file EXCEPT this same
       // empire's own prior staged add (if any) — re-staging the same source
@@ -298,7 +306,6 @@ export function useDesignsSession(): DesignsSession {
       const resolvedName = resolveStagedName(desiredKey, takenForResolution, uniqueDesignName);
       const renamedFrom = resolvedName !== desiredKey ? desiredKey : null;
 
-      const { serializeDesignEntry } = await import("./designSerialize");
       const text = serializeDesignEntry({ ...designPayload, key: resolvedName }, designs.separator);
 
       const id =
@@ -343,65 +350,109 @@ export function useDesignsSession(): DesignsSession {
     if (adds.length === 0 && removed.size === 0) return; // no-op: nothing staged
     if (!designs || !designsOriginalBytes) return; // nothing loaded to save
 
-    const { spliceDesignsFile, encodeDesignsText, parseDesignsFile } = await import("./designsText");
-    const { designsText, archiveText, addedCount, removedCount } = buildDesignsOutputs(
-      designs,
-      archive,
-      removed,
-      adds,
-      spliceDesignsFile,
-    );
-    const designsBytes = encodeDesignsText(designsText);
+    // Everything below is wrapped: a chunk-load failure, a download failure or
+    // a post-write re-parse failure must surface as a user-visible error, never
+    // as a swallowed unhandled rejection (callers use `void save()`) and never
+    // as a silently stale baseline that reverts this save on the next one
+    // (review WR-01).
+    let wroteDesigns = false;
+    try {
+      const { spliceDesignsFile, encodeDesignsText, parseDesignsFile } = await import("./designsText");
+      const { designsText, archiveText, addedCount, removedCount } = buildDesignsOutputs(
+        designs,
+        archive,
+        removed,
+        adds,
+        spliceDesignsFile,
+      );
+      const designsBytes = encodeDesignsText(designsText);
 
-    let backupName: string | null = null;
-    let wroteInPlace = false;
-    if (handle) {
-      // Permission is not guaranteed to persist between load and save — re-check.
-      let permitted = false;
-      try {
-        permitted = await ensureReadWritePermission(handle);
-      } catch {
-        permitted = false;
-      }
-      if (permitted) {
+      let backupName: string | null = null;
+      let wroteInPlace = false;
+      if (handle) {
+        // Permission is not guaranteed to persist between load and save — re-check.
+        let permitted = false;
         try {
-          const result = await saveInPlaceWithBackup(handle, designsOriginalBytes, designsBytes, designs.filename);
-          backupName = result.backupName;
-          wroteInPlace = true;
+          permitted = await ensureReadWritePermission(handle);
         } catch {
+          permitted = false;
+        }
+        if (permitted) {
+          try {
+            const result = await saveInPlaceWithBackup(handle, designsOriginalBytes, designsBytes, designs.filename);
+            backupName = result.backupName;
+            wroteInPlace = true;
+          } catch {
+            setError(
+              "Couldn't save directly — permission was denied. Downloading your files instead; replace the originals manually.",
+            );
+          }
+        } else {
           setError(
             "Couldn't save directly — permission was denied. Downloading your files instead; replace the originals manually.",
           );
         }
-      } else {
+      }
+      if (!wroteInPlace) {
+        // Always the SAME filename the user uploaded — never reconstructed or
+        // version-suffixed (D-03).
+        downloadBlob(designsBytes, designs.filename);
+      }
+      wroteDesigns = true;
+
+      // The archive is always a download, even in the in-place path — D-02
+      // scopes File System Access write-back to the primary designs file only.
+      const archiveFilename = archive?.filename ?? DEFAULT_ARCHIVE_FILENAME;
+      let archiveBytes: Uint8Array | null = null;
+      if (archiveText !== null) {
+        archiveBytes = encodeDesignsText(archiveText);
+        downloadBlob(archiveBytes, archiveFilename);
+      }
+
+      // Re-baseline: the emitted bytes become the new "original" bytes, and we
+      // re-parse them so stored spans reflect the new file — otherwise a
+      // second save in the same session would splice from stale offsets.
+      const reparsed = await parseDesignsFile(designsBytes, designs.filename);
+      setDesigns(reparsed);
+      setDesignsOriginalBytes(designsBytes);
+
+      // The ARCHIVE needs the same treatment (review CR-02). Without it, a
+      // second removal in the same session builds archive #2 from the stale
+      // uploaded archive, so the first save's archived entry is missing from
+      // the file the user is told to keep — while that design has already been
+      // removed from the designs file. That is silent data loss through the
+      // sanctioned workflow, and it breaks D-05 ("a remove always produces the
+      // corresponding archive entry").
+      if (archiveBytes !== null) {
+        setArchive(await parseDesignsFile(archiveBytes, archiveFilename));
+      }
+
+      // Only now is it safe to drop the staged changes — they are on disk AND
+      // both baselines match what was written.
+      setLastSave({ added: addedCount, removed: removedCount, backupName });
+      setRemoved(new Set());
+      setAdds([]);
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      if (wroteDesigns) {
+        // The new file is already on disk but we could not re-establish a
+        // trustworthy baseline. Keeping the old spans would make the NEXT save
+        // splice from stale offsets and silently revert this one, so drop the
+        // loaded file entirely and make the user re-open it.
+        setDesigns(null);
+        setDesignsOriginalBytes(null);
+        setHandle(null);
+        setCanWriteInPlace(false);
+        setRemoved(new Set());
+        setAdds([]);
+        setLastSave(null);
         setError(
-          "Couldn't save directly — permission was denied. Downloading your files instead; replace the originals manually.",
+          `Your files were written, but the result couldn't be re-read (${detail}). Load your designs file again before making more changes.`,
         );
+      } else {
+        setError(`Couldn't save your changes (${detail}). Nothing was written — your staged changes are still here.`);
       }
     }
-    if (!wroteInPlace) {
-      // Always the SAME filename the user uploaded — never reconstructed or
-      // version-suffixed (D-03).
-      downloadBlob(designsBytes, designs.filename);
-    }
-
-    // The archive is always a download, even in the in-place path — D-02
-    // scopes File System Access write-back to the primary designs file only.
-    if (archiveText !== null) {
-      const archiveBytes = encodeDesignsText(archiveText);
-      downloadBlob(archiveBytes, archive?.filename ?? "user_empire_designs_archive.txt");
-    }
-
-    setLastSave({ added: addedCount, removed: removedCount, backupName });
-    setRemoved(new Set());
-    setAdds([]);
-
-    // Re-baseline: the emitted bytes become the new "original" bytes, and we
-    // re-parse them so stored spans reflect the new file — otherwise a
-    // second save in the same session would splice from stale offsets.
-    const reparsed = await parseDesignsFile(designsBytes, designs.filename);
-    setDesigns(reparsed);
-    setDesignsOriginalBytes(designsBytes);
   }, [designs, designsOriginalBytes, archive, removed, adds, handle]);
 
   const takenNames = useMemo(() => {

@@ -122,6 +122,49 @@ describe("buildDesignsOutputs — removals with an uploaded archive", () => {
   });
 });
 
+/**
+ * Review CR-02: two saves in ONE session. `save()` must re-baseline the
+ * ARCHIVE from the archive it just emitted, exactly as it re-baselines the
+ * designs file — otherwise archive #2 is built from the stale uploaded
+ * archive and silently drops save #1's archived entry, while that design has
+ * already been removed from the designs file. This test drives the same
+ * re-baseline sequence `save()` performs.
+ */
+describe("buildDesignsOutputs — repeated saves in one session (archive re-baseline)", () => {
+  it("archive #2 contains BOTH removed entries when the emitted archive is fed back as the new baseline", async () => {
+    const designs1 = await parseFixture(designsFixtureText());
+    const archive0 = await parseFixture(archiveFixtureText(), "user_empire_designs_archive.txt");
+
+    // Save #1: remove entry A.
+    const save1 = buildDesignsOutputs(designs1, archive0, new Set([0]), [], spliceDesignsFile);
+    expect(save1.archiveText).toContain(ENTRY_A);
+
+    // Re-baseline BOTH outputs, as save() now does.
+    const designs2 = await parseFixture(save1.designsText);
+    const archive1 = await parseFixture(save1.archiveText!, "user_empire_designs_archive.txt");
+
+    // Save #2: remove what is now the only remaining entry (B).
+    const save2 = buildDesignsOutputs(designs2, archive1, new Set([0]), [], spliceDesignsFile);
+
+    expect(save2.archiveText).toContain(ARCHIVED_ENTRY); // the originally uploaded archive
+    expect(save2.archiveText).toContain(ENTRY_A); // save #1's removal — the CR-02 regression
+    expect(save2.archiveText).toContain(ENTRY_B); // save #2's removal
+    expect(save2.designsText.trim()).toBe("");
+  });
+
+  it("WITHOUT the archive re-baseline, archive #2 loses save #1's entry (documents the defect being fixed)", async () => {
+    const designs1 = await parseFixture(designsFixtureText());
+    const archive0 = await parseFixture(archiveFixtureText(), "user_empire_designs_archive.txt");
+
+    const save1 = buildDesignsOutputs(designs1, archive0, new Set([0]), [], spliceDesignsFile);
+    const designs2 = await parseFixture(save1.designsText);
+
+    // Stale archive baseline — the old behaviour.
+    const save2 = buildDesignsOutputs(designs2, archive0, new Set([0]), [], spliceDesignsFile);
+    expect(save2.archiveText).not.toContain(ENTRY_A);
+  });
+});
+
 describe("buildDesignsOutputs — adds", () => {
   it("added entry texts appear after all kept entries, in staging order", async () => {
     const text = designsFixtureText();

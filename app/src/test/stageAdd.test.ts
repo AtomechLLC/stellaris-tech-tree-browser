@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveStagedName } from "../lib/empire/useDesignsSession";
 import { uniqueDesignName, findTopLevelSpans } from "../lib/empire/designsText";
-import { serializeDesignEntry } from "../lib/empire/designSerialize";
+import { serializeDesignEntry, sanitizeDesignKey } from "../lib/empire/designSerialize";
 import type { DesignEntry, DesignFlag } from "../lib/empire/designSchema";
 
 /**
@@ -127,6 +127,43 @@ describe("resolveStagedName — numbering rule lives in one place", () => {
     // function's behavior (already covered above) — this documents intent;
     // the authoritative gate is the plan's own grep acceptance criterion.
     expect(resolveStagedName("X", ["X"], uniqueDesignName)).toBe("X (2)");
+  });
+});
+
+/**
+ * Review WR-02: D-09 must resolve the SANITIZED key, because that is what
+ * lands in the file. Resolving the raw key lets a save-derived name slip a
+ * duplicate top-level key past the collision check.
+ */
+describe("resolveStagedName — runs on the sanitized key (WR-02)", () => {
+  it("a name whose quotes sanitize away collides with the already-taken stripped form", () => {
+    const rawKey = 'Alarian"Consciousness';
+    const taken = ["AlarianConsciousness"];
+
+    // The defect: resolving the RAW key sees no collision.
+    expect(resolveStagedName(rawKey, taken, uniqueDesignName)).toBe(rawKey);
+
+    // The fix: sanitize first, exactly as stageAddFromEmpire now does.
+    const resolved = resolveStagedName(sanitizeDesignKey(rawKey), taken, uniqueDesignName);
+    expect(resolved).toBe("AlarianConsciousness (2)");
+
+    // …and the emitted top-level key equals the resolved name byte-for-byte,
+    // so `takenNames` and the UI stay in sync with the file.
+    const text = serializeDesignEntry({ ...baseDesign(rawKey), key: resolved }, "\r\n");
+    const spans = findTopLevelSpans(`${text}\r\n`);
+    expect(spans).toHaveLength(1);
+    expect(spans[0]!.name).toBe(resolved);
+  });
+
+  it("sanitizing is idempotent, so resolution and serialization agree for CR/LF-bearing names", () => {
+    const rawKey = "Empire\r\nWith Newlines";
+    const sanitized = sanitizeDesignKey(rawKey);
+    expect(sanitized).toBe("EmpireWith Newlines");
+    expect(sanitizeDesignKey(sanitized)).toBe(sanitized);
+
+    const resolved = resolveStagedName(sanitized, [sanitized], uniqueDesignName);
+    const text = serializeDesignEntry({ ...baseDesign(rawKey), key: resolved }, "\r\n");
+    expect(findTopLevelSpans(`${text}\r\n`)[0]!.name).toBe(resolved);
   });
 });
 
