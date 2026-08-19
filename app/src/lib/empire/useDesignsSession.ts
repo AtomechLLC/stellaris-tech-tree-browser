@@ -1,10 +1,11 @@
 /**
- * Empire Manager session state (04-05). Owns the loaded designs/archive
- * files, the optional in-place-write handle, and every staged add/remove —
- * deliberately lifted to a hook mounted in `EmpirePanel` (not the dialog
- * itself) so this state survives the manager dialog being closed and
- * reopened (UI-SPEC Dialog Close Behavior: closing must never discard
- * staged work).
+ * Empire Manager session state (04-05, extended 04-06). Owns the loaded
+ * designs/archive files, the optional in-place-write handle, every staged
+ * add/remove, and — as of 04-06 — the `save()` action that turns staged
+ * changes into the two output files. Deliberately lifted to a hook mounted
+ * in `EmpirePanel` (not the dialog itself) so this state survives the
+ * manager dialog being closed and reopened (UI-SPEC Dialog Close Behavior:
+ * closing must never discard staged work).
  *
  * Parser access (`parseDesignsFile`, from `./designsText`) is ALWAYS via a
  * dynamic `await import(...)` inside an action, never a static top-level
@@ -13,15 +14,61 @@
  * inline type query (`import("./designsText").DesignsFile`), which TS
  * erases entirely at compile time — there is no runtime import of
  * `./designsText` anywhere in this module outside the lazy-loaded handlers.
- *
- * `save()` is NOT part of this plan — 04-06 adds the splice + write-back
- * action on top of this session's `designs`/`archive`/`removed`/`adds`
- * state.
  */
 import { useCallback, useMemo, useState } from "react";
-import { ensureReadWritePermission, pickTextFileHandle } from "../fsAccess";
+import { downloadBlob, ensureReadWritePermission, pickTextFileHandle, saveInPlaceWithBackup } from "../fsAccess";
 
 type DesignsFile = import("./designsText").DesignsFile;
+
+const DEFAULT_ARCHIVE_FILENAME = "user_empire_designs_archive.txt";
+
+/**
+ * Pure core of the save flow (D-08/D-05): derives the two output texts from
+ * the currently-loaded files plus staged changes, via the SAME
+ * `spliceDesignsFile` engine for both the designs file and the archive file
+ * so kept/previously-archived entries are never re-serialized (D-08,
+ * RESEARCH Pitfall 6). Exported at module scope (not inside the hook) so it
+ * is directly unit-testable in the node vitest environment.
+ */
+export function buildDesignsOutputs(
+  designs: DesignsFile,
+  archive: DesignsFile | null,
+  removed: ReadonlySet<number>,
+  adds: readonly StagedAdd[],
+  spliceDesignsFile: (file: DesignsFile, removedIndices: ReadonlySet<number>, addedTexts: readonly string[]) => string,
+): { designsText: string; archiveText: string | null; addedCount: number; removedCount: number } {
+  const addedCount = adds.length;
+  const removedCount = removed.size;
+
+  const designsText = spliceDesignsFile(
+    designs,
+    removed,
+    adds.map((a) => a.text),
+  );
+
+  let archiveText: string | null = null;
+  if (removedCount > 0) {
+    const removedTexts = designs.entries
+      .map((entry, i) => ({ entry, i }))
+      .filter(({ i }) => removed.has(i))
+      .map(({ entry }) => designs.text.slice(entry.start, entry.end));
+
+    const archiveTarget: DesignsFile =
+      archive ??
+      ({
+        filename: DEFAULT_ARCHIVE_FILENAME,
+        text: "",
+        separator: designs.separator,
+        encoding: designs.encoding,
+        entries: [],
+        warning: null,
+      } satisfies DesignsFile);
+
+    archiveText = spliceDesignsFile(archiveTarget, new Set(), removedTexts);
+  }
+
+  return { designsText, archiveText, addedCount, removedCount };
+}
 
 /** A staged "add from save" entry. `text` is the already-serialized entry
  *  body (04-07's `designSerialize.ts` output); `rawName` is the possibly
@@ -34,6 +81,15 @@ export interface StagedAdd {
   originalName: string;
   text: string;
   sourceEmpireId: number;
+}
+
+/** Result of the most recent successful `save()`, rendered by the dialog as
+ *  the success banner (Copywriting Contract: "Saved — {A} added, {R}
+ *  archived." plus, when a backup was made, the backup-filename sentence). */
+export interface LastSave {
+  added: number;
+  removed: number;
+  backupName: string | null;
 }
 
 export interface DesignsSession {
@@ -51,6 +107,9 @@ export interface DesignsSession {
   /** Raw names currently "in" the file: kept (non-removed) entries plus
    *  staged adds — for 04-07's D-09 duplicate-name check. */
   takenNames: string[];
+  /** Result of the most recent successful save, or null before any save /
+   *  after `clearLastSave()`. */
+  lastSave: LastSave | null;
   loadDesignsFile: (file: File) => Promise<void>;
   loadDesignsViaPicker: () => Promise<void>;
   loadArchiveFile: (file: File) => Promise<void>;
@@ -59,10 +118,20 @@ export interface DesignsSession {
   undoAdd: (id: string) => void;
   discard: () => void;
   clearError: () => void;
+  /** No-op when `pendingCount === 0`. Splices staged changes into the two
+   *  output files, writes/downloads them, and re-baselines the session so a
+   *  second save in the same session stays byte-safe. See module doc. */
+  save: () => Promise<void>;
+  clearLastSave: () => void;
 }
 
 export function useDesignsSession(): DesignsSession {
   const [designs, setDesigns] = useState<DesignsFile | null>(null);
+  // The exact bytes as read for the currently-loaded designs file — the
+  // pre-write backup uses THIS, never a re-encode of `designs.text`, because
+  // a file that fell back to the windows-1252 decode path would not
+  // re-encode to the same bytes (see designsText.ts's decodeDesignsBytes doc).
+  const [designsOriginalBytes, setDesignsOriginalBytes] = useState<Uint8Array | null>(null);
   const [archive, setArchive] = useState<DesignsFile | null>(null);
   const [handle, setHandle] = useState<FileSystemFileHandle | null>(null);
   const [canWriteInPlace, setCanWriteInPlace] = useState(false);
@@ -71,6 +140,7 @@ export function useDesignsSession(): DesignsSession {
   const [warning, setWarning] = useState<string | null>(null);
   const [removed, setRemoved] = useState<ReadonlySet<number>>(new Set());
   const [adds, setAdds] = useState<StagedAdd[]>([]);
+  const [lastSave, setLastSave] = useState<LastSave | null>(null);
 
   const loadDesignsFile = useCallback(async (file: File) => {
     setLoading(true);
@@ -80,9 +150,11 @@ export function useDesignsSession(): DesignsSession {
       const { parseDesignsFile } = await import("./designsText");
       const parsed = await parseDesignsFile(bytes, file.name);
       setDesigns(parsed);
+      setDesignsOriginalBytes(bytes);
       setRemoved(new Set());
       setAdds([]);
       setWarning(parsed.warning);
+      setLastSave(null);
     } catch (e) {
       // Leave the previously loaded file (if any) untouched on failure.
       setError(e instanceof Error ? e.message : String(e));
@@ -104,9 +176,11 @@ export function useDesignsSession(): DesignsSession {
       const { parseDesignsFile } = await import("./designsText");
       const parsed = await parseDesignsFile(bytes, file.name);
       setDesigns(parsed);
+      setDesignsOriginalBytes(bytes);
       setRemoved(new Set());
       setAdds([]);
       setWarning(parsed.warning);
+      setLastSave(null);
       setHandle(picked);
       setCanWriteInPlace(await ensureReadWritePermission(picked));
     } catch (e) {
@@ -160,6 +234,75 @@ export function useDesignsSession(): DesignsSession {
     setError(null);
   }, []);
 
+  const clearLastSave = useCallback(() => {
+    setLastSave(null);
+  }, []);
+
+  const save = useCallback(async () => {
+    if (adds.length === 0 && removed.size === 0) return; // no-op: nothing staged
+    if (!designs || !designsOriginalBytes) return; // nothing loaded to save
+
+    const { spliceDesignsFile, encodeDesignsText, parseDesignsFile } = await import("./designsText");
+    const { designsText, archiveText, addedCount, removedCount } = buildDesignsOutputs(
+      designs,
+      archive,
+      removed,
+      adds,
+      spliceDesignsFile,
+    );
+    const designsBytes = encodeDesignsText(designsText);
+
+    let backupName: string | null = null;
+    let wroteInPlace = false;
+    if (handle) {
+      // Permission is not guaranteed to persist between load and save — re-check.
+      let permitted = false;
+      try {
+        permitted = await ensureReadWritePermission(handle);
+      } catch {
+        permitted = false;
+      }
+      if (permitted) {
+        try {
+          const result = await saveInPlaceWithBackup(handle, designsOriginalBytes, designsBytes, designs.filename);
+          backupName = result.backupName;
+          wroteInPlace = true;
+        } catch {
+          setError(
+            "Couldn't save directly — permission was denied. Downloading your files instead; replace the originals manually.",
+          );
+        }
+      } else {
+        setError(
+          "Couldn't save directly — permission was denied. Downloading your files instead; replace the originals manually.",
+        );
+      }
+    }
+    if (!wroteInPlace) {
+      // Always the SAME filename the user uploaded — never reconstructed or
+      // version-suffixed (D-03).
+      downloadBlob(designsBytes, designs.filename);
+    }
+
+    // The archive is always a download, even in the in-place path — D-02
+    // scopes File System Access write-back to the primary designs file only.
+    if (archiveText !== null) {
+      const archiveBytes = encodeDesignsText(archiveText);
+      downloadBlob(archiveBytes, archive?.filename ?? "user_empire_designs_archive.txt");
+    }
+
+    setLastSave({ added: addedCount, removed: removedCount, backupName });
+    setRemoved(new Set());
+    setAdds([]);
+
+    // Re-baseline: the emitted bytes become the new "original" bytes, and we
+    // re-parse them so stored spans reflect the new file — otherwise a
+    // second save in the same session would splice from stale offsets.
+    const reparsed = await parseDesignsFile(designsBytes, designs.filename);
+    setDesigns(reparsed);
+    setDesignsOriginalBytes(designsBytes);
+  }, [designs, designsOriginalBytes, archive, removed, adds, handle]);
+
   const takenNames = useMemo(() => {
     const kept = designs
       ? designs.entries.filter((_, i) => !removed.has(i)).map((e) => e.rawName)
@@ -179,6 +322,7 @@ export function useDesignsSession(): DesignsSession {
     adds,
     pendingCount: adds.length + removed.size,
     takenNames,
+    lastSave,
     loadDesignsFile,
     loadDesignsViaPicker,
     loadArchiveFile,
@@ -187,5 +331,7 @@ export function useDesignsSession(): DesignsSession {
     undoAdd,
     discard,
     clearError,
+    save,
+    clearLastSave,
   };
 }
