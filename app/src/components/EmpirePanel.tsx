@@ -2,9 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TechSnapshot } from "../types/tech-snapshot";
 import type { SavedEmpire, SavGalaxy } from "../lib/empire/savLoad";
 import { buildTechLite, classifyEmpire, type Bucket } from "../lib/empire/classifyEmpire";
+import { useDesignsSession } from "../lib/empire/useDesignsSession";
 import { GalaxyMinimap } from "./GalaxyMinimap";
+import { EmpireManagerPanel } from "./EmpireManagerPanel";
+import { PdxName } from "./PdxName";
 import { dataUrl } from "../lib/data/paths";
-import { parsePdxText, stripPdxCodes } from "../lib/pdxText";
+import { stripPdxCodes } from "../lib/pdxText";
 
 /**
  * Saved Empire tab (spike 005) — left panel. Loads a `.sav` client-side, lists
@@ -40,6 +43,10 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
   // Whether the docked "all settings" window (right side) is open. Persists
   // across empire swaps — the panel just re-reads the newly-selected empire.
   const [showSettings, setShowSettings] = useState(false);
+  // Empire Manager (04-05): session state is owned here (not in the dialog)
+  // so staged adds/removes survive the dialog closing and reopening.
+  const designsSession = useDesignsSession();
+  const [showManager, setShowManager] = useState(false);
   const [result, setResult] = useState<{ counts: Record<Bucket, number>; falseNever: number; total: number } | null>(
     null,
   );
@@ -192,6 +199,19 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
             </button>
           )}
 
+          {/* Always visible — the designs-file upload flow is independent of
+              a .sav being loaded (UI-SPEC App Shell Integration). */}
+          <button
+            type="button"
+            className="empire-panel__settings-btn"
+            aria-pressed={showManager}
+            onClick={() => setShowManager((v) => !v)}
+          >
+            {designsSession.pendingCount === 0
+              ? "Manage my empire designs"
+              : `Manage my empire designs · ${designsSession.pendingCount} pending`}
+          </button>
+
           <div className="empire-legend">
             {BUCKETS.map((b) => (
               <div key={b.key} className="empire-legend__row" data-bucket={b.key}>
@@ -221,6 +241,14 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
           onClose={() => setShowSettings(false)}
         />
       )}
+
+      {showManager && (
+        <EmpireManagerPanel
+          session={designsSession}
+          iconBase={dataUrl(`${version}/icons`)}
+          onClose={() => setShowManager(false)}
+        />
+      )}
     </aside>
   );
 }
@@ -234,25 +262,6 @@ function humanize(id: string): string {
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase())
     .trim();
-}
-
-/** Renders save text with Paradox color codes as colored spans (e.g. a
- *  rainbow multiplayer nickname); plain text passes through untouched. */
-function PdxName({ raw }: { raw: string }) {
-  const segments = parsePdxText(raw);
-  return (
-    <>
-      {segments.map((s, i) =>
-        s.color ? (
-          <span key={i} style={{ color: s.color }}>
-            {s.text}
-          </span>
-        ) : (
-          s.text
-        ),
-      )}
-    </>
-  );
 }
 
 /** One settings chip: game icon + name. `iconOnly` (ethics) drops the text —
