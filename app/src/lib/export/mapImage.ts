@@ -1,4 +1,5 @@
 import type { TreeLayout } from "../tree/layoutTree";
+import { downloadBlob } from "../fsAccess";
 
 /**
  * Full-map PNG export. Renders the ENTIRE banded layout (band tints + labels +
@@ -123,10 +124,5 @@ export async function exportMapPng(
 
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
   if (!blob) throw new Error("PNG encoding failed");
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, filename);
 }
