@@ -1,14 +1,16 @@
 import { useRef, useState } from "react";
 import type { DesignsSession } from "../lib/empire/useDesignsSession";
 import { supportsFsAccess } from "../lib/fsAccess";
+import { stripPdxCodes } from "../lib/pdxText";
 import { PdxName } from "./PdxName";
 
 /**
  * Empire Designs manager dialog (04-05, extended 04-06 with the save/
- * discard/replace confirmation flow and result banners). Adding empires from
- * a loaded save is 04-07. This component never imports a parser module
- * statically — every parse call goes through `session`'s actions, which
- * lazy-load `designsText.ts` themselves.
+ * discard/replace confirmation flow and result banners, extended 04-07 with
+ * staged-add rows for empires added from a loaded save — the panel action
+ * that populates `session.adds` lives in `EmpirePanel.tsx`). This component
+ * never imports a parser module statically — every parse call goes through
+ * `session`'s actions, which lazy-load `designsText.ts` themselves.
  */
 
 /** Inline confirmation state — replaces the footer's action row (save,
@@ -163,6 +165,13 @@ export function EmpireManagerPanel({
     .map((entry, index) => ({ entry, index }))
     .filter(({ entry }) => entry.displayName.toLowerCase().includes(filter.toLowerCase()));
 
+  // Staged-add rows: most-recent-first (reverse staging order), filtered
+  // against the code-stripped display form of rawName — never the raw bytes
+  // — same rule as the file's own entries.
+  const filteredAdds = [...session.adds]
+    .reverse()
+    .filter((add) => stripPdxCodes(add.rawName).toLowerCase().includes(filter.toLowerCase()));
+
   const addedCount = session.adds.length;
   const removedCount = session.removed.size;
   const pendingLabel = `${session.pendingCount} pending change${session.pendingCount === 1 ? "" : "s"}`;
@@ -312,10 +321,39 @@ export function EmpireManagerPanel({
                 autoComplete="off"
                 spellCheck={false}
               />
-              {entries.length === 0 ? (
+              {entries.length === 0 && filteredAdds.length === 0 ? (
                 <div className="empire-manager__empty">This file has no saved designs yet.</div>
               ) : (
                 <ul className="empire-manager__list">
+                  {filteredAdds.map((add) => {
+                    const renamed = add.rawName !== add.originalName;
+                    return (
+                      <li key={add.id} className="empire-manager__add-item">
+                        <div className="find-box__result empire-manager__row">
+                          <span className="empire-manager__row-text">
+                            <span className="empire-manager__row-name">
+                              <PdxName raw={add.rawName} />
+                            </span>
+                          </span>
+                          <span className="empire-manager__badge" data-variant="added">
+                            Added from save
+                          </span>
+                          <button
+                            type="button"
+                            className="empire-manager__row-action"
+                            onClick={() => session.undoAdd(add.id)}
+                          >
+                            Undo
+                          </button>
+                        </div>
+                        {renamed && (
+                          <div className="empire-manager__note">
+                            '{add.originalName}' already exists — will be saved as '{add.rawName}'.
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
                   {filteredIndexed.map(({ entry, index }) => {
                     const isRemoved = session.removed.has(index);
                     const metaParts = [
