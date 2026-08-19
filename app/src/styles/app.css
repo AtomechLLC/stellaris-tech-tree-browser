@@ -2239,6 +2239,14 @@
   background: color-mix(in srgb, var(--color-select) 16%, transparent);
 }
 
+/* "Add to my empires" duplicate-name notice (04-07) — the panel's equivalent
+   of .empire-manager__note, same 12px/--color-select/informational treatment. */
+.empire-panel__add-note {
+  font-size: 12px;
+  color: var(--color-select);
+  padding: var(--space-xs) 0 0;
+}
+
 /* Docked "all settings" window — right edge of the viewport, mirroring the
    .tech-detail dock. z-index above .tech-detail (20) so this user-invoked
    window sits on top when a tech's detail panel is also open. */
@@ -2597,6 +2605,21 @@
 }
 .empire-manager__row[data-removed] .empire-manager__row-action:hover {
   border-color: var(--color-select);
+}
+
+/* Staged-add row (04-07): a plain <li> wrapper (not itself the flex row) so
+   the duplicate-name notice can sit as a block sibling directly under the
+   .find-box__result row, instead of squeezing into that row's flex layout. */
+.empire-manager__add-item {
+  display: flex;
+  flex-direction: column;
+}
+/* Duplicate-name notice — under a staged-add row here, and reused under the
+   "Add to my empires" panel button (EmpirePanel.tsx's equivalent note). */
+.empire-manager__note {
+  font-size: 12px;
+  color: var(--color-select);
+  padding: 0 var(--space-sm) var(--space-xs);
 }
 
 .empire-manager__pending {
