@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_to_plan
-stopped_at: Phase 2 complete (3/3) — ready to discuss Phase 3
-last_updated: 2026-07-08T04:28:59.412Z
-last_activity: 2026-07-08
+status: executing
+stopped_at: Phase 4 UI-SPEC approved
+last_updated: "2026-08-19T03:23:03.556Z"
+last_activity: 2026-08-19 -- Phase 4 planning complete
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 2
-  total_plans: 8
+  total_plans: 16
   completed_plans: 8
-  percent: 67
+  percent: 50
 ---
 
 # Project State
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 
 Phase: 3
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-07-09 - Completed quick task 260708-qt8: exposed tech potential gates in the pipeline (gate field in tech.json) and wired the Saved Empire tab to read them from the snapshot (side-load removed)
+Status: Ready to execute
+Last activity: 2026-08-19 -- Phase 4 planning complete
 
 Progress: [██████████] 100%
 
@@ -94,6 +94,10 @@ Recent decisions affecting current work:
 - [Phase 02-tech-tree-visualization]: theme.test.ts stubs getComputedStyle directly instead of switching the app package to a jsdom vitest environment -- avoids a new dependency purely for one test file while exercising the real bridge code path
 - [Phase 02-tech-tree-visualization]: Edge opacity is baked into a single rgba() string derived from the bridged --color-edge hex, since Sigma Settings has no separate edge-opacity field to pair with defaultEdgeColor
 
+### Roadmap Evolution
+
+- Phase 4 added: Empire Manager — upload user_empire_designs, add empires from a loaded .sav as playable custom empire designs, remove and archive entries, download updated files (File System Access write-back where supported)
+
 ### Pending Todos
 
 None yet.
@@ -133,6 +137,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-08T03:55:30.303Z
-Stopped at: Completed 02-03-PLAN.md
-Resume file: None
+Last session: 2026-08-19T02:45:35.216Z
+Stopped at: Phase 4 UI-SPEC approved
+Resume file: .planning/phases/04-empire-manager-upload-user-empire-designs-add-empires-from-a/04-UI-SPEC.md

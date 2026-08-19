@@ -731,9 +731,12 @@ stable across Stellaris versions (only the filename suffix changes, per D-03).
 **If this table is empty:** N/A — six assumptions logged above, all flagged with concrete mitigation
 or verification steps.
 
-## Open Questions
+## Open Questions (RESOLVED — annotations added at plan-check, 2026-08-18)
 
-1. **Save-side source for `secondary_species` extraction**
+1. **Save-side source for `secondary_species` extraction** — **(ACCEPTED as documented v1 limitation)**
+   04-04-PLAN.md deliberately omits `secondary_species` extraction with an in-source comment;
+   `designSchema.ts` keeps the field optional so future work can populate it without a schema
+   change. Recorded in 04-CONTEXT.md Deferred Ideas.
    - What we know: The design file's `secondary_species` block is shaped identically to `species`
      (verified from 15 real sample entries, e.g. "Cyrrician Core" — a Machine Servitor gestalt with
      a `MACHINE` primary species and a `PLANT` secondary species).
@@ -746,7 +749,9 @@ or verification steps.
      Assimilator, Machine Servitor, or Hive/Servitor-hybrid empire and grep its `country` block for
      a species reference beyond `founder_species_ref`.
 
-2. **Exact save-side field name for `room`**
+2. **Exact save-side field name for `room`** — **(RESOLVED)** 04-04-PLAN.md's interfaces block
+   cites measured save data (`country.room` present on 70/133 countries) and specifies the
+   `default_room` fallback; the plan states "(Resolves RESEARCH Open Question 2 / assumption A3.)"
    - What we know: The design file always has a `room="..._room"` field (100% of 182 sampled
      entries), and it appears in the field-order sequence right after `city_graphical_culture` /
      near `ship_prefix`.
@@ -757,7 +762,10 @@ or verification steps.
      save; verify presence/absence during implementation with a targeted grep for `room=` inside
      a country block.
 
-3. **Whether Clausewitz/the game client cares about serializer whitespace style**
+3. **Whether Clausewitz/the game client cares about serializer whitespace style** — **(RESOLVED
+   via verification checkpoint)** 04-08-PLAN.md Task 3 is an explicit human-verification checkpoint
+   that loads the produced file in the actual game client, discharging assumption A6; additionally
+   the serializer (04-03) targets byte-style parity with the game's own output as a golden-text test.
    - What we know: jomini's own `Writer` produces syntactically different (but presumably still
      valid) whitespace than the game's own output.
    - What's unclear: Whether the game's file loader (used both when loading the empire creation
