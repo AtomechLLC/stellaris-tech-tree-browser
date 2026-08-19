@@ -343,15 +343,197 @@ function resolveFlag(country: Record<string, any>): DesignFlag {
 }
 
 /**
+ * `root.galaxy.design` is an array of the ORIGINAL empire designs the galaxy
+ * was generated from, stored in EXACTLY the `user_empire_designs` shape (key,
+ * ship_prefix, species with repeated `trait`, name/adjective, authority,
+ * government, planet_class, initializer, graphical_culture, empire_flag,
+ * ruler, spawn flags, repeated `ethic`, civics, origin). Measured: 64 blocks
+ * in `app/public/data/v4.5.0/sample.sav` (Pegasus v4.4.6); ABSENT entirely
+ * from the user's current saves (`mpcubecubecubecube5`,
+ * `mpcubecubecubecube16` both have no `design` key under `galaxy`) — so this
+ * is an opportunistic upgrade, never a requirement.
+ *
+ * When present and confidently matched it is strictly better than synthesis:
+ * it carries the empire's designer-selected origin and ethics rather than the
+ * mutated runtime values, plus `secondary_species` (which has no located
+ * runtime source at all).
+ */
+function galaxyDesigns(root: Record<string, any>): Record<string, any>[] {
+  const galaxy = root.galaxy;
+  if (!isObj(galaxy)) return [];
+  return toArr((galaxy as Record<string, any>).design as unknown).filter(isObj);
+}
+
+/** The species-identity tuple used for `galaxy.design` matching. Deliberately
+ *  four independent fields — class, portrait, name_list, and the species-name
+ *  key — because any one alone is shared by many empires. */
+function speciesFingerprint(cls: unknown, portrait: unknown, nameList: unknown, nameKey: string): string | null {
+  if (typeof cls !== "string" || typeof portrait !== "string" || typeof nameList !== "string") return null;
+  if (cls === "" || portrait === "" || nameKey === "") return null;
+  return `${cls} ${portrait} ${nameList} ${nameKey}`;
+}
+
+/**
+ * Find the `galaxy.design` block that describes this country, or null.
+ *
+ * CONSERVATIVE BY CONSTRUCTION — a wrong match silently hands the user a
+ * different empire's design, which is worse than falling back to synthesis.
+ * Two rules, both requiring species agreement:
+ *  1. the design's `key` equals the country's resolved display name AND the
+ *     species fingerprints agree; or
+ *  2. the species fingerprint agrees and is UNIQUE across the whole design
+ *     list (this is what rescues the `%ADJECTIVE%`-named prescripted empires,
+ *     whose country name is a template, not a name).
+ * Anything ambiguous returns null.
+ */
+function matchGalaxyDesign(
+  root: Record<string, any>,
+  species: Record<string, any>,
+  displayName: string,
+): Record<string, any> | null {
+  const designs = galaxyDesigns(root);
+  if (designs.length === 0) return null;
+
+  const countryFingerprint = speciesFingerprint(
+    species.class,
+    species.portrait,
+    species.name_list,
+    parseLocName(species.name)?.key ?? "",
+  );
+  if (countryFingerprint === null) return null;
+
+  const sameSpecies = designs.filter((d) => {
+    const ds = isObj(d.species) ? (d.species as Record<string, any>) : null;
+    if (!ds) return false;
+    const fp = speciesFingerprint(ds.class, ds.portrait, ds.name_list, parseLocName(ds.species_name)?.key ?? "");
+    return fp !== null && fp === countryFingerprint;
+  });
+  if (sameSpecies.length === 0) return null;
+
+  const byKey = sameSpecies.filter((d) => typeof d.key === "string" && d.key === displayName);
+  if (byKey.length === 1) return byKey[0]!;
+  if (sameSpecies.length === 1) return sameSpecies[0]!;
+  return null;
+}
+
+/** `species={}` inside a `galaxy.design` block is ALREADY in design-file
+ *  shape (species_name/species_plural/species_adjective, repeated `trait`
+ *  directly under the block) — unlike `species_db`, which nests traits under
+ *  `traits={ trait=... }` and names them name/plural/adjective. */
+function speciesFromDesignBlock(block: Record<string, any>): DesignSpecies {
+  return {
+    class: typeof block.class === "string" ? block.class : "",
+    portrait: typeof block.portrait === "string" ? block.portrait : "",
+    species_name: locNameOrEmpty(block.species_name),
+    species_plural: locNameOrEmpty(block.species_plural),
+    species_adjective: locNameOrEmpty(block.species_adjective),
+    name_list: typeof block.name_list === "string" ? block.name_list : "",
+    gender: typeof block.gender === "string" ? block.gender : "not_set",
+    traits: toArr(block.trait).filter((t): t is string => typeof t === "string"),
+  };
+}
+
+function rulerFromDesignBlock(block: unknown, fallbackPortrait: string): DesignRuler {
+  const r = isObj(block) ? (block as Record<string, any>) : {};
+  const name = isObj(r.name) ? (r.name as Record<string, any>) : {};
+  const num = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+  return {
+    gender: typeof r.gender === "string" ? r.gender : "not_set",
+    name: {
+      full_names: locNameOrEmpty(name.full_names),
+      use_full_regnal_name: isYes(name.use_full_regnal_name),
+    },
+    portrait: typeof r.portrait === "string" ? r.portrait : fallbackPortrait,
+    texture: num(r.texture),
+    evolution_mask: num(r.evolution_mask),
+    attachment: num(r.attachment),
+    clothes: num(r.clothes),
+    trait: typeof r.trait === "string" ? r.trait : "",
+    leader_class: typeof r.leader_class === "string" ? r.leader_class : "official",
+  };
+}
+
+/**
+ * Convert a matched `galaxy.design` block into a `DesignEntry`. The block IS
+ * the ground truth the empire editor originally produced, so its `origin` and
+ * `ethic` values are used verbatim — `resolveOrigin`'s runtime-origin mapping
+ * is deliberately BYPASSED here, because there is nothing to repair: a stored
+ * design's origin was selectable in the designer by construction.
+ *
+ * `spawn_enabled` is tri-state in the save (`always` / `yes` / `no`, all three
+ * observed in the user's own designs file) but boolean in `DesignEntry`;
+ * only an explicit `no` maps to false.
+ */
+export function designEntryFromGalaxyDesign(block: Record<string, any>): DesignEntry {
+  const speciesBlock = isObj(block.species) ? (block.species as Record<string, any>) : {};
+  const species = speciesFromDesignBlock(speciesBlock);
+  const key = typeof block.key === "string" ? block.key : "";
+  const authority = typeof block.authority === "string" ? block.authority : "";
+
+  const flag = isObj(block.empire_flag) ? (block.empire_flag as Record<string, any>) : {};
+  const icon = isObj(flag.icon) ? (flag.icon as Record<string, any>) : {};
+  const background = isObj(flag.background) ? (flag.background as Record<string, any>) : {};
+
+  const entry: DesignEntry = {
+    key,
+    ship_prefix: locNameOrKey(block.ship_prefix, "ISS"),
+    species,
+    name: locNameOrKey(block.name, key),
+    adjective: locNameOrKey(block.adjective, key),
+    authority,
+    government: typeof block.government === "string" ? block.government : "",
+    is_nomadic: isYes(block.is_nomadic),
+    planet_name: locNameOrEmpty(block.planet_name),
+    planet_class: typeof block.planet_class === "string" ? block.planet_class : "pc_continental",
+    system_name: locNameOrEmpty(block.system_name),
+    initializer: typeof block.initializer === "string" ? block.initializer : "",
+    graphical_culture: typeof block.graphical_culture === "string" ? block.graphical_culture : "",
+    city_graphical_culture: typeof block.city_graphical_culture === "string" ? block.city_graphical_culture : "",
+    empire_flag: {
+      icon: {
+        category: typeof icon.category === "string" ? icon.category : "",
+        file: typeof icon.file === "string" ? icon.file : "",
+      },
+      background: {
+        category: typeof background.category === "string" ? background.category : "",
+        file: typeof background.file === "string" ? background.file : "",
+      },
+      colors: toArr(flag.colors).filter((c): c is string => typeof c === "string"),
+    },
+    ruler: rulerFromDesignBlock(block.ruler, species.portrait),
+    spawn_as_fallen: isYes(block.spawn_as_fallen),
+    ignore_portrait_duplication: isYes(block.ignore_portrait_duplication),
+    room: typeof block.room === "string" ? block.room : "default_room",
+    spawn_enabled: block.spawn_enabled !== "no" && block.spawn_enabled !== false,
+    ethics: normalizeEthics(authority, readEthos(block)),
+    civics: toArr(block.civics).filter((c): c is string => typeof c === "string"),
+    origin: typeof block.origin === "string" && block.origin !== "" ? block.origin : "origin_default",
+  };
+
+  if (typeof block.advisor_voice_type === "string") entry.advisor_voice_type = block.advisor_voice_type;
+  // Unlike the runtime tables, a stored design DOES carry secondary_species
+  // when the empire has one (RESEARCH Open Question 1 / 04-CONTEXT Deferred).
+  if (isObj(block.secondary_species)) {
+    entry.secondary_species = speciesFromDesignBlock(block.secondary_species as Record<string, any>);
+  }
+
+  return entry;
+}
+
+/**
  * Map a save country to a complete `DesignEntry`, or `null` when the country
  * is too degenerate to describe (no `government` block, or no resolvable
  * founder species).
+ *
+ * Prefers the save's own stored `galaxy.design` block when one matches this
+ * country confidently (see `matchGalaxyDesign`); otherwise synthesizes the
+ * entry from the runtime tables.
  *
  * `opts.displayName` becomes the entry's `key` — the design file's `key` is
  * the plain design name the game editor shows, which for a save-derived
  * empire is the already-resolved `SavedEmpire.name`. `opts.ethics` is the
  * already-resolved ethics list from `savLoad.ts` (including its pop-group
- * fallback); it's used only when `country.ethos.ethic` is absent.
+ * fallback); it's used only when `country.ethos` is absent.
  */
 export function extractDesignFromCountry(
   root: Record<string, any>,
@@ -368,6 +550,11 @@ export function extractDesignFromCountry(
   const founderRef = typeof country.founder_species_ref === "number" ? country.founder_species_ref : null;
   const species = founderRef !== null ? resolveSpecies(root, founderRef) : null;
   if (!species) return null; // no resolvable founder species → not a describable entry
+
+  // Ground truth first: the save's own stored design for this empire, when it
+  // exists and matches unambiguously. Falls through to synthesis otherwise.
+  const stored = matchGalaxyDesign(root, species, opts.displayName);
+  if (stored) return designEntryFromGalaxyDesign(stored);
 
   const rulerId = typeof country.ruler === "number" ? country.ruler : null;
   const ruler = resolveRuler(root, rulerId, species);

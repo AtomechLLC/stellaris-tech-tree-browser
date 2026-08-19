@@ -379,6 +379,171 @@ describe("extractDesignFromCountry — origin safety", () => {
   });
 });
 
+/**
+ * `root.galaxy.design` holds the ORIGINAL designer-authored empire designs
+ * (64 blocks measured in sample.sav; absent from the user's current saves).
+ * When one matches the country confidently it is used verbatim — it carries
+ * the designer-selected origin/ethics rather than the mutated runtime values.
+ */
+describe("extractDesignFromCountry — galaxy.design preference", () => {
+  /** A stored design block for the fixture's founder species, in the exact
+   *  shape the save writes (species_name/species_plural/species_adjective +
+   *  repeated `trait`, repeated `ethic`, tri-state spawn_enabled). */
+  function storedDesign(overrides: Record<string, any> = {}) {
+    return {
+      key: "Test Empire",
+      ship_prefix: { key: "" },
+      species: {
+        class: "HUM",
+        portrait: "hum01",
+        species_name: { key: "SPEC_Human" },
+        species_plural: { key: "SPEC_Human_pl" },
+        species_adjective: { key: "SPEC_Human_adj" },
+        name_list: "HUM1",
+        gender: "not_set",
+        trait: ["trait_intelligent", "trait_thrifty"],
+      },
+      name: { key: "Original Name", literal: "yes" },
+      adjective: { key: "Originalian", literal: "yes" },
+      authority: "auth_democratic",
+      government: "gov_democratic",
+      is_nomadic: false,
+      planet_name: { key: "Homeworld", literal: "yes" },
+      planet_class: "pc_tropical",
+      system_name: { key: "Home System", literal: "yes" },
+      initializer: "",
+      graphical_culture: "human_01",
+      city_graphical_culture: "human_01",
+      empire_flag: {
+        icon: { category: "human", file: "flag_human_1.dds" },
+        background: { category: "backgrounds", file: "circle.dds" },
+        colors: ["blue", "white", "null", "null"],
+      },
+      ruler: {
+        gender: "female",
+        name: { full_names: { key: "HUM1_CHR_Origin" }, use_full_regnal_name: "yes" },
+        portrait: "hum01",
+        texture: 2,
+        evolution_mask: 0,
+        attachment: 0,
+        clothes: 1,
+        trait: "trait_ruler_charismatic",
+        leader_class: "official",
+      },
+      spawn_as_fallen: false,
+      ignore_portrait_duplication: false,
+      room: "default_room",
+      spawn_enabled: "always",
+      ethic: ["ethic_fanatic_egalitarian", "ethic_xenophile"],
+      civics: ["civic_beacon_of_liberty", "civic_idealistic_foundation"],
+      origin: "origin_shattered_ring",
+      ...overrides,
+    };
+  }
+
+  function rootWithDesigns(designs: any, countryOverrides: Record<string, any> = {}) {
+    return { ...buildRoot({ country: countryOverrides }), galaxy: { design: designs } };
+  }
+
+  it("uses the stored design verbatim when key AND species fingerprint agree", () => {
+    const root = rootWithDesigns([storedDesign()]);
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    // Every one of these differs from what synthesis would have produced.
+    expect(design.origin).toBe("origin_shattered_ring"); // runtime says origin_prosperous_unification
+    expect(design.ethics).toEqual(["ethic_fanatic_egalitarian", "ethic_xenophile"]);
+    expect(design.civics).toEqual(["civic_beacon_of_liberty", "civic_idealistic_foundation"]);
+    expect(design.name).toEqual({ key: "Original Name", literal: true });
+    expect(design.planet_class).toBe("pc_tropical");
+    expect(design.planet_name).toEqual({ key: "Homeworld", literal: true });
+    expect(design.ship_prefix).toEqual({ key: "" });
+    expect(design.species.traits).toEqual(["trait_intelligent", "trait_thrifty"]);
+    expect(design.ruler.texture).toBe(2);
+    expect(design.ruler.name.use_full_regnal_name).toBe(true);
+    expect(design.spawn_enabled).toBe(true); // "always" is not "no"
+  });
+
+  it("matches on a UNIQUE species fingerprint even when the country name is a %ADJECTIVE% template", () => {
+    const root = rootWithDesigns([storedDesign({ key: "Prescripted Empire" })], { name: { key: "%ADJECTIVE%" } });
+    const design = extractDesignFromCountry(root, COUNTRY_ID, { displayName: "%ADJECTIVE%", ethics: [] })!;
+    expect(design.key).toBe("Prescripted Empire");
+    expect(design.origin).toBe("origin_shattered_ring");
+  });
+
+  it("refuses an AMBIGUOUS match (two designs share the species fingerprint, neither key matches) and synthesizes instead", () => {
+    const root = rootWithDesigns([storedDesign({ key: "Alpha" }), storedDesign({ key: "Beta" })], {
+      name: { key: "%ADJECTIVE%" },
+    });
+    const design = extractDesignFromCountry(root, COUNTRY_ID, { displayName: "%ADJECTIVE%", ethics: [] })!;
+    expect(design.key).toBe("%ADJECTIVE%");
+    expect(design.origin).toBe("origin_prosperous_unification"); // synthesized from the runtime government
+  });
+
+  it("disambiguates two same-species designs by exact key match", () => {
+    const root = rootWithDesigns([storedDesign({ key: "Other Empire", origin: "origin_remnants" }), storedDesign()]);
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.key).toBe("Test Empire");
+    expect(design.origin).toBe("origin_shattered_ring");
+  });
+
+  it("refuses to match a design whose species disagrees, even on an exact key match", () => {
+    const root = rootWithDesigns([storedDesign({ species: { ...storedDesign().species, portrait: "hum09" } })]);
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.origin).toBe("origin_prosperous_unification"); // synthesized
+  });
+
+  it("falls back to synthesis when the save carries no galaxy.design at all (current saves)", () => {
+    const design = extractDesignFromCountry({ ...buildRoot(), galaxy: { template: "default" } }, COUNTRY_ID, OPTS)!;
+    expect(design.origin).toBe("origin_prosperous_unification");
+  });
+
+  it("collapses a single stored design (parser gives a bare object, not a 1-element array)", () => {
+    const design = extractDesignFromCountry(rootWithDesigns(storedDesign()), COUNTRY_ID, OPTS)!;
+    expect(design.origin).toBe("origin_shattered_ring");
+  });
+
+  it("carries secondary_species through, which synthesis has no source for", () => {
+    const root = rootWithDesigns([
+      storedDesign({
+        secondary_species: {
+          class: "MAM",
+          portrait: "mam01",
+          species_name: { key: "SPEC_Servitor" },
+          species_plural: { key: "SPEC_Servitor_pl" },
+          species_adjective: { key: "SPEC_Servitor_adj" },
+          name_list: "MAM1",
+          gender: "not_set",
+          trait: ["trait_docile"],
+        },
+      }),
+    ]);
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.secondary_species?.class).toBe("MAM");
+    expect(design.secondary_species?.traits).toEqual(["trait_docile"]);
+  });
+
+  it("still normalizes a stored gestalt design's ethics", () => {
+    const root = rootWithDesigns([storedDesign({ authority: "auth_hive_mind", ethic: [] })]);
+    const design = extractDesignFromCountry(root, COUNTRY_ID, OPTS)!;
+    expect(design.ethics).toEqual(["ethic_gestalt_consciousness"]);
+  });
+
+  it("reads a stored design's ethics under either the ethic or ethics key", () => {
+    const root = rootWithDesigns([storedDesign({ ethic: undefined, ethics: ["ethic_militarist"] })]);
+    expect(extractDesignFromCountry(root, COUNTRY_ID, OPTS)!.ethics).toEqual(["ethic_militarist"]);
+  });
+
+  it("spawn_enabled=no is the only value mapping to false", () => {
+    expect(
+      extractDesignFromCountry(rootWithDesigns([storedDesign({ spawn_enabled: "no" })]), COUNTRY_ID, OPTS)!
+        .spawn_enabled,
+    ).toBe(false);
+    expect(
+      extractDesignFromCountry(rootWithDesigns([storedDesign({ spawn_enabled: "yes" })]), COUNTRY_ID, OPTS)!
+        .spawn_enabled,
+    ).toBe(true);
+  });
+});
+
 describe("extractDesignFromCountry — degenerate input", () => {
   it("returns null rather than a half-built entry when the country has no government block", () => {
     const root = buildRoot({ country: { government: undefined } });
