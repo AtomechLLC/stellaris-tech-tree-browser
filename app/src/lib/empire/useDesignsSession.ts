@@ -1,22 +1,30 @@
 /**
- * Empire Manager session state (04-05, extended 04-06). Owns the loaded
- * designs/archive files, the optional in-place-write handle, every staged
- * add/remove, and — as of 04-06 — the `save()` action that turns staged
- * changes into the two output files. Deliberately lifted to a hook mounted
- * in `EmpirePanel` (not the dialog itself) so this state survives the
- * manager dialog being closed and reopened (UI-SPEC Dialog Close Behavior:
- * closing must never discard staged work).
+ * Empire Manager session state (04-05, extended 04-06, extended 04-07). Owns
+ * the loaded designs/archive files, the optional in-place-write handle,
+ * every staged add/remove, the `save()` action that turns staged changes
+ * into the two output files, and — as of 04-07 — `stageAddFromEmpire`, which
+ * converts any `SavedEmpire` from a loaded `.sav` into a staged design
+ * (D-06/D-07/D-09). Deliberately lifted to a hook mounted in `EmpirePanel`
+ * (not the dialog itself) so this state survives the manager dialog being
+ * closed and reopened (UI-SPEC Dialog Close Behavior: closing must never
+ * discard staged work).
  *
- * Parser access (`parseDesignsFile`, from `./designsText`) is ALWAYS via a
- * dynamic `await import(...)` inside an action, never a static top-level
- * import, so jomini stays out of the main bundle (CLAUDE.md bundle
- * constraint / RESEARCH.md). `DesignsFile` is referenced here only as an
- * inline type query (`import("./designsText").DesignsFile`), which TS
- * erases entirely at compile time — there is no runtime import of
- * `./designsText` anywhere in this module outside the lazy-loaded handlers.
+ * Parser access (`parseDesignsFile`/`uniqueDesignName`, from `./designsText`)
+ * is ALWAYS via a dynamic `await import(...)` inside an action, never a
+ * static top-level import, so jomini stays out of the main bundle (CLAUDE.md
+ * bundle constraint / RESEARCH.md); `serializeDesignEntry` (from
+ * `./designSerialize`) follows the same dynamic-import convention even
+ * though that module has no jomini dependency, for consistency and because
+ * it is only ever needed inside the same lazy action. `DesignsFile` is
+ * referenced here only as an inline type query
+ * (`import("./designsText").DesignsFile`), which TS erases entirely at
+ * compile time — there is no runtime import of `./designsText` anywhere in
+ * this module outside the lazy-loaded handlers.
  */
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { downloadBlob, ensureReadWritePermission, pickTextFileHandle, saveInPlaceWithBackup } from "../fsAccess";
+import type { SavedEmpire } from "./savLoad";
+import type { DesignEntry } from "./designSchema";
 
 type DesignsFile = import("./designsText").DesignsFile;
 
@@ -70,11 +78,35 @@ export function buildDesignsOutputs(
   return { designsText, archiveText, addedCount, removedCount };
 }
 
+/**
+ * D-09 name resolution for staging an "add from save" — the single exported
+ * pure function through which the disambiguation decision flows. Deliberately
+ * does NOT construct the numbered-suffix text itself: it delegates entirely
+ * to `uniqueDesignName` (`designsText.ts`), passed in as `uniqueName`, so
+ * that construction exists in exactly one source file across this directory
+ * — `designsText.ts`, never duplicated here. `uniqueName` is a parameter —
+ * not a static import — because `designsText.ts` pulls in `jomini`, and this
+ * module's own invariant (see header doc) is zero static references to that
+ * module outside its lazy-loaded handlers; `stageAddFromEmpire` supplies the
+ * real `uniqueDesignName` from its existing dynamic `await
+ * import("./designsText")`, and tests supply it directly (test bundles are
+ * never shipped).
+ */
+export function resolveStagedName(
+  desiredKey: string,
+  taken: readonly string[],
+  uniqueName: (desired: string, taken: Iterable<string>) => string,
+): string {
+  return uniqueName(desiredKey, taken);
+}
+
 /** A staged "add from save" entry. `text` is the already-serialized entry
- *  body (04-07's `designSerialize.ts` output); `rawName` is the possibly
- *  D-09-disambiguated name actually used for the new top-level key. This
- *  plan only stores and counts these — 04-07 is what populates them via
- *  `stageAdd`. */
+ *  body (`designSerialize.ts`'s output); `rawName` is the possibly
+ *  D-09-disambiguated name actually used for the new top-level key.
+ *  Populated by `stageAddFromEmpire`, which replaces (rather than
+ *  duplicates) a prior staged add for the same `sourceEmpireId`; `stageAdd`
+ *  remains the lower-level append-only setter for direct construction
+ *  (e.g. tests). */
 export interface StagedAdd {
   id: string;
   rawName: string;
@@ -90,6 +122,16 @@ export interface LastSave {
   added: number;
   removed: number;
   backupName: string | null;
+}
+
+/** Result of `stageAddFromEmpire` — what the panel action (04-07 Task 2)
+ *  needs to decide what to render: open the manager dialog (`needsFile`),
+ *  show the collision notice (`renamedFrom` set), or neither. */
+export interface StageAddResult {
+  staged: boolean;
+  needsFile: boolean;
+  rawName: string | null;
+  renamedFrom: string | null;
 }
 
 export interface DesignsSession {
@@ -115,6 +157,9 @@ export interface DesignsSession {
   loadArchiveFile: (file: File) => Promise<void>;
   toggleRemove: (index: number) => void;
   stageAdd: (add: StagedAdd) => void;
+  /** D-06/D-07/D-09: converts any `SavedEmpire` (player or AI) into a staged,
+   *  correctly-named, serialized design entry. See module doc + `StageAddResult`. */
+  stageAddFromEmpire: (empire: SavedEmpire) => Promise<StageAddResult>;
   undoAdd: (id: string) => void;
   discard: () => void;
   clearError: () => void;
@@ -141,6 +186,9 @@ export function useDesignsSession(): DesignsSession {
   const [removed, setRemoved] = useState<ReadonlySet<number>>(new Set());
   const [adds, setAdds] = useState<StagedAdd[]>([]);
   const [lastSave, setLastSave] = useState<LastSave | null>(null);
+  // Fallback id source when crypto.randomUUID is unavailable — a counter is
+  // sufficient for identity within one session (ids are never persisted).
+  const addIdCounter = useRef(0);
 
   const loadDesignsFile = useCallback(async (file: File) => {
     setLoading(true);
@@ -219,6 +267,59 @@ export function useDesignsSession(): DesignsSession {
   const stageAdd = useCallback((add: StagedAdd) => {
     setAdds((prev) => [...prev, add]);
   }, []);
+
+  const stageAddFromEmpire = useCallback(
+    async (empire: SavedEmpire): Promise<StageAddResult> => {
+      // No file loaded — there's nowhere to stage into. The caller (the
+      // panel action) opens the manager dialog; nothing is staged here
+      // (T-04-27 / UI-SPEC: never a silent no-op).
+      if (!designs) {
+        return { staged: false, needsFile: true, rawName: null, renamedFrom: null };
+      }
+      // Empire couldn't be converted to a design payload (too degenerate a
+      // country) — a user-facing error, never a throw.
+      if (!empire.design) {
+        setError("This empire's data is too incomplete to convert into a design.");
+        return { staged: false, needsFile: false, rawName: null, renamedFrom: null };
+      }
+
+      const designPayload: DesignEntry = empire.design;
+      const desiredKey = designPayload.key;
+
+      // Resolve against everything currently "in" the file EXCEPT this same
+      // empire's own prior staged add (if any) — re-staging the same source
+      // empire replaces it rather than compounding the " (N)" suffix on
+      // every re-stage.
+      const kept = designs.entries.filter((_, i) => !removed.has(i)).map((e) => e.rawName);
+      const otherAdds = adds.filter((a) => a.sourceEmpireId !== empire.id).map((a) => a.rawName);
+      const takenForResolution = [...kept, ...otherAdds];
+
+      const { uniqueDesignName } = await import("./designsText");
+      const resolvedName = resolveStagedName(desiredKey, takenForResolution, uniqueDesignName);
+      const renamedFrom = resolvedName !== desiredKey ? desiredKey : null;
+
+      const { serializeDesignEntry } = await import("./designSerialize");
+      const text = serializeDesignEntry({ ...designPayload, key: resolvedName }, designs.separator);
+
+      const id =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `add-${addIdCounter.current++}`;
+
+      const newAdd: StagedAdd = {
+        id,
+        rawName: resolvedName,
+        originalName: desiredKey,
+        text,
+        sourceEmpireId: empire.id,
+      };
+
+      setAdds((prev) => [...prev.filter((a) => a.sourceEmpireId !== empire.id), newAdd]);
+
+      return { staged: true, needsFile: false, rawName: resolvedName, renamedFrom };
+    },
+    [designs, removed, adds],
+  );
 
   const undoAdd = useCallback((id: string) => {
     setAdds((prev) => prev.filter((a) => a.id !== id));
@@ -328,6 +429,7 @@ export function useDesignsSession(): DesignsSession {
     loadArchiveFile,
     toggleRemove,
     stageAdd,
+    stageAddFromEmpire,
     undoAdd,
     discard,
     clearError,
