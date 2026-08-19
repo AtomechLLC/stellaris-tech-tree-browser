@@ -8,11 +8,11 @@
  * writer: tab indentation (one tab per nesting depth), one value per line,
  * CRLF line terminators, and the exact field order/shape measured
  * byte-for-byte against the user's real `user_empire_designs_v3.4.txt`
- * (see 04-RESEARCH.md "A complete real design entry"). Do NOT use the
- * Clausewitz parser library's `Writer` class here (RESEARCH.md Pitfall 3 —
- * its 2-space/single-line output is cosmetically wrong) and do NOT import
- * `designsText.ts` — the splice engine is the consumer of this module's
- * output, not a dependency of it (T-04-09).
+ * (see 04-RESEARCH.md "A complete real design entry"). Do NOT reach for the
+ * Clausewitz parser library's own serialization helper class here
+ * (RESEARCH.md Pitfall 3 — its 2-space/single-line output is cosmetically
+ * wrong) and do NOT import `designsText.ts` — the splice engine is the
+ * consumer of this module's output, not a dependency of it (T-04-09).
  */
 import type {
   DesignEntry,
