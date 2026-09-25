@@ -29,13 +29,12 @@
  * corpus.test.ts) compares tech.json with `meta.generatedAt` normalized/
  * excluded — every OTHER field is byte-stable across runs.
  */
-import { writeFileSync, mkdirSync, copyFileSync, existsSync, readdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, copyFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { resolveConfig } from "./config.js";
 import { detectGameVersion, detectVersionLabel } from "./version/detect.js";
 import { extractTechSources } from "./parser/event-grants.js";
-import { parseClausewitzFile } from "./parser/clausewitz.js";
 import { loadScriptedVariables } from "./parser/scripted-variables.js";
 import { extractAllTechsWithStats, listTechFiles } from "./parser/tech-extractor.js";
 import { loadDlcRegistry } from "./dlc/dlc-registry.js";
@@ -45,6 +44,7 @@ import { scanAllLocalisation, resolveTechText } from "./localisation/loc-scanner
 import { resolveIconSource, type TechSwap } from "./icons/resolve.js";
 import { archetypeSwapTag } from "./icons/archetype-swap.js";
 import { convertDdsToWebp, PLACEHOLDER_ICON_NAME } from "./icons/convert.js";
+import { resolveGovIconSources } from "./icons/gov-icons.js";
 import { buildUnlocks } from "./unlocks.js";
 import { normalizePotential } from "./gates.js";
 import { buildReport, printReport, type ReportWarnings } from "./report.js";
@@ -113,24 +113,22 @@ export async function runAssemble(): Promise<string> {
   const iconsOutDir = join(outDir, "icons");
   mkdirSync(iconsOutDir, { recursive: true });
 
-  // D-13: the placeholder is copied ONCE into the icons output dir and every
-  // fallback references that same emitted file — the shipped `icon` field must
-  // always point at a real file under data/v{version}/icons/ (SCHEMA.md
-  // contract). A copy failure warns rather than failing the build.
-  let placeholderEmitted = false;
-  const usePlaceholder = (): string => {
-    if (!placeholderEmitted) {
-      placeholderEmitted = true;
-      try {
-        copyFileSync(PLACEHOLDER_ICON_PATH, join(iconsOutDir, PLACEHOLDER_ICON_NAME));
-      } catch (err) {
-        console.warn(
-          `[assemble] failed to copy placeholder icon into ${iconsOutDir} (${err}) — placeholder refs may dangle`,
-        );
-      }
-    }
-    return PLACEHOLDER_ICON_NAME;
-  };
+  // D-13: the placeholder is copied unconditionally, every build, into the
+  // icons output dir — not lazily on first fallback use. This keeps every
+  // snapshot's icons dir the same shape (placeholder always present) so
+  // icon-count diffs between versions stay meaningful even when a build has
+  // zero tech icon fallbacks. Every fallback reference below points at this
+  // same emitted file — the shipped `icon` field must always point at a real
+  // file under data/v{version}/icons/ (SCHEMA.md contract). A copy failure
+  // warns rather than failing the build.
+  try {
+    copyFileSync(PLACEHOLDER_ICON_PATH, join(iconsOutDir, PLACEHOLDER_ICON_NAME));
+  } catch (err) {
+    console.warn(
+      `[assemble] failed to copy placeholder icon into ${iconsOutDir} (${err}) — placeholder refs may dangle`,
+    );
+  }
+  const usePlaceholder = (): string => PLACEHOLDER_ICON_NAME;
 
   const missingNames: string[] = [];
   let unresolvedGrantLocKeysTotal = 0;
@@ -336,69 +334,18 @@ export async function runAssemble(): Promise<string> {
     }
   }
 
-  // Civic / origin / authority / ascension-perk icons — shown in the app's
-  // empire-settings window (Saved Empire). Emitted as `_<save id>.webp` so the
-  // app maps an id to its icon with one rule.
-  //
-  // Civics/origins/authorities are DEFINITION-driven: each def may carry an
-  // explicit `icon = "gfx/....dds"` path (variant origins like origin_scion
-  // point at another origin's art — filename convention alone misses ~26 of
-  // them); a def without one falls back to the conventional same-named file.
-  // Ascension perks have no icon field — their files match ids 1:1, so a
-  // directory scan covers them. Supplementary (D-13): failures warn and skip.
-  const isPlain = (v: unknown): v is Record<string, unknown> =>
-    typeof v === "object" && v !== null && !Array.isArray(v);
-  const govDefSources: Array<{ defDir: string; idPattern: RegExp; fallbackDir: string }> = [
-    {
-      defDir: "common/governments/civics",
-      idPattern: /^(civic_|origin_)/,
-      fallbackDir: "gfx/interface/icons/governments/civics",
-    },
-    {
-      defDir: "common/governments/authorities",
-      idPattern: /^auth_/,
-      fallbackDir: "gfx/interface/icons/governments/authorities",
-    },
-  ];
-  const govDone = new Set<string>();
-  for (const { defDir, idPattern, fallbackDir } of govDefSources) {
-    const dir = join(gameRoot, ...defDir.split("/"));
-    let defFiles: string[] = [];
+  // Civic / origin / authority icons — shown in the app's empire-settings
+  // window (Saved Empire). Emitted as `_<id>.webp` so the app maps an id to
+  // its icon with one rule (declared-icon-wins, D-13 warn-and-skip on a
+  // conversion failure). See gov-icons.ts for the v4.5.1 specifics: nested
+  // `advanced_authority_swap` sub-blocks and the legacy conventional-art scan
+  // for civic/origin defs v4.5.1 deleted outright.
+  const govIconSources = await resolveGovIconSources(gameRoot);
+  for (const [id, srcPath] of govIconSources) {
     try {
-      defFiles = readdirSync(dir).filter((f) => f.endsWith(".txt"));
+      await convertDdsToWebp(srcPath, join(iconsOutDir, `_${id}.tmp.png`), join(iconsOutDir, `_${id}.webp`));
     } catch (err) {
-      console.warn(`[assemble] could not read gov def dir ${dir} (${err})`);
-      continue;
-    }
-    for (const file of defFiles) {
-      let raw: Record<string, unknown>;
-      try {
-        raw = await parseClausewitzFile(join(dir, file));
-      } catch (err) {
-        console.warn(`[assemble] could not parse gov defs ${file} (${err}) — skipping`);
-        continue;
-      }
-      for (const [id, val] of Object.entries(raw)) {
-        if (!idPattern.test(id) || !SAFE_NAME.test(id) || govDone.has(id)) continue;
-        const block = Array.isArray(val) ? val.find(isPlain) : val;
-        if (!isPlain(block)) continue;
-        // Def-declared icon path wins; else the conventional <id>.dds.
-        const declared = typeof block.icon === "string" && /\.dds$/i.test(block.icon) ? block.icon : null;
-        const srcPath = declared
-          ? join(gameRoot, ...declared.split("/"))
-          : join(gameRoot, ...fallbackDir.split("/"), `${id}.dds`);
-        if (!existsSync(srcPath)) continue;
-        govDone.add(id);
-        try {
-          await convertDdsToWebp(
-            srcPath,
-            join(iconsOutDir, `_${id}.tmp.png`),
-            join(iconsOutDir, `_${id}.webp`),
-          );
-        } catch (err) {
-          console.warn(`[assemble] gov icon conversion failed for "${id}" (${err}) — skipping`);
-        }
-      }
+      console.warn(`[assemble] gov icon conversion failed for "${id}" (${err}) — skipping`);
     }
   }
   // Ascension perks + ethics: filename == id, plain directory scans.
