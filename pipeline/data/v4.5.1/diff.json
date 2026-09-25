@@ -1,0 +1,19 @@
+{
+  "fromVersion": "v4.5.0",
+  "toVersion": "v4.5.1",
+  "added": [],
+  "removed": [],
+  "changed": [
+    {
+      "key": "tech_psi_jump_drive_1",
+      "name": "Psi Jump Drive",
+      "changes": [
+        {
+          "field": "weight",
+          "from": 25,
+          "to": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { parseClausewitzFile, normalizeToArray } from "../src/parser/clausewitz.js";
 import { loadScriptedVariables, resolveValue } from "../src/parser/scripted-variables.js";
 import { resolveConfig } from "../src/config.js";
@@ -68,8 +69,12 @@ describe("parser: resolveValue", () => {
 });
 
 describe("version: detectGameVersion", () => {
-  it("returns v4.5.0 from the real install's launcher-settings.json", () => {
-    expect(detectGameVersion(gameRoot)).toBe("v4.5.0");
+  it("returns the real install's launcher-settings.json rawVersion verbatim", () => {
+    const launcherSettings = JSON.parse(
+      readFileSync(join(gameRoot, "launcher-settings.json"), "utf8"),
+    );
+    expect(detectGameVersion(gameRoot)).toBe(launcherSettings.rawVersion);
+    expect(detectGameVersion(gameRoot)).toMatch(/^v\d+\.\d+\.\d+$/);
   });
 
   it("throws when rawVersion is absent", () => {

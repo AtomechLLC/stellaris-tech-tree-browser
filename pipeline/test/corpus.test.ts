@@ -1,6 +1,9 @@
 /**
  * Full-corpus integration test (D-18): validates the real 33-file install,
- * not a sample or fixture set. Proves DATA-01 through DATA-05 end-to-end:
+ * not a sample or fixture set. Proves DATA-01 through DATA-05 end-to-end.
+ * Targets whatever version is detected from the install (detectGameVersion),
+ * so it re-checks every future game-version bump rather than pinning to a
+ * committed snapshot:
  *
  *   Test 1 (full-corpus coverage, D-18): 650+ techs, 0 unresolved
  *     @scripted_variable references, 0 dangling prerequisites.
@@ -24,9 +27,13 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { runAssemble } from "../src/assemble.js";
 import { TechSnapshotSchema, type TechSnapshot } from "../src/schema/tech-snapshot.js";
+import { resolveConfig } from "../src/config.js";
+import { detectGameVersion } from "../src/version/detect.js";
 
-const OUT_PATH = join(process.cwd(), "data", "v4.5.0", "tech.json");
-const ICONS_DIR = join(process.cwd(), "data", "v4.5.0", "icons");
+const { gameRoot } = resolveConfig([]);
+const DATA_VERSION = detectGameVersion(gameRoot);
+const OUT_PATH = join(process.cwd(), "data", DATA_VERSION, "tech.json");
+const ICONS_DIR = join(process.cwd(), "data", DATA_VERSION, "icons");
 
 /** Strips the volatile meta.generatedAt field so two runs can be compared byte-for-byte. */
 function normalizeGeneratedAt(snapshot: TechSnapshot): TechSnapshot {
