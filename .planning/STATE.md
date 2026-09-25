@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 Phase: 04 (Empire Manager) — EXECUTING
 Plan: 1 of 8
 Status: Executing Phase 04
-Last activity: 2026-09-25 - Completed quick task 260924-qfo: regenerated tech-tree data snapshot for Stellaris v4.5.1 (Cygnus, 358e)
+Last activity: 2026-09-25 - Completed quick task 260924-vbv: restored 104 missing gov/authority icons in the v4.5.1 snapshot (byte-parity with v4.5.0)
 
 Progress: [██████████] 100%
 
@@ -120,6 +120,7 @@ None yet.
 | 260708-5di | Explore mode — Map/Explore toggle + collapsible forward tech tree from roots (expand to see unlocks) | 2026-07-08 | 61425c7..31a0ee2 | [260708-5di-...](./quick/260708-5di-explore-mode-collapsible-forward-tech-tr/) |
 | 260708-qt8 | Expose tech `potential` gates in pipeline (`gate` in tech.json); wire Saved Empire tab to snapshot gates, drop side-load | 2026-07-09 | code in working tree (WIP-entangled; see SUMMARY) | [260708-qt8-...](./quick/260708-qt8-expose-tech-potential-gates-in-pipeline-/) |
 | 260924-qfo | Regenerate tech-tree data snapshot for Stellaris v4.5.1 (Cygnus, 358e) — version-agnostic test paths, v4.5.1 data + diff, app snapshot schema test | 2026-09-25 | 1d363a0..9b502fb | [260924-qfo-...](./quick/260924-qfo-regenerate-tech-tree-data-snapshot-for-s/) |
+| 260924-vbv | Restore 104 missing gov/authority icons in v4.5.1 snapshot — resolveGovIconSources (authority-swap sub-blocks + legacy conventional art), placeholder always emitted, byte-parity 1373/1373 with v4.5.0 | 2026-09-25 | db87332..ec6a797 | [260924-vbv-...](./quick/260924-vbv-restore-missing-gov-authority-icons-in-v/) |
 
 ## Deferred Items
 
