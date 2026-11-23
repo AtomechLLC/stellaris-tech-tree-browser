@@ -25,11 +25,11 @@ async function getTechs(): Promise<ExtractedTech[]> {
 }
 
 describe("extractor: extractAllTechs (full 33-file corpus)", () => {
-  it("Test 1: returns 670+ techs, all keys start with tech_", async () => {
+  it("Test 1: returns 670+ techs, keys are non-empty and never @-prefixed", async () => {
     const techs = await getTechs();
     expect(techs.length).toBeGreaterThanOrEqual(670);
     for (const t of techs) {
-      expect(t.key.startsWith("tech_")).toBe(true);
+      expect(t.key.length > 0 && !t.key.startsWith("@")).toBe(true);
     }
   });
 

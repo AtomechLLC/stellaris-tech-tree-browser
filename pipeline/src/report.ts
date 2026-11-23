@@ -4,7 +4,7 @@
  *
  * Suggested minimum contents per RESEARCH.md's Validation Architecture
  * section:
- *   - total tech count parsed vs. total tech_* keys found (should match —
+ *   - total tech count parsed vs. top-level tech keys found (should match —
  *     catches technology_swap leakage per Pitfall 5)
  *   - count of unresolved @scripted_variable references remaining (must be 0)
  *   - count of dangling prerequisite references (must be 0 — buildAndValidateGraph
@@ -28,7 +28,7 @@ const KNOWN_CROSS_DLC_CASES: Array<{ techKey: string; expectedDlc: string }> = [
 ];
 
 export interface ReportWarnings {
-  /** Total tech_* top-level keys found across all source files (before any filtering). */
+  /** Top-level tech keys found across all source files (before any filtering). */
   totalTechKeysFound: number;
   /** Count of unresolved @scripted_variable references remaining in final output (should be 0). */
   unresolvedVariableCount: number;

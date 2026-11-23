@@ -1,8 +1,10 @@
 /**
- * Per-tech DLC classification (D-08, Pitfall 4): two-layer classification
- * combining filename convention (primary) with a `host_has_dlc` trigger scan
- * (secondary, overriding). Both layers are data-driven from the parsed DLC
- * registry (dlc-registry.ts) — no hand-typed DLC display-name table.
+ * Per-tech DLC classification (D-08, Pitfall 4): three layers, all data-driven
+ * (no hand-typed DLC display-name table). Order: host_has_dlc override, then
+ * filename convention, then a positive top-level scripted DLC trigger
+ * (Layer 3, fallback-only, from common/scripted_triggers via dlc-triggers.ts).
+ * Layer 3 is why the 4 Willpower techs and 20 previously-unlabeled DLC-gated
+ * techs (Cosmic Storms, Shroud, Paragons, Federations, Machine Age) get labels.
  *
  * Layer 1 (filename convention): normalize both the source filename's stem
  * (e.g. "00_ancient_relics_tech" -> tokens ["ancient","relics"]) and every
@@ -105,10 +107,38 @@ export function classifyDlc(
   tech: { potentialRaw?: unknown } | Record<string, unknown>,
   sourceFilename: string,
   dlcRegistry: Map<string, string>,
+  dlcTriggers?: Map<string, string>,
 ): string | null {
   const potential = (tech as Record<string, unknown>).potentialRaw;
   const override = findHostHasDlc(potential);
   if (override) return override;
 
-  return classifyByFilename(sourceFilename, dlcRegistry);
+  const byFile = classifyByFilename(sourceFilename, dlcRegistry);
+  if (byFile) return byFile;
+
+  if (dlcTriggers && dlcTriggers.size > 0) return findScriptedDlcTrigger(potential, dlcTriggers);
+  return null;
+}
+
+const TRANSPARENT_WRAPPERS = ["AND", "hidden_trigger", "custom_tooltip"];
+
+function isTrue(v: unknown): boolean {
+  const last = Array.isArray(v) ? v[v.length - 1] : v;
+  return last === true || last === "yes";
+}
+
+/** Walks the AND-chain (top level + AND/hidden_trigger/custom_tooltip), never OR/NOT/NOR. */
+function findScriptedDlcTrigger(block: unknown, triggers: Map<string, string>): string | null {
+  if (!isPlainObject(block)) return null;
+  for (const [key, value] of Object.entries(block)) {
+    const dlc = triggers.get(key);
+    if (dlc && isTrue(value)) return dlc;
+  }
+  for (const w of TRANSPARENT_WRAPPERS) {
+    for (const entry of normalizeToArray(block[w] as unknown | unknown[] | undefined)) {
+      const found = findScriptedDlcTrigger(entry, triggers);
+      if (found) return found;
+    }
+  }
+  return null;
 }
