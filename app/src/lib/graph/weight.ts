@@ -37,7 +37,7 @@ const OPERATORS: Record<string, string> = {
 };
 
 /** Condition keys that carry structural/meta info, not a real player condition. */
-const SKIP_KEYS = new Set(["factor", "inline_script", "add", "always"]);
+const SKIP_KEYS = new Set(["factor", "mult", "inline_script", "add", "always"]);
 
 /** Boolean-logic connectives — their value is a block of sub-conditions. */
 const LOGIC = new Set(["OR", "AND", "NOR", "NOT"]);
@@ -289,7 +289,8 @@ function describeCondition(
  */
 function describeModifier(mod: unknown, techByKey: Map<string, Tech>): string | null {
   if (!isPlainObject(mod)) return null;
-  const factor = mod.factor;
+  // 4.6.0 also writes the multiplier as `mult`; treat it exactly like `factor`.
+  const factor = mod.factor ?? mod.mult;
   const conditions: string[] = [];
   for (const [key, value] of Object.entries(mod)) {
     if (SKIP_KEYS.has(key)) continue;
