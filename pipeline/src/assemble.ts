@@ -42,7 +42,7 @@ import { classifyDlc } from "./dlc/dlc-classifier.js";
 import { loadDlcTriggerMap } from "./dlc/dlc-triggers.js";
 import { loadSpriteTextures, resolveFactionTypes } from "./factions/faction-types.js";
 import { buildAndValidateGraph } from "./graph/build-dag.js";
-import { scanAllLocalisation, resolveTechText } from "./localisation/loc-scanner.js";
+import { scanAllLocalisation, resolveTechText, loadScriptedLocDefaults } from "./localisation/loc-scanner.js";
 import { resolveIconSource, type TechSwap } from "./icons/resolve.js";
 import { archetypeSwapTag } from "./icons/archetype-swap.js";
 import { convertDdsToWebp, PLACEHOLDER_ICON_NAME } from "./icons/convert.js";
@@ -102,6 +102,7 @@ export async function runAssemble(): Promise<string> {
     );
   }
   const locMap = scanAllLocalisation(join(gameRoot, LOCALISATION_SUBDIR));
+  const scriptedLoc = await loadScriptedLocDefaults(join(gameRoot, "common", "scripted_loc"));
 
   // Event / dig-site tech grants → synthetic "source" parent cards (reliable
   // subset; see parser/event-grants.ts). Attached below to eligible techs only.
@@ -161,7 +162,7 @@ export async function runAssemble(): Promise<string> {
     // the tech has no potential gate).
     const gate = normalizePotential(potentialRaw);
 
-    const { name, description } = resolveTechText(key, locMap);
+    const { name, description } = resolveTechText(key, locMap, scriptedLoc);
     if (!name) {
       missingNames.push(key);
     }

@@ -27,6 +27,7 @@
  */
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { parseClausewitzFile, normalizeToArray } from "../parser/clausewitz.js";
 
 // Optional numeric index: matches BOTH `key:0 "value"` and `key: "value"`
 // forms. Requiring the digit falsely reports ~215 keys missing (verified in
@@ -77,14 +78,51 @@ export function resolveLocTokens(
   value: string,
   map: Map<string, string>,
   depth = 0,
+  scriptedLoc?: Map<string, string>,
 ): string {
   if (depth > 12) return value; // cycle / runaway guard
-  return value.replace(/\$([^$]*)\$/g, (whole, inner: string) => {
+  const expanded = value.replace(/\$([^$]*)\$/g, (whole, inner: string) => {
     if (inner === "") return whole; // literal `$$` etc.
     const key = inner.split("|")[0]; // drop a `$key|fmt$` formatting spec
     const hit = map.get(key);
-    return hit === undefined ? whole : resolveLocTokens(hit, map, depth + 1);
+    return hit === undefined ? whole : resolveLocTokens(hit, map, depth + 1, scriptedLoc);
   });
+  if (!scriptedLoc || scriptedLoc.size === 0) return expanded;
+  // Bare `[GetX]` scripted-loc calls (no dots/scopes) -> the definition's default key.
+  return expanded.replace(/\[(Get[A-Za-z0-9_]*)\]/g, (whole, name: string) => {
+    const defaultKey = scriptedLoc.get(name);
+    if (defaultKey === undefined) return whole;
+    const hit = map.get(defaultKey);
+    return hit === undefined ? whole : resolveLocTokens(hit, map, depth + 1, scriptedLoc);
+  });
+}
+
+/**
+ * Loads common/scripted_loc/*.txt into a name -> default-localisation-key map
+ * (`defined_text = { name = GetX ... default = some_loc_key }`). A file that
+ * fails to parse is warned about and skipped (same policy as scripted_triggers).
+ */
+export async function loadScriptedLocDefaults(scriptedLocDir: string): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  let files: string[] = [];
+  try {
+    files = readdirSync(scriptedLocDir).filter((f) => f.toLowerCase().endsWith(".txt")).sort();
+  } catch {
+    return out;
+  }
+  for (const file of files) {
+    try {
+      const parsed = await parseClausewitzFile(join(scriptedLocDir, file));
+      for (const def of normalizeToArray(parsed.defined_text)) {
+        if (typeof def !== "object" || def === null) continue;
+        const d = def as Record<string, unknown>;
+        if (typeof d.name === "string" && typeof d.default === "string") out.set(d.name, d.default);
+      }
+    } catch {
+      console.warn(`[loc] scripted_loc file failed to parse (skipped): ${file}`);
+    }
+  }
+  return out;
 }
 
 /**
@@ -106,8 +144,12 @@ function stripLocMarkup(value: string): string {
  * tech names/descriptions AND unlock (grant) text so both render as plain text
  * with no residual raw tokens.
  */
-export function resolveDisplayText(raw: string, map: Map<string, string>): string {
-  return stripLocMarkup(resolveLocTokens(raw, map));
+export function resolveDisplayText(
+  raw: string,
+  map: Map<string, string>,
+  scriptedLoc?: Map<string, string>,
+): string {
+  return stripLocMarkup(resolveLocTokens(raw, map, 0, scriptedLoc));
 }
 
 /**
@@ -119,11 +161,15 @@ export function resolveDisplayText(raw: string, map: Map<string, string>): strin
  * to the building/module/megastructure it unlocks) and strips in-game §colour /
  * £icon markup, so the output is clean display plain text — never HTML.
  */
-export function resolveTechText(techKey: string, map: Map<string, string>): ResolvedTechText {
+export function resolveTechText(
+  techKey: string,
+  map: Map<string, string>,
+  scriptedLoc?: Map<string, string>,
+): ResolvedTechText {
   const rawName = map.get(techKey);
   const rawDesc = map.get(`${techKey}_desc`);
   return {
-    name: rawName === undefined ? null : resolveDisplayText(rawName, map),
-    description: rawDesc === undefined ? null : resolveDisplayText(rawDesc, map),
+    name: rawName === undefined ? null : resolveDisplayText(rawName, map, scriptedLoc),
+    description: rawDesc === undefined ? null : resolveDisplayText(rawDesc, map, scriptedLoc),
   };
 }
