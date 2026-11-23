@@ -28,7 +28,6 @@ import type { Tech } from "../schema/tech-snapshot.js";
 
 const TECHNOLOGY_SUBDIR = join("common", "technology");
 const VALID_AREAS = new Set(["physics", "society", "engineering"]);
-const TECH_KEY_PATTERN = /^tech_/;
 
 /** A prereqfor_desc entry's title/desc are verbatim LOCALISATION KEYS (D-05a) — not resolved here. */
 export interface PrereqforDescEntry {
@@ -351,7 +350,7 @@ export function extractTech(
 export interface ExtractAllTechsResult {
   techs: ExtractedTech[];
   /**
-   * Total top-level `tech_*` keys seen across all source files BEFORE the
+   * Total top-level tech keys (not `@var`, not `inline_script`) seen across all source files BEFORE the
    * isPlainObject extraction filter — the D-17 count-match input. Measured
    * here (not derived from the filtered output) so the report's
    * parsed-vs-found comparison can actually detect extraction drift.
@@ -360,10 +359,10 @@ export interface ExtractAllTechsResult {
 }
 
 /**
- * Parses all 33 tech files under `common/technology/` and returns the full
- * set of extracted `tech_*` records (678+ expected per RESEARCH.md's direct
- * corpus count; `000_documentation.txt` and any non-tech top-level key are
- * filtered out) plus the pre-filter `tech_*` key count for the D-17 report.
+ * Parses every tech file under `common/technology/` (count is version
+ * dependent) and returns the extracted records for every top-level key that is
+ * not an `@variable` (including non-`tech_`-prefixed techs such as 4.6.0's
+ * `null_void_beam`), plus the pre-filter key count for the D-17 report.
  */
 export async function extractAllTechsWithStats(
   gameRoot: string,
@@ -389,7 +388,11 @@ export async function extractAllTechsWithStats(
     }
 
     for (const [key, value] of Object.entries(rawFile)) {
-      if (!TECH_KEY_PATTERN.test(key)) continue;
+      // Every top-level key that is not an @variable or the reserved
+      // inline_script word is a tech candidate. Not all techs are
+      // `tech_`-prefixed (4.6.0: `null_void_beam`); extractTech's missing
+      // area/tier throw is the fail-loud guard against a non-tech block.
+      if (key.startsWith("@") || key === "inline_script") continue;
       totalTechKeysFound++;
       if (!isPlainObject(value)) continue;
       techs.push(extractTech(key, value, fileVars, file));

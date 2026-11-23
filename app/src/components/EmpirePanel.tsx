@@ -6,6 +6,7 @@ import { useDesignsSession } from "../lib/empire/useDesignsSession";
 import { GalaxyMinimap } from "./GalaxyMinimap";
 import { EmpireManagerPanel } from "./EmpireManagerPanel";
 import { PdxName } from "./PdxName";
+import { humanizeId } from "../lib/empire/labels";
 import { dataUrl } from "../lib/data/paths";
 import { stripPdxCodes } from "../lib/pdxText";
 
@@ -287,6 +288,7 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
         <EmpireSettingsPanel
           empire={selected}
           iconBase={dataUrl(`${version}/icons`)}
+          factionTypes={snapshot.factions}
           onClose={() => setShowSettings(false)}
         />
       )}
@@ -302,17 +304,6 @@ export function EmpirePanel({ snapshot, onBuckets }: EmpirePanelProps) {
   );
 }
 
-/** Strips a known id prefix, unslugs, and Title-Cases a raw Stellaris id
- *  (e.g. `ethic_fanatic_militarist` → "Fanatic Militarist"). No localisation
- *  for these lives in the snapshot, so this humanizes the raw key. */
-function humanize(id: string): string {
-  return id
-    .replace(/^(auth_|origin_|ethic_|civic_|ap_|sp_)/, "")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim();
-}
-
 /** One settings chip: game icon + name. `iconOnly` (ethics) drops the text —
  *  players read these at a glance — keeping it as the tooltip; if the icon
  *  fails to load the text comes back so the chip is never empty. */
@@ -321,18 +312,23 @@ function SettingsChip({
   text,
   iconBase,
   iconOnly = false,
+  iconFile,
 }: {
   id: string | null;
   text: string;
   iconBase: string;
   iconOnly?: boolean;
+  /** Explicit icon filename under iconBase (snapshot-table sourced). Undefined
+   *  keeps the `_<id>.webp` convention; null renders text only. */
+  iconFile?: string | null;
 }) {
   const [iconFailed, setIconFailed] = useState(false);
-  const showIcon = id !== null && !iconFailed;
+  const iconName = iconFile === undefined ? (id !== null ? `_${id}.webp` : null) : iconFile;
+  const showIcon = iconName !== null && !iconFailed;
   return (
     <span className="empire-chip" data-icon-only={iconOnly && showIcon ? "" : undefined} title={text}>
       {showIcon && (
-        <img src={`${iconBase}/_${id}.webp`} alt={text} loading="lazy" onError={() => setIconFailed(true)} />
+        <img src={`${iconBase}/${iconName}`} alt={text} loading="lazy" onError={() => setIconFailed(true)} />
       )}
       {(!iconOnly || !showIcon) && text}
     </span>
@@ -343,10 +339,13 @@ function SettingsChip({
 function EmpireSettingsPanel({
   empire,
   iconBase,
+  factionTypes,
   onClose,
 }: {
   empire: SavedEmpire;
   iconBase: string;
+  /** Snapshot faction table (4.6.0+); undefined on older snapshots. */
+  factionTypes?: TechSnapshot["factions"];
   onClose: () => void;
 }) {
   // Chips carry the raw id so they can show the game's icon — the pipeline
@@ -355,16 +354,26 @@ function EmpireSettingsPanel({
   const rows: {
     label: string;
     iconOnly?: boolean;
-    items: { id: string | null; text: string }[];
+    items: { id: string | null; text: string; iconFile?: string | null }[];
   }[] = [
     {
       label: "Authority",
-      items: empire.authority ? [{ id: empire.authority, text: humanize(empire.authority) }] : [],
+      items: empire.authority ? [{ id: empire.authority, text: humanizeId(empire.authority) }] : [],
     },
-    { label: "Origin", items: empire.origin ? [{ id: empire.origin, text: humanize(empire.origin) }] : [] },
-    { label: "Ethics", iconOnly: true, items: empire.ethics.map((e) => ({ id: e, text: humanize(e) })) },
-    { label: "Civics", items: empire.civics.map((c) => ({ id: c, text: humanize(c) })) },
-    { label: "Ascension Perks", items: (empire.perks ?? []).map((p) => ({ id: p, text: humanize(p) })) },
+    { label: "Origin", items: empire.origin ? [{ id: empire.origin, text: humanizeId(empire.origin) }] : [] },
+    { label: "Ethics", iconOnly: true, items: empire.ethics.map((e) => ({ id: e, text: humanizeId(e) })) },
+    {
+      // Icon filenames come ONLY from the snapshot table, never from save
+      // strings (unknown/old-snapshot types render a humanized text chip).
+      label: "Factions",
+      items: (empire.factions ?? []).map((f) => ({
+        id: f,
+        text: factionTypes?.[f]?.name ?? humanizeId(f),
+        iconFile: factionTypes?.[f]?.icon ?? null,
+      })),
+    },
+    { label: "Civics", items: empire.civics.map((c) => ({ id: c, text: humanizeId(c) })) },
+    { label: "Ascension Perks", items: (empire.perks ?? []).map((p) => ({ id: p, text: humanizeId(p) })) },
   ];
   return (
     <aside className="empire-settings" aria-label={`${stripPdxCodes(empire.name)} settings`}>
@@ -395,11 +404,12 @@ function EmpireSettingsPanel({
               {r.items.length > 0 ? (
                 r.items.map((it) => (
                   <SettingsChip
-                    key={it.text}
+                    key={it.id ?? it.text}
                     id={it.id}
                     text={it.text}
                     iconBase={iconBase}
                     iconOnly={r.iconOnly}
+                    iconFile={it.iconFile}
                   />
                 ))
               ) : (

@@ -94,6 +94,20 @@ export const TechSchema = z.object({
   archetypeIcons: z.array(ArchetypeIconSchema).default([]),
 });
 
+/** One faction type (pop_faction_types). KEEP IN SYNC with the pipeline schema. */
+export const FactionTypeSchema = z.object({
+  key: z.string(),
+  name: z.string(),
+  icon: z.string().nullable(),
+  guidingEthic: z.string().nullable(),
+  ideologies: z.array(z.string()),
+  ideologyEthics: z.array(z.string()),
+  ideologicalName: z.string().nullable(),
+  ideologicalIcon: z.string().nullable(),
+});
+
+export type FactionType = z.infer<typeof FactionTypeSchema>;
+
 export const TechSnapshotSchema = z.object({
   meta: z.object({
     gameVersion: z.string(),
@@ -109,6 +123,8 @@ export const TechSnapshotSchema = z.object({
     sourceFiles: z.array(z.string()),
   }),
   techs: z.record(z.string(), TechSchema),
+  /** Faction-type table, keyed by faction key. 4.6.0+; absent in older snapshots. */
+  factions: z.record(z.string(), FactionTypeSchema).optional(),
 });
 
 export type TechSnapshot = z.infer<typeof TechSnapshotSchema>;

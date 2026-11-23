@@ -1,0 +1,314 @@
+{
+  "fromVersion": "v4.5.1",
+  "toVersion": "v4.6.0",
+  "added": [
+    {
+      "key": "null_void_beam",
+      "name": "Null Void Beam",
+      "tier": 2,
+      "area": "physics"
+    },
+    {
+      "key": "tech_cultural_envoys",
+      "name": "[GetCulturalEnvoyNamePlural]",
+      "tier": 2,
+      "area": "society"
+    },
+    {
+      "key": "tech_galactic_halls",
+      "name": "Galactic Halls",
+      "tier": 2,
+      "area": "society"
+    },
+    {
+      "key": "tech_ideology_projection_1",
+      "name": "Ideological Projection",
+      "tier": 3,
+      "area": "society"
+    },
+    {
+      "key": "tech_ideology_projection_2",
+      "name": "Ideological Amplification",
+      "tier": 4,
+      "area": "society"
+    }
+  ],
+  "removed": [],
+  "changed": [
+    {
+      "key": "tech_advanced_industrial_storm_protection",
+      "name": "Planetary Storm Nullification",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Cosmic Storms"
+        }
+      ]
+    },
+    {
+      "key": "tech_advanced_storm_manipulation",
+      "name": "Advanced Storm Manipulation",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Cosmic Storms"
+        }
+      ]
+    },
+    {
+      "key": "tech_alloy_fossilization",
+      "name": "Alloy Fossilization",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Shadows of the Shroud"
+        }
+      ]
+    },
+    {
+      "key": "tech_cryovault",
+      "name": "Frozen World Habitats",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Shadows of the Shroud"
+        }
+      ]
+    },
+    {
+      "key": "tech_georadiation_terraforming",
+      "name": "Georadiation Terraforming",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Shadows of the Shroud"
+        }
+      ]
+    },
+    {
+      "key": "tech_industrial_storm_protection",
+      "name": "Planetary Storm Negation",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Cosmic Storms"
+        }
+      ]
+    },
+    {
+      "key": "tech_interstellar_assembly",
+      "name": "Interstellar Assembly",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Megacorp"
+        }
+      ]
+    },
+    {
+      "key": "tech_leviathan_techgenesis",
+      "name": "Leviathan Tech Genesis",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "The Machine Age"
+        }
+      ]
+    },
+    {
+      "key": "tech_living_test_subjects",
+      "name": "Living Test Subjects",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Shadows of the Shroud"
+        }
+      ]
+    },
+    {
+      "key": "tech_matter_decompressor",
+      "name": "Matter Decompressor",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Megacorp"
+        }
+      ]
+    },
+    {
+      "key": "tech_mega_art",
+      "name": "Mega Art Installation",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Megacorp"
+        }
+      ]
+    },
+    {
+      "key": "tech_mega_shipyard",
+      "name": "Mega Shipyard",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Federations"
+        }
+      ]
+    },
+    {
+      "key": "tech_orbital_maneuvers",
+      "name": "Advanced Orbital Maneuvers",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Shadows of the Shroud"
+        }
+      ]
+    },
+    {
+      "key": "tech_pyroclastic_resonation",
+      "name": "Pyroclastic Resonation",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Shadows of the Shroud"
+        }
+      ]
+    },
+    {
+      "key": "tech_ship_hull_storm_breaker_1",
+      "name": "Storm Dampening Generators",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Cosmic Storms"
+        }
+      ]
+    },
+    {
+      "key": "tech_ship_hull_storm_breaker_2",
+      "name": "Storm Breaker Coating",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Cosmic Storms"
+        }
+      ]
+    },
+    {
+      "key": "tech_ship_storm_weapons_1",
+      "name": "Payload Padding",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Cosmic Storms"
+        }
+      ]
+    },
+    {
+      "key": "tech_ship_storm_weapons_2",
+      "name": "Tempest Cage Architecture",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Cosmic Storms"
+        }
+      ]
+    },
+    {
+      "key": "tech_storm_manipulation",
+      "name": "Storm Manipulation",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Cosmic Storms"
+        }
+      ]
+    },
+    {
+      "key": "tech_storm_prediction_1",
+      "name": "Cosmic Weather Models",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Cosmic Storms"
+        }
+      ]
+    },
+    {
+      "key": "tech_storm_prediction_2",
+      "name": "Probability Current",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Cosmic Storms"
+        }
+      ]
+    },
+    {
+      "key": "tech_strategic_coordination",
+      "name": "Strategic Coordination Center",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Megacorp"
+        }
+      ]
+    },
+    {
+      "key": "tech_strike_craft_skrand",
+      "name": "Skravird Strike Craft",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Galactic Paragons"
+        }
+      ]
+    },
+    {
+      "key": "tech_volcanic_terraforming",
+      "name": "Volcanic Terraforming",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Infernals Species Pack"
+        }
+      ]
+    },
+    {
+      "key": "tech_xeno_linguistics",
+      "name": "Xeno-Linguistics",
+      "changes": [
+        {
+          "field": "dlc",
+          "from": "none",
+          "to": "Galactic Paragons"
+        }
+      ]
+    }
+  ]
+}

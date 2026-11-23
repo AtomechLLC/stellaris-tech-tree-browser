@@ -225,6 +225,15 @@ describe("describeWeightModifiers", () => {
     ]);
   });
 
+  it("treats 4.6.0 `mult` as a synonym of `factor`", () => {
+    const lines = describeWeightModifiers(
+      { modifier: { mult: 2, has_ethic: "ethic_fanatic_militarist" } },
+      mapOf(),
+    );
+    expect(lines).toHaveLength(1);
+    expect(lines[0]!.startsWith("×2 if")).toBe(true);
+  });
+
   it("returns [] for empty / undefined / non-object input (defensive)", () => {
     expect(describeWeightModifiers(undefined, mapOf())).toEqual([]);
     expect(describeWeightModifiers(null, mapOf())).toEqual([]);

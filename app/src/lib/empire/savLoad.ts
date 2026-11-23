@@ -24,6 +24,9 @@ export interface SavedEmpire extends RawEmpire {
   /** Full custom-empire-design payload for the Empire Manager (D-07); null
    *  when the country is too degenerate to describe. */
   design: DesignEntry | null;
+  /** Faction type keys from the save's `pop_factions` (sorted, unique).
+   *  Optional so fixtures predating this field keep compiling. */
+  factions?: string[];
 }
 
 /** One star system on the galaxy minimap. Coordinates are the save's raw
@@ -67,6 +70,24 @@ function toArr<T>(v: T | T[] | undefined): T[] {
 }
 function isObj(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/** Faction type keys per country id from the gamestate's `pop_factions`
+ *  (`0=none` placeholders and entries without a numeric country / string type
+ *  are skipped). Sorted and de-duplicated per country. */
+export function readFactionsByCountry(root: Record<string, any>): Map<number, string[]> {
+  const out = new Map<number, string[]>();
+  const pf = root.pop_factions;
+  if (!isObj(pf)) return out;
+  for (const f of Object.values(pf)) {
+    if (!isObj(f)) continue;
+    if (typeof f.country !== "number" || typeof f.type !== "string") continue;
+    const list = out.get(f.country) ?? [];
+    if (!list.includes(f.type)) list.push(f.type);
+    out.set(f.country, list);
+  }
+  for (const list of out.values()) list.sort();
+  return out;
 }
 
 /** Full client-side pipeline: raw .sav bytes → list of empires. */
@@ -145,6 +166,7 @@ export async function loadEmpiresFromSav(savBytes: Uint8Array): Promise<SavLoadR
   };
 
   const countries = root.country;
+  const factionsByCountry = readFactionsByCountry(root);
   const empires: SavedEmpire[] = [];
   if (isObj(countries)) {
     for (const [key, val] of Object.entries(countries)) {
@@ -197,6 +219,7 @@ export async function loadEmpiresFromSav(savBytes: Uint8Array): Promise<SavLoadR
         researched,
         researchedCount: researched.length,
         design,
+        factions: factionsByCountry.get(idNum) ?? [],
       });
     }
   }

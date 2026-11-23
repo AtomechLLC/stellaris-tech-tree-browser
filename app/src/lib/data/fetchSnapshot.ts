@@ -5,9 +5,9 @@ import { dataUrl } from "./paths";
 export const VERSION_PREF_KEY = "stellaris-tech:data-version";
 
 export interface VersionEntry {
-  /** Data directory name, e.g. "v4.5.0". */
+  /** Data directory name, e.g. "v<major>.<minor>.<patch>". */
   dir: string;
-  /** Display label, e.g. "Cygnus v4.5.0 (aa56)". */
+  /** Display label, e.g. "<Release> v<major>.<minor>.<patch> (<checksum>)". */
   label: string;
 }
 
@@ -18,8 +18,8 @@ export interface VersionsManifest {
 
 /**
  * Fetches the versions manifest written by copy-data. Returns null on ANY
- * failure (older deploys have no manifest) — the caller falls back to the
- * hardcoded default version, exactly the pre-selector behavior.
+ * failure (the app has no hard-coded default version) — resolveDataVersion
+ * throws when the manifest is missing, which App surfaces as its error state.
  */
 export async function fetchVersionManifest(): Promise<VersionsManifest | null> {
   try {
@@ -55,7 +55,10 @@ export function resolveDataVersion(manifest: VersionsManifest | null): string {
   } catch {
     /* storage unavailable — fall through to latest */
   }
-  return manifest?.latest ?? "v4.5.0";
+  if (!manifest || manifest.versions.length === 0) {
+    throw new Error("Data manifest (data/versions.json) is missing or empty — run `npm run copy-data`");
+  }
+  return manifest.latest;
 }
 
 /**
@@ -66,7 +69,7 @@ export function resolveDataVersion(manifest: VersionsManifest | null): string {
  * (App.tsx) can surface a clean error state instead of a blank screen
  * (T-02-02 mitigation).
  */
-export async function fetchSnapshot(version = "v4.5.0"): Promise<TechSnapshot> {
+export async function fetchSnapshot(version: string): Promise<TechSnapshot> {
   // `cache: "no-cache"` forces the browser to REVALIDATE with the server on
   // every load (conditional GET → 304 when unchanged, fresh 200 when the data
   // was regenerated). Without this the browser happily serves a stale cached

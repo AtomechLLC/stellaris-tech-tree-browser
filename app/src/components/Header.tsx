@@ -9,10 +9,6 @@ import { dataUrl } from "../lib/data/paths";
 import type { VersionEntry } from "../lib/data/fetchSnapshot";
 import { WhatsNew } from "./WhatsNew";
 
-// Fixed version path — the header renders before the snapshot loads, and the
-// icon is a static asset generated into the versioned icon set by the pipeline.
-const XENOPHILE_ICON = dataUrl("v4.5.0/icons/_ethic_xenophile.webp");
-
 export function Header({
   version,
   dataVersion,
@@ -21,7 +17,7 @@ export function Header({
   onJumpToTech,
 }: {
   version?: string;
-  /** Snapshot data version ("v4.5.0") — drives the What's-new diff lookup. */
+  /** Snapshot data version ("v<major>.<minor>.<patch>") — drives the What's-new diff lookup and the header icon. */
   dataVersion?: string;
   /** Available data versions (manifest) — >1 turns the chip into a picker. */
   versions?: VersionEntry[];
@@ -33,7 +29,14 @@ export function Header({
   const selectable = versions.length > 1 && !!onSelectVersion && !!dataVersion;
   return (
     <header className="app-header">
-      <img className="app-header__ethic" src={XENOPHILE_ICON} alt="" aria-hidden />
+      {dataVersion && (
+        <img
+          className="app-header__ethic"
+          src={dataUrl(`${dataVersion}/icons/_ethic_xenophile.webp`)}
+          alt=""
+          aria-hidden
+        />
+      )}
       <h1 className="app-header__title">Xelnath's Stellaris Tech Finder</h1>
       {selectable ? (
         <select

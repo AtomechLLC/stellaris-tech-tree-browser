@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { parseClausewitzFile } from "../src/parser/clausewitz.js";
 import { resolveConfig } from "../src/config.js";
 import { loadScriptedVariables } from "../src/parser/scripted-variables.js";
-import { extractAllTechs } from "../src/parser/tech-extractor.js";
+import { extractAllTechs, extractAllTechsWithStats, listTechFiles } from "../src/parser/tech-extractor.js";
 import { loadDlcRegistry } from "../src/dlc/dlc-registry.js";
 import { classifyDlc } from "../src/dlc/dlc-classifier.js";
 import { buildAndValidateGraph } from "../src/graph/build-dag.js";
@@ -21,11 +25,11 @@ async function getTechs(): Promise<ExtractedTech[]> {
 }
 
 describe("extractor: extractAllTechs (full 33-file corpus)", () => {
-  it("Test 1: returns 670+ techs, all keys start with tech_", async () => {
+  it("Test 1: returns 670+ techs, keys are non-empty and never @-prefixed", async () => {
     const techs = await getTechs();
     expect(techs.length).toBeGreaterThanOrEqual(670);
     for (const t of techs) {
-      expect(t.key.startsWith("tech_")).toBe(true);
+      expect(t.key.length > 0 && !t.key.startsWith("@")).toBe(true);
     }
   });
 
@@ -64,13 +68,39 @@ describe("extractor: extractAllTechs (full 33-file corpus)", () => {
     expect(tech!.prerequisites).toContain("tech_basic_science_lab_2");
   });
 
-  it("Test 6: 000_documentation.txt contributes zero techs, no non-tech_* keys leak", async () => {
+  it("Test 6: 000_documentation.txt contributes zero techs; every top-level non-@ key in every tech file is extracted", async () => {
     const techs = await getTechs();
-    for (const t of techs) {
-      expect(t.key.startsWith("tech_")).toBe(true);
+    const keys = new Set(techs.map((t) => t.key));
+    const expected: string[] = [];
+    for (const f of listTechFiles(gameRoot)) {
+      const parsed = await parseClausewitzFile(join(gameRoot, "common", "technology", f));
+      for (const k of Object.keys(parsed)) if (!k.startsWith("@")) expected.push(k);
     }
+    expect(expected.length).toBeGreaterThan(600);
+    for (const k of expected) expect(keys.has(k), k).toBe(true);
     const fromDocs = techs.filter((t) => t.sourceFile === "000_documentation.txt");
     expect(fromDocs.length).toBe(0);
+  });
+
+  it("Test 6b: fixture dir extracts non-tech_-prefixed keys and counts them", async () => {
+    const root = mkdtempSync(join(tmpdir(), "tech-extract-"));
+    try {
+      mkdirSync(join(root, "common", "technology"), { recursive: true });
+      writeFileSync(
+        join(root, "common", "technology", "00_fixture.txt"),
+        [
+          "@v = 5",
+          "tech_a = { area = physics tier = 1 cost = @v }",
+          "null_thing = { area = society tier = 2 cost = 10 }",
+          "",
+        ].join("\n"),
+      );
+      const res = await extractAllTechsWithStats(root, new Map());
+      expect(res.totalTechKeysFound).toBe(2);
+      expect(res.techs.map((t) => t.key).sort()).toEqual(["null_thing", "tech_a"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("Test 7: each tech captures its OWN raw unlock content (D-05 component a)", async () => {

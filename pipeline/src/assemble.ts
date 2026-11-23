@@ -39,6 +39,8 @@ import { loadScriptedVariables } from "./parser/scripted-variables.js";
 import { extractAllTechsWithStats, listTechFiles } from "./parser/tech-extractor.js";
 import { loadDlcRegistry } from "./dlc/dlc-registry.js";
 import { classifyDlc } from "./dlc/dlc-classifier.js";
+import { loadDlcTriggerMap } from "./dlc/dlc-triggers.js";
+import { loadSpriteTextures, resolveFactionTypes } from "./factions/faction-types.js";
 import { buildAndValidateGraph } from "./graph/build-dag.js";
 import { scanAllLocalisation, resolveTechText } from "./localisation/loc-scanner.js";
 import { resolveIconSource, type TechSwap } from "./icons/resolve.js";
@@ -93,6 +95,12 @@ export async function runAssemble(): Promise<string> {
   const versionLabel = detectVersionLabel(gameRoot);
   const varMap = await loadScriptedVariables(gameRoot);
   const dlcRegistry = await loadDlcRegistry(gameRoot);
+  const { map: dlcTriggers, unparsedFiles: unparsedTriggerFiles } = await loadDlcTriggerMap(gameRoot);
+  if (unparsedTriggerFiles.length > 0) {
+    console.warn(
+      `[assemble] ${unparsedTriggerFiles.length} scripted_triggers file(s) failed to parse (skipped): ${unparsedTriggerFiles.join(", ")}`,
+    );
+  }
   const locMap = scanAllLocalisation(join(gameRoot, LOCALISATION_SUBDIR));
 
   // Event / dig-site tech grants → synthetic "source" parent cards (reliable
@@ -147,7 +155,7 @@ export async function runAssemble(): Promise<string> {
     const { key, sourceFile, unlockContentRaw, potentialRaw, iconOverrideRaw, technologySwapRaw, fileVars, ...techFields } =
       extracted;
 
-    const dlc = classifyDlc({ potentialRaw }, sourceFile, dlcRegistry);
+    const dlc = classifyDlc({ potentialRaw }, sourceFile, dlcRegistry, dlcTriggers);
     // Normalize the raw `potential` block into a machine-evaluable gate tree so
     // the app's Saved Empire view can classify never-reachable techs (null when
     // the tech has no potential gate).
@@ -375,6 +383,45 @@ export async function runAssemble(): Promise<string> {
     }
   }
 
+  // Faction-type icons (4.6.0): every .dds under factions/types -> _factiontype_<stem>.webp.
+  const convertedFactionStems = new Set<string>();
+  const factionIconDir = join(gameRoot, "gfx", "interface", "icons", "factions", "types");
+  try {
+    for (const file of readdirSync(factionIconDir)) {
+      if (!/\.dds$/i.test(file)) continue;
+      const stem = file.replace(/\.dds$/i, "");
+      if (!SAFE_NAME.test(stem)) continue;
+      try {
+        await convertDdsToWebp(
+          join(factionIconDir, file),
+          join(iconsOutDir, `_factiontype_${stem}.tmp.png`),
+          join(iconsOutDir, `_factiontype_${stem}.webp`),
+        );
+        convertedFactionStems.add(stem);
+      } catch (err) {
+        console.warn(`[assemble] faction icon conversion failed for "${file}" (${err}) — skipping`);
+      }
+    }
+  } catch (err) {
+    console.warn(`[assemble] could not read faction icon dir ${factionIconDir} (${err})`);
+  }
+  const spriteWarnings: string[] = [];
+  const sprites = await loadSpriteTextures(gameRoot, spriteWarnings);
+  const { factions: factionList, warnings: factionWarnings } = await resolveFactionTypes(
+    gameRoot,
+    locMap,
+    sprites,
+    convertedFactionStems,
+  );
+  const factionsTable: Record<string, (typeof factionList)[number]> = {};
+  for (const f of factionList) factionsTable[f.key] = f;
+  const allFactionWarnings = [...spriteWarnings, ...factionWarnings];
+  console.log(
+    `[assemble] factions: ${factionList.length} types (${factionList.filter((f) => f.icon).length} with icon, ` +
+      `${factionList.filter((f) => f.ideologies.length > 0).length} with ideology), ${allFactionWarnings.length} warnings`,
+  );
+  for (const w of allFactionWarnings) console.warn(`[assemble]   faction warning: ${w}`);
+
   // D-16: strict-fail on any tech with an unresolved name.
   if (missingNames.length > 0) {
     throw new Error(
@@ -407,6 +454,7 @@ export async function runAssemble(): Promise<string> {
       sourceFiles,
     },
     techs: sortedTechs,
+    factions: factionsTable,
   };
 
   // D-16: validate before writing — throw and do not write if invalid.
