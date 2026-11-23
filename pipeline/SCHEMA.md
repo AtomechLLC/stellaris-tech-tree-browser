@@ -19,8 +19,31 @@ independently of running the pipeline itself.
 {
   meta: Meta,
   techs: Record<string, Tech>, // keyed by tech key, e.g. "tech_lasers_1"
+  factions?: Record<string, FactionType>, // optional, v4.6.0+
 }
 ```
+
+## `factions` (optional, v4.6.0+)
+
+Absent in v4.4.6 / v4.5.0 / v4.5.1 snapshots; consumers must treat it as
+optional. Keyed (and written sorted) by faction key. Derived from
+`common/pop_faction_types` (plus `common/inline_scripts/pop_faction_types`
+includes, expanded at the file/block top level) and `common/ideologies`.
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `key` | `string` | Faction type key (equals the record key), e.g. `totalitarian`, `the_masquerade_xenophile`. |
+| `name` | `string` | Resolved localised name. Name loc key defaults to `pft_<key>` (game-documented default), overridden by `swappable_data` (`default.name` or `name`); falls back to the loc entry for the key itself, then the raw key. |
+| `icon` | `string \| null` | `_factiontype_<stem>.webp` under `icons/`, or `null`. Sprite defaults to `GFX_faction_icon_<key>` (documented default), overridden by `swappable_data`; mapped to a texture through `interface/*.gfx`. Only textures under `gfx/interface/icons/factions/` that were converted are accepted. |
+| `guidingEthic` | `string \| null` | The faction's `guiding_ethic`. |
+| `ideologies` | `string[]` | Ideology keys whose `faction` is this faction (sorted). |
+| `ideologyEthics` | `string[]` | The (fanatic) ethics those ideologies set (sorted). |
+| `ideologicalName` | `string \| null` | Name used when the faction is ideological: the `swap_type` whose trigger is `exists = ideology`. |
+| `ideologicalIcon` | `string \| null` | Icon of that swap, same naming as `icon`. |
+
+Icons: every `.dds` under `gfx/interface/icons/factions/types/` is emitted as
+`_factiontype_<stem>.webp`. Absolute ethics (`ethic_absolute_*`, 4.6.0) are
+emitted by the existing ethics scan as `_ethic_absolute_*.webp`.
 
 ## `meta` block
 
@@ -31,11 +54,11 @@ independently of running the pipeline itself.
 | `techCount` | `number` | no | Total number of techs in the `techs` record. Matches `Object.keys(techs).length`. |
 | `areaCounts` | `Record<string, number>` | no | Tech count per research area (`physics`/`society`/`engineering`). |
 | `tierCounts` | `Record<string, number>` | no | Tech count per tier (stringified tier number as the key). |
-| `sourceFiles` | `string[]` | no | The full list of source filenames under `common/technology/` that were parsed (33 files for the current corpus). |
+| `sourceFiles` | `string[]` | no | The full list of source filenames under `common/technology/` that were parsed (the file count is version-dependent). |
 
 ## `techs` record
 
-Keyed by tech key (e.g. `"tech_lasers_1"`). Written **sorted by key** for
+Keyed by tech key (e.g. `"tech_lasers_1"`). Keys are not always `tech_`-prefixed (4.6.0 ships `null_void_beam`): every top-level non-`@` key in `common/technology/*.txt` is a tech. Written **sorted by key** for
 deterministic, diff-stable output across runs (D-03/DATA-05).
 
 ## `Tech` fields
@@ -52,7 +75,7 @@ deterministic, diff-stable output across runs (D-03/DATA-05).
 | `weightModifierRaw` | `unknown` | yes (optional) | The raw `weight_modifier` block(s), preserved structurally and NOT flattened (D-06) — duplicate `modifier` entries stay arrays. Deferred structured display is v2 (WGHT-01); this field exists so that future work has the real data rather than a lossy summary. |
 | `prerequisites` | `string[]` | no (may be `[]`) | Flattened list of prerequisite tech keys. OR-alternative blocks (`{OR: [...]}` or jomini's mixed-key positional artifact) are flattened into real edges — "any one of these satisfies the prerequisite" is still treated as a genuine dependency relationship for graph/leadsTo purposes. No AND/OR semantics are modeled in this field's shape. |
 | `unlocks` | `{ grants: string[], leadsTo: string[] }` | no (both sub-fields always present, required, never `.default()`) | See "unlocks (D-05)" section below — the two-component shape. |
-| `dlc` | `string \| null` | yes | The DLC display name gating this tech (e.g. `"Apocalypse"`), or `null` for base-game content (D-08). Sourced from the game's own `dlc/dlc0XX_*/dlc0XX.dlc` metadata (`name` field), matched by source filename convention and/or an explicit `host_has_dlc` trigger override — not a hand-typed lookup table. |
+| `dlc` | `string \| null` | yes | The DLC display name gating this tech (e.g. `"Apocalypse"`), or `null` for base-game content (D-08). Sourced from the game's own `dlc/dlc0XX_*/dlc0XX.dlc` metadata (`name` field), classified in three data-driven layers: (1) an explicit `host_has_dlc` trigger in `potential`, (2) source-filename token containment, (3) fallback only: a positive top-level scripted DLC trigger (e.g. `has_force_of_will_dlc`, resolved from `common/scripted_triggers`) — not a hand-typed lookup table. |
 | `flags` | `{ isRare: boolean, isDangerous: boolean, isRepeatable: boolean, isStarting: boolean }` | no | Parsed flags (D-09). Visual flag legend/display is deferred to v2 (FLAG-01); the data ships now so no pipeline re-run is needed later. |
 | `name` | `string` | no | Resolved localised display name. **Strict-fail** (D-16): the pipeline throws and refuses to write if any tech's name cannot be resolved. |
 | `description` | `string \| null` | yes | Resolved localised description. **Warn-not-fail** (D-16): `null` is an expected, cosmetic gap for some techs, not a build failure. |

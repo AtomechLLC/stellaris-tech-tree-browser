@@ -34,9 +34,16 @@ async function getParser(): Promise<Jomini> {
  * around jomini's root-level parsing quirks.
  */
 export async function parseClausewitzFile(filePath: string): Promise<Record<string, unknown>> {
+  return parseClausewitzText(readFileSync(filePath).toString("latin1"));
+}
+
+/**
+ * Parses already-read (latin1-decoded) Clausewitz text: same BOM strip,
+ * `__root__` wrap and windows1252 parse as parseClausewitzFile.
+ */
+export async function parseClausewitzText(input: string): Promise<Record<string, unknown>> {
   const parser = await getParser();
-  const buf = readFileSync(filePath);
-  let text = buf.toString("latin1");
+  let text = input;
   // Strip a UTF-8 BOM: the bytes EF BB BF decode under latin1 to the three
   // characters U+00EF U+00BB U+00BF ("ï»¿" as literal chars), which would otherwise fuse with
   // the file's first root token and make the first tech key silently fail
