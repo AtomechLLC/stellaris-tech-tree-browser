@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 Phase: 04 (Empire Manager) — EXECUTING
 Plan: 1 of 8
 Status: Executing Phase 04
-Last activity: 2026-09-25 - Completed quick task 260924-vbv: restored 104 missing gov/authority icons in the v4.5.1 snapshot (byte-parity with v4.5.0)
+Last activity: 2026-11-23 - Completed quick task 261123-j1a: upgraded tech-tree data to Stellaris v4.6.0 Corona Borealis (3d1a) — Willpower DLC, absolute ethics, faction types
 
 Progress: [██████████] 100%
 
@@ -121,6 +121,7 @@ None yet.
 | 260708-qt8 | Expose tech `potential` gates in pipeline (`gate` in tech.json); wire Saved Empire tab to snapshot gates, drop side-load | 2026-07-09 | code in working tree (WIP-entangled; see SUMMARY) | [260708-qt8-...](./quick/260708-qt8-expose-tech-potential-gates-in-pipeline-/) |
 | 260924-qfo | Regenerate tech-tree data snapshot for Stellaris v4.5.1 (Cygnus, 358e) — version-agnostic test paths, v4.5.1 data + diff, app snapshot schema test | 2026-09-25 | 1d363a0..9b502fb | [260924-qfo-...](./quick/260924-qfo-regenerate-tech-tree-data-snapshot-for-s/) |
 | 260924-vbv | Restore 104 missing gov/authority icons in v4.5.1 snapshot — resolveGovIconSources (authority-swap sub-blocks + legacy conventional art), placeholder always emitted, byte-parity 1373/1373 with v4.5.0 | 2026-09-25 | db87332..ec6a797 | [260924-vbv-...](./quick/260924-vbv-restore-missing-gov-authority-icons-in-v/) |
+| 261123-j1a | Upgrade to Stellaris v4.6.0 "Corona Borealis" (3d1a) — 683 techs (+5 Willpower/null_void_beam), scripted-trigger DLC labels (Willpower + 25 corrected), faction-type table + 41 faction icons, 8 absolute-ethic icons, factions/absolute chips in app, manifest-latest default, scripted-loc name resolution | 2026-11-23 | 6579bd8..ea0fe85 | [261123-j1a-...](./quick/261123-j1a-upgrade-tech-tree-data-to-stellaris-v4-6/) |
 
 ## Deferred Items
 
