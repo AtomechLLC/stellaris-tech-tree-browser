@@ -54,3 +54,27 @@ describe("localisation: resolveTechText", () => {
     expect(result.description).toBeNull();
   });
 });
+
+describe("localisation: scripted-loc [GetX] defaults", () => {
+  it("resolves a bare [GetX] call to its scripted_loc default localisation", async () => {
+    const { mkdtempSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { loadScriptedLocDefaults, resolveTechText: rtt } = await import("../src/localisation/loc-scanner.js");
+    const dir = mkdtempSync(join(tmpdir(), "sloc-"));
+    writeFileSync(
+      join(dir, "a.txt"),
+      "defined_text = {\n name = GetCulturalEnvoyNamePlural\n text = { trigger = { always = yes } localization_key = cultural_envoy_x }\n default = cultural_envoy_default_plural\n}\n",
+    );
+    const defaults = await loadScriptedLocDefaults(dir);
+    const map = new Map([
+      ["tech_cultural_envoys", "$cultural_envoy_ship_plural$"],
+      ["cultural_envoy_ship_plural", "[GetCulturalEnvoyNamePlural]"],
+      ["cultural_envoy_default_plural", "Cultural Envoys"],
+      ["tech_scoped", "[Root.GetName]"],
+      ["tech_unknown", "[GetNothing]"],
+    ]);
+    expect(rtt("tech_cultural_envoys", map, defaults).name).toBe("Cultural Envoys");
+    expect(rtt("tech_scoped", map, defaults).name).toBe("[Root.GetName]");
+    expect(rtt("tech_unknown", map, defaults).name).toBe("[GetNothing]");
+  });
+});
