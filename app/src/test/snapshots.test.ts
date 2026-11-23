@@ -65,6 +65,15 @@ describe("snapshots: every shipped snapshot validates against the app schema", (
       }
       expect(missingIconFiles).toEqual([]);
 
+      if (parsed.factions) {
+        for (const [key, f] of Object.entries(parsed.factions)) {
+          expect(f.key).toBe(key);
+          for (const icon of [f.icon, f.ideologicalIcon]) {
+            if (icon) expect(existsSync(join(versionDir, "icons", icon)), `${key}: ${icon}`).toBe(true);
+          }
+        }
+      }
+
       const diffPath = join(versionDir, "diff.json");
       if (existsSync(diffPath)) {
         const diff = JSON.parse(readFileSync(diffPath, "utf8"));
