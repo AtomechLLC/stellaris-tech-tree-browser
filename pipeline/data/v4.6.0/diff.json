@@ -10,7 +10,7 @@
     },
     {
       "key": "tech_cultural_envoys",
-      "name": "[GetCulturalEnvoyNamePlural]",
+      "name": "Cultural Envoys",
       "tier": 2,
       "area": "society"
     },

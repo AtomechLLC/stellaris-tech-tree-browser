@@ -3,7 +3,7 @@
     "gameVersion": "v4.6.0",
     "versionLabel": "Corona Borealis v4.6.0 (3d1a)",
     "checksum": "3d1a",
-    "generatedAt": "2026-11-23T22:08:36.699Z",
+    "generatedAt": "2026-11-23T22:19:55.581Z",
     "techCount": 683,
     "areaCounts": {
       "physics": 168,
@@ -8667,8 +8667,8 @@
         "isStarting": false,
         "isInsight": false
       },
-      "name": "[GetCulturalEnvoyNamePlural]",
-      "description": "There are few instruments better suited to carrying our ideals across the stars than dedicated starships. By deploying [GetCulturalEnvoyNamePlural] in orbit around foreign colonies, we can gradually sway their populations through direct and carefully guided messaging.",
+      "name": "Cultural Envoys",
+      "description": "There are few instruments better suited to carrying our ideals across the stars than dedicated starships. By deploying Cultural Envoys in orbit around foreign colonies, we can gradually sway their populations through direct and carefully guided messaging.",
       "icon": "tech_cultural_envoys.webp",
       "gate": {
         "op": "leaf",

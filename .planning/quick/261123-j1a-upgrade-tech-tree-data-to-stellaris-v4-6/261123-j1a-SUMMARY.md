@@ -139,3 +139,7 @@ None of the STOP conditions triggered.
 ## Self-Check: PASSED
 
 All created files exist (dlc-triggers.ts, faction-types.ts, labels.ts, data/v4.6.0/{tech.json,diff.json,icons}); the 7 commits are present in `git log`.
+
+## Follow-up: scripted-loc names
+
+Defect: `tech_cultural_envoys` shipped with name `[GetCulturalEnvoyNamePlural]` (and the same raw call in its description). Fix: `loadScriptedLocDefaults` (pipeline/src/localisation/loc-scanner.ts) parses `common/scripted_loc/*.txt` via jomini (unparseable files warned and skipped) into name -> `default` loc key; `resolveLocTokens` now substitutes bare `[GetX]` calls with that default's resolved localisation (scoped calls like `[Root.GetName]` and unknown names stay verbatim). Wired into `resolveTechText` from assemble.ts. Result: name and description now read "Cultural Envoys"; v4.6.0 snapshot and What's-new diff regenerated (5 added / 0 removed). Remaining bare `[GetX]` calls (8 names) live only in unlock grant text (`resolveOrVerbatim` path, not tech name/description) and are out of scope here.
